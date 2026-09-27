@@ -5,25 +5,19 @@
 ![Local](https://img.shields.io/badge/TTS-100%25_local-orange)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-skill-black)
 
-### Tu app, tu manual, tus documentos o cualquier tema → un video narrado con voz nativa. En tu máquina.
+### Tu agente convierte materiales e ideas en videos.
+
+Combina apps, PDF, documentos o investigación para crear demos, tutoriales, capacitaciones y explicativos narrados.
 
 <p align="center">
   <img src="docs/demo.gif" alt="Video generado por video-web a partir de la demo pública de OrangeHRM" width="800">
   <br>
-  <sub>Fragmento de un video de 30 s generado de punta a punta por la skill contra la demo
-  pública de OrangeHRM (sin afiliación). <a href="https://github.com/rave9226/video-web/releases/latest">Video completo con audio en la release</a>.</sub>
+  <sub>Fragmento de un video de 30 s generado de punta a punta con la demo pública de OrangeHRM (sin afiliación). <a href="https://github.com/rave9226/video-web/releases/latest">Mira el video completo con audio</a>.</sub>
 </p>
 
-> **English:** an agent skill (Claude Code, OpenCode) that turns a web app URL, a PDF manual,
-> any document or a researched topic into a 1920×1080 narrated video: real read-only
-> screenshots, a script, native local voice-over in 10 languages (Qwen3-TTS, verified with
-> Whisper), brand colors and HyperFrames animations (motion graphics included) synced to every
-> spoken word. Docs are in Spanish; videos can be in any of the 10 languages below.
+> **English:** Turn a web app URL, PDF manual, document or researched topic into a 1920×1080 narrated MP4. video-web is an open-source agent skill for Claude Code and OpenCode: real read-only screenshots, a script, local native voice-over in 10 languages (Qwen3-TTS, each line checked with Whisper), your brand colors and HyperFrames animation synced to each spoken word. Motion graphics included. Docs are in Spanish; videos can use any of the 10 languages below.
 
-Le pides un video a tu agente de código (Claude Code, OpenCode) y le das lo que tengas: la URL
-de tu app, un manual en PDF, una presentación, unas notas o solo un tema para investigar. Él
-reúne el material, escribe el guion, narra con voz nativa en tu idioma, pone los colores de tu
-marca, anima cada escena al ritmo de la voz y te entrega un MP4 1920×1080 listo para publicar.
+Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo sin app que capturar. Pídeselo a Claude Code u OpenCode con el material que ya tienes:
 
 ```text
 "Haz un video demo de 45 segundos de https://mi-app.com, voz en español latino"
@@ -32,9 +26,9 @@ marca, anima cada escena al ritmo de la voz y te entrega un MP4 1920×1080 listo
 "Make a 30-second motion graphics explainer about our new pricing, English voice-over"
 ```
 
-**Sin editor de video. Sin locutor. Sin suscripción de TTS. Sin tocar tus datos.**
+**Sin editor de video, locutor ni suscripción de TTS.** La captura de la app opera en solo lectura; la voz se genera localmente.
 
-## Mucho más que grabar una app
+## Dale lo que tienes. Publica lo que necesitas.
 
 | Le das… | Obtienes… |
 |---|---|
@@ -42,72 +36,56 @@ marca, anima cada escena al ritmo de la voz y te entrega un MP4 1920×1080 listo
 | 📄 **Un manual en PDF** | Tutoriales y procedimientos paso a paso; sus imágenes se recortan y se animan |
 | 🗂️ **Cualquier documento** (Word, PowerPoint, notas, transcripciones) | Capacitaciones, onboarding y comunicados internos narrados |
 | 🔎 **Solo un tema** | El agente investiga, cita sus fuentes, busca imágenes oficiales o con licencia libre y arma un explicativo |
-| ✨ **Una idea o un mensaje** | Motion graphics: tipografía cinética, diagramas, números y formas animadas, sin una sola captura |
+| ✨ **Una idea o un mensaje** | Motion graphics con tipografía cinética, diagramas, números y formas animadas, sin capturas |
 
-Y se combinan: la URL de tu app más su manual, o una investigación más las capturas oficiales
-de la documentación del proveedor. Un caso real: un video interno de 3 minutos para una
-**migración de Google Workspace a Microsoft 365**, con el mapa de equivalencias entre
-herramientas y un recorrido por Teams, SharePoint, Planner y Power Automate usando capturas
-oficiales de la documentación de Microsoft. Sin app que capturar, solo investigación.
+También puedes combinar fuentes: la app con su manual, o una investigación con capturas oficiales de documentación. Por ejemplo, un video interno de 3 minutos sobre una **migración de Google Workspace a Microsoft 365**: equivalencias entre herramientas y recorrido por Teams, SharePoint, Planner y Power Automate con capturas oficiales de la documentación de Microsoft. Sin app que capturar.
 
-## Hecho sobre HyperFrames
+## Movimiento que sigue cada palabra
 
-Cada escena es una composición [HyperFrames](https://github.com/heygen-com/hyperframes): HTML +
-GSAP renderizado cuadro a cuadro, determinista. video-web funciona **junto con las skills de
-HyperFrames** que instalas con `npx hyperframes skills update`, así que tu agente también puede
-usar `/motion-graphics`, `/hyperframes-animation` (blueprints de escenas) o
-`/hyperframes-creative` dentro del mismo video. `vl` pone lo que HyperFrames no trae: captura
-segura, voz nativa verificada, sincronía con cada palabra, marca y revisión antes del render.
+Las escenas usan [HyperFrames](https://github.com/heygen-com/hyperframes): HTML + GSAP renderizado cuadro a cuadro. video-web sincroniza los elementos con cada palabra hablada y funciona junto con las skills que instalas con `npx hyperframes skills update`: `/motion-graphics`, `/hyperframes-animation` (blueprints de escenas) y `/hyperframes-creative`. `vl` añade captura en solo lectura, voz verificada, marca y revisión antes del render.
 
 ---
 
-## ¿Por qué no pedirle a un agente que "haga un video" y ya?
+## Tu producto real, no una interfaz inventada
 
-Porque lo que sale suele ser una interfaz dibujada a mano, cifras inventadas, una voz con
-acento extranjero y animaciones que no coinciden con lo que se dice. video-web resuelve
-justo eso:
+Una demo pierde fuerza si dibuja una app distinta, habla sobre un botón que aún no aparece o cambia de estilo entre escenas. video-web ata la imagen, la voz y el movimiento al material original:
 
 | Problema típico | Lo que hace video-web |
 |---|---|
 | El agente redibuja tu app en HTML | **Capturas reales** a 2x de tu app, con la posición de cada botón medida al píxel |
-| Navegar tu app con un agente es riesgoso | **Solo lectura garantizada en red**: bloquea escrituras, GET de acción y WebSockets; solo pasa el login |
+| Navegar tu app con un agente es riesgoso | **Captura en solo lectura**: bloquea escrituras, GET de acción y WebSockets; permite el login |
 | Voz robótica o con acento extranjero | **Voz nativa en 10 idiomas**, local con Qwen3-TTS, y cada línea verificada con Whisper (se regenera sola si falla) |
 | Animaciones desfasadas de la voz | Cada elemento aparece **en el segundo exacto** en que la voz lo nombra |
 | Cada escena con un estilo distinto | **Colores y fuentes de tu marca** fijados para todo el video |
 | Errores que aparecen tras 20 min de render | **`vl check`** detecta antes del render lo que rompe el video |
 
-## Idiomas
+## Una voz para tu audiencia
 
 🇪🇸 Español (por defecto, latino) · 🇺🇸 Inglés · 🇧🇷 Portugués · 🇫🇷 Francés · 🇩🇪 Alemán ·
 🇮🇹 Italiano · 🇷🇺 Ruso · 🇨🇳 Chino · 🇯🇵 Japonés · 🇰🇷 Coreano
 
-Son los 10 idiomas de Qwen3-TTS. Probados: español (videos completos), inglés y portugués de
-Brasil (voz: diseño, clonación y validación). Cómo cambiar el idioma: `video-web/references/oficio.md` § Otros idiomas.
+Son los 10 idiomas de Qwen3-TTS. **Probados:** español en videos completos; inglés y portugués de Brasil en diseño, clonación y validación de voz. Para cambiar el idioma: `video-web/references/oficio.md` § Otros idiomas.
 
-## Qué puedes hacer
+## Del lanzamiento a la capacitación
 
 - 🚀 **Lanzamientos** de producto o de una función nueva.
 - 🧭 **Demos y tours** de tu SaaS, portal o panel de administración (con o sin login).
 - 🎓 **Tutoriales y procedimientos** desde tu app o tu manual en PDF.
 - 🏢 **Capacitación interna**: migraciones de herramientas, onboarding, políticas y procesos.
 - 🔎 **Explicativos investigados** sobre cualquier tema, con fuentes citadas.
-- ✨ **Motion graphics** de moda: tipografía cinética, diagramas y datos animados.
+- ✨ **Motion graphics**: tipografía cinética, diagramas y datos animados.
 - 🌎 **El mismo video en otro idioma**: cambia voz, guion y textos; reusa capturas y estructura.
 
-## Probado de verdad
+## Números de videos reales
 
-- 3 videos completos generados de punta a punta contra apps públicas (OrangeHRM y
-  books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, todo el pipeline incluido.
-- Voz validada con Whisper: **WER 0** en las líneas medidas y P(idioma) > 0,98 en español,
-  inglés y portugués.
-- Audio nivelado para plataformas (≈ −16 LUFS).
-- **Sin GPU también funciona**: la voz corre en CPU (≈ 10× la duración del audio con 16
-  núcleos). Probado en Linux; macOS y Windows con WSL2 están soportados pero aún sin
-  probar en equipos reales: si lo pruebas, cuéntanos.
+- **3 videos completos** de punta a punta con apps públicas (OrangeHRM y books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, incluido todo el pipeline.
+- **Voz comprobada con Whisper:** WER 0 en las líneas medidas y P(idioma) > 0,98 en español, inglés y portugués.
+- **Audio nivelado** a ≈ −16 LUFS.
+- **También corre sin GPU:** la voz tarda ≈ 10× la duración del audio en una CPU de 16 núcleos. Probado en Linux. macOS y Windows con WSL2 están soportados, pero aún no se han probado en equipos reales.
 
-## Cómo funciona
+## Pide el video; revisa lo que importa
 
-Un solo comando, `vl`, hace lo mecánico. Tu agente decide el video.
+`vl` ejecuta el pipeline. Tu agente prepara el video con tu material:
 
 ```text
 explorar → capturar → marca → guion → voz → música → escenas → revisar → render
@@ -123,13 +101,11 @@ explorar → capturar → marca → guion → voz → música → escenas → re
 6. `vl snap`: hojas de revisión con inicio, medio y final de cada escena.
 7. `vl render`: MP4 final, versión 720p y grilla de revisión.
 
-Tú apruebas en los puntos que importan: qué datos se muestran, qué voz, qué música y el
-video antes del render.
+Tú decides qué datos se muestran, eliges la voz y la música, y revisas el video antes del render.
 
-**100 % local**: tus capturas, tu guion y tu voz no pasan por ningún servicio de TTS o
-video en la nube (el único modelo externo es el de tu agente).
+**Producción local:** las capturas, el guion y la voz no pasan por servicios de TTS o video en la nube. El único modelo externo es el de tu agente.
 
-> ⚠️ **Música:** MusicGen es CC-BY-NC (no comercial). Para videos comerciales usa una pista
+> **Música para uso comercial:** MusicGen es CC-BY-NC (no comercial). Usa una pista
 > propia con licencia (`assets/bgm/track.wav` + `vl musica mezclar`) o ninguna.
 
 Las instrucciones completas para el agente están en [`video-web/SKILL.md`](video-web/SKILL.md).
