@@ -1,0 +1,324 @@
+<template>
+<!--
+PATRÓN window-feature-zoom · ejemplo real: escena 4 del video de referencia (f04-leads).
+CUÁNDO: Una pantalla del producto con 1–3 zonas que la voz nombra: ventana, cambio de pantalla dentro de ella, anillo y zoom ≤ 1.6 (sirve también para dashboards e informes).
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f04-leads → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="12.09" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-leads-nuevo.png, assets/app-leads.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: IMG_W, SELECT_RECT, TABS_ROW, TABS, PILL_PAD, ZOOM, WORD_T, CHIP_T, STAGE_T → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 4 — Todo empieza con un lead
+
+- scene: La pantalla de Leads con sus canales de origen y el embudo por etapas resaltado pestaña a pestaña
+- voiceover: "Todo empieza con un lead. Llegue por formulario, chatbot, referido o carga de archivos, avanza por un embudo claro: captura, elegibilidad, cotización y cierre."
+- duration: 11.59s
+- transition_in: crossfade
+- status: animated
+- src: compositions/frames/f04-leads.html
+- pattern: window-feature-zoom
+- type: feature_showcase
+- persuasion: Show-don't-tell proof
+- beat: momentum
+- blueprint: device-surface-showcase (Adapt)
+- focal: assets/app-leads.png
+- roles: app-leads = cutout (window hero) · app-leads-nuevo = supporting (in-window swap)
+- asset_candidates: assets/app-leads.png — listado de leads con pestañas de etapa; assets/app-leads-nuevo.png — modal Nuevo lead con canal de origen
+- sfx: none
+
+narrativeRole: inicio del recorrido: captación desde cualquier canal y embudo claro.
+keyMessage: cada interesado entra y avanza por etapas visibles.
+
+Adapt: static-tour variant — window hero with in-window screen swaps and the side headline column updating per beat (signature); camera only punches in on the tabs row.
+Scene 1 (0.0–1.5s): window with `app-leads.png` slides in from the right and settles; left eyebrow "LEADS", h2 "Todo empieza con un lead" per-word 0.0–1.1.
+Scene 2 (1.5–5.6s): four channel chips (icon + label) stack in the left column on their words: Formulario 2.2 · Chatbot 3.0 · Referido 3.7 · Carga de archivos 4.5. At 2.2 the window swaps to `app-leads-nuevo.png`; turquoise ring on the "Canal de origen" select (rect [818,1016,606,124] of 2880×1800).
+Scene 3 (5.6–11.59s): window swaps back to `app-leads.png` (5.8); punch-in onto the stage tabs row (tabs row rect [1392,272,1104,68]; tabs: Captura [1540,272,164,68] · Elegibilidad [1716,272,216,68] · Cotización [1944,272,202,68] · Cierre [2158,272,132,68]); a turquoise pill highlight slides tab to tab on the words: Captura 7.3 · Elegibilidad 8.2 · Cotización 9.2 · Cierre 10.3. Left column: the channel chips drop to 40% and a four-step mini funnel (stacked narrowing primary bars labeled Captura / Elegibilidad / Cotización / Cierre) builds step by step in sync. Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids/clases con el prefijo de la escena; los selectores [id=…]/[class~=…] equivalen a #id/.clase.
+       Type sizes are frame.md cqw tokens resolved at 1920 wide (1cqw = 19.2px). */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    [id="f04-leads-bg"] { position: absolute; inset: 0; background: #F1F1F1; }
+    [id="f04-leads-stage"] { position: absolute; inset: 0; }
+
+    /* ── Left column: eyebrow · h2 · channel chips · mini funnel (96 → ~814px) ── */
+    [id="f04-leads-col"] {
+      position: absolute; left: 96px; top: 96px; width: 560px;
+      display: flex; flex-direction: column; align-items: flex-start;
+    }
+    [id="f04-leads-eyebrow"] { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    [id="f04-leads-accent"] {
+      display: block; width: 60px; height: 4px; border-radius: 2px;
+      background: #2F4E9C; transform-origin: 0% 50%;
+    }
+    [id="f04-leads-eyebrow-text"] {
+      display: block; font-size: 15.36px; font-weight: 600; line-height: 1.2;
+      letter-spacing: 0.08em; text-transform: uppercase; color: #2F4E9C;
+    }
+    [id="f04-leads-h2"] {
+      margin: 0 0 44px; font-size: 50px; font-weight: 600; line-height: 1.1;
+      letter-spacing: -0.02em; color: #22254F;
+    }
+    [class~="f04-leads-line"] { display: block; white-space: nowrap; }
+    [class~="f04-leads-w"] { display: inline-block; }
+
+    [id="f04-leads-chips"] {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 44px;
+    }
+    [class~="f04-leads-chip"] {
+      display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 28px 0 20px;
+      box-sizing: border-box; border-radius: 100px; background: rgba(47, 78, 156, 0.08);
+      color: #2F4E9C; font-size: 27px; font-weight: 500; line-height: 1; white-space: nowrap;
+    }
+    [class~="f04-leads-chip"] svg {
+      display: block; flex: none; width: 30px; height: 30px; fill: none; stroke: #2F4E9C;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* Funnel: stacked narrowing primary bars 100 / 85 / 70 / 55 % of 480px, centered */
+    [id="f04-leads-funnel"] {
+      width: 480px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    [class~="f04-leads-bar"] {
+      height: 50px; box-sizing: border-box; border-radius: 10px; background: #2F4E9C;
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-size: 27px; font-weight: 600; line-height: 1;
+      letter-spacing: -0.01em; white-space: nowrap;
+    }
+
+    /* ── Window hero: white app window, 14px radius, soft navy shadow (frame.md) ──
+       app-*.png are 2880×1800 (2x) captures shown at 1120×700 → 7/18 of native. */
+    [id="f04-leads-win"] {
+      position: absolute; left: 700px; top: 96px; width: 1120px; height: 740px;
+      border-radius: 14px; overflow: hidden; background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    [id="f04-leads-winbar"] {
+      position: absolute; left: 0; top: 0; width: 1120px; height: 40px; box-sizing: border-box;
+      display: flex; align-items: center; gap: 8px; padding-left: 18px;
+      border-bottom: 1px solid rgba(28, 32, 68, 0.06);
+    }
+    [class~="f04-leads-dot"] {
+      display: block; width: 11px; height: 11px; border-radius: 50%; background: rgba(28, 32, 68, 0.14);
+    }
+    [id="f04-leads-view"] {
+      position: absolute; left: 0; top: 40px; width: 1120px; height: 700px;
+      overflow: hidden; background: #F1F1F1;
+    }
+    /* coordinate-target-zoom: outer scales about the view center, inner counter-translates */
+    [id="f04-leads-zoom-outer"], [id="f04-leads-zoom-inner"], [id="f04-leads-nuevo"] {
+      position: absolute; left: 0; top: 0; width: 1120px; height: 700px;
+    }
+    [id="f04-leads-zoom-outer"] { transform-origin: 50% 50%; }
+    [class~="f04-leads-shot"] {
+      position: absolute; left: 0; top: 0; width: 1120px; height: 700px; display: block; max-width: none;
+    }
+    /* Turquoise focus ring (brand spark) on the "Canal de origen" select — placed by JS */
+    [id="f04-leads-ring"] {
+      position: absolute; box-sizing: border-box; border-radius: 10px;
+      border: 2.5px solid #4BC1ED; background: rgba(75, 193, 237, 0.06);
+      box-shadow: 0 0 0 5px rgba(75, 193, 237, 0.22);
+    }
+    /* Punch-in focus: canvas-colored wash everywhere except the tabs row (placed by JS) */
+    [id="f04-leads-spot"] {
+      position: absolute; border-radius: 12px;
+      box-shadow: 0 0 10px 2000px rgba(241, 241, 241, 0.62);
+    }
+    /* Stage-tab highlight — lives in capture space, so its 1.25px stroke reads ~3px at 2.4× */
+    [id="f04-leads-pill"] {
+      position: absolute; box-sizing: border-box; border-radius: 100px;
+      border: 1.25px solid #4BC1ED; background: rgba(75, 193, 237, 0.16);
+      box-shadow: 0 0 0 2.5px rgba(75, 193, 237, 0.25); transform-origin: 50% 50%;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f04-leads" data-width="1920" data-height="1080" data-duration="12.09">
+    <div id="f04-leads-bg" class="clip" data-start="0" data-duration="12.09" data-track-index="0"></div>
+
+    <div id="f04-leads-stage" class="clip" data-start="0" data-duration="12.09" data-track-index="1">
+      <div id="f04-leads-col">
+        <div id="f04-leads-eyebrow">
+          <span id="f04-leads-accent"></span>
+          <span id="f04-leads-eyebrow-text">LEADS</span>
+        </div>
+
+        <h2 id="f04-leads-h2">
+          <span class="f04-leads-line"><span id="f04-leads-w0" class="f04-leads-w">Todo</span> <span id="f04-leads-w1" class="f04-leads-w">empieza</span></span>
+          <span class="f04-leads-line"><span id="f04-leads-w2" class="f04-leads-w">con</span> <span id="f04-leads-w3" class="f04-leads-w">un</span> <span id="f04-leads-w4" class="f04-leads-w">lead</span></span>
+        </h2>
+
+        <div id="f04-leads-chips">
+          <div id="f04-leads-chip0" class="f04-leads-chip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
+            <span>Formulario</span>
+          </div>
+          <div id="f04-leads-chip1" class="f04-leads-chip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3" /><path d="M12 8V5" /><circle cx="12" cy="3.6" r="1.2" /><path d="M9 13v1.5M15 13v1.5M2 13v3M22 13v3" /></svg>
+            <span>Chatbot</span>
+          </div>
+          <div id="f04-leads-chip2" class="f04-leads-chip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M19 8v6M16 11h6" /></svg>
+            <span>Referido</span>
+          </div>
+          <div id="f04-leads-chip3" class="f04-leads-chip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /><path d="M12 15V4" /><path d="M7.5 8.5 12 4l4.5 4.5" /></svg>
+            <span>Carga de archivos</span>
+          </div>
+        </div>
+
+        <div id="f04-leads-funnel">
+          <div id="f04-leads-bar0" class="f04-leads-bar" style="width: 480px">Captura</div>
+          <div id="f04-leads-bar1" class="f04-leads-bar" style="width: 408px">Elegibilidad</div>
+          <div id="f04-leads-bar2" class="f04-leads-bar" style="width: 336px">Cotización</div>
+          <div id="f04-leads-bar3" class="f04-leads-bar" style="width: 264px">Cierre</div>
+        </div>
+      </div>
+
+      <div id="f04-leads-win" data-layout-allow-overflow>
+        <div id="f04-leads-winbar">
+          <span class="f04-leads-dot"></span><span class="f04-leads-dot"></span><span class="f04-leads-dot"></span>
+        </div>
+        <div id="f04-leads-view">
+          <div id="f04-leads-zoom-outer" data-layout-allow-overflow>
+            <div id="f04-leads-zoom-inner" data-layout-allow-overflow>
+              <img id="f04-leads-shot-a" class="f04-leads-shot" src="assets/app-leads.png" alt="Pantalla de Leads" />
+              <div id="f04-leads-nuevo">
+                <img class="f04-leads-shot" src="assets/app-leads-nuevo.png" alt="Modal Nuevo lead" />
+                <div id="f04-leads-ring"></div>
+              </div>
+              <img id="f04-leads-shot-b" class="f04-leads-shot" src="assets/app-leads.png" alt="Pantalla de Leads" />
+              <div id="f04-leads-spot"></div>
+              <div id="f04-leads-pill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var el = function (key) { return document.getElementById("f04-leads-" + key); };
+
+      // ── Capture geometry: packet rects are in the 2880×1800 image's own pixels ──
+      var IMG_W = 2880, IMG_H = 1800, VIEW_W = 1120, VIEW_H = 700;
+      var S = VIEW_W / IMG_W; // display px per capture px (7/18)
+      var place = function (node, r, pad) {
+        node.style.left = (r[0] - pad) * S + "px";
+        node.style.top = (r[1] - pad) * S + "px";
+        node.style.width = (r[2] + 2 * pad) * S + "px";
+        node.style.height = (r[3] + 2 * pad) * S + "px";
+      };
+      var SELECT_RECT = [818, 1016, 606, 124]; // "Canal de origen" select, app-leads-nuevo.png
+      var TABS_ROW = [1392, 272, 1104, 68];
+      var TABS = [
+        [1540, 272, 164, 68], // Captura
+        [1716, 272, 216, 68], // Elegibilidad
+        [1944, 272, 202, 68], // Cotización
+        [2158, 272, 132, 68] // Cierre
+      ];
+      var PILL_PAD = 6;
+      var ring = el("ring");
+      var pill = el("pill");
+      var spot = el("spot");
+      place(ring, SELECT_RECT, 8);
+      place(pill, TABS[0], PILL_PAD);
+      place(spot, TABS_ROW, 14);
+      var pillAt = TABS.map(function (r) {
+        return { x: (r[0] - TABS[0][0]) * S, width: (r[2] + 2 * PILL_PAD) * S };
+      });
+
+      // Punch-in on the stage tabs (nested wrappers → counter-translate T = -offset).
+      // Gentle 1.5× (orchestrator review): the Leads page holds a single lead, so a 2.4×
+      // push on the tabs alone left the window almost empty with clipped glyphs. At 1.5× the
+      // view keeps title, tabs, filter and the lead card while the tabs still read clearly (view spans capture x 590–2510).
+      var ZOOM = 1.5;
+      var halfW = VIEW_W / (S * ZOOM) / 2;
+      var halfH = VIEW_H / (S * ZOOM) / 2;
+      var clamp = function (v, lo, hi) { return Math.min(Math.max(v, lo), hi); };
+      // Focus = the whole tabs row (equal margins; its left edge lands past the lead card's
+      // text, so no stray glyphs). y is clamped so the capture's top edge never enters the view.
+      // Focus between the tabs row and the lead card (capture px), clamped to the image.
+      var focusX = clamp(1550, halfW, IMG_W - halfW);
+      var focusY = clamp(560, halfH, IMG_H - halfH);
+      var camX = -(focusX * S - VIEW_W / 2);
+      var camY = -(focusY * S - VIEW_H / 2);
+
+      // VO word starts (s): lead-in 0.04–0.08 s so each reveal reads ON the word.
+      var WORD_T = [0.0, 0.34, 0.64, 0.98, 1.12]; // Todo · empieza · con · un · lead
+      var CHIP_T = [2.22, 2.98, 3.68, 4.54]; // formulario · chatbot · referido · carga de archivos
+      var STAGE_T = [7.3, 8.16, 9.18, 10.34]; // captura · elegibilidad · cotización · cierre
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0.0–1.5): window slides in from the right and settles; eyebrow + per-word h2
+      tl.fromTo(el("win"), { x: 180 }, { x: 0, duration: 1.1, ease: "power3.out" }, 0);
+      tl.fromTo(el("win"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 0);
+      tl.fromTo(el("accent"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo(el("eyebrow-text"), { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.05);
+      WORD_T.forEach(function (t, i) {
+        tl.fromTo(el("w" + i), { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, Math.max(0, t - 0.04));
+      });
+
+      // Scene 2 (1.5–5.6): channel chips stack in on their words; in-window swap to the
+      // Nuevo lead modal on "formulario" + turquoise focus ring on "Canal de origen"
+      CHIP_T.forEach(function (t, i) {
+        tl.fromTo(el("chip" + i), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, t - 0.04);
+      });
+      tl.fromTo(el("nuevo"), { opacity: 0 }, { opacity: 1, duration: 0.34, ease: "power1.inOut" }, 2.18);
+      tl.fromTo(ring, { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 2.42);
+
+      // Scene 3 (5.6–11.59): swap back (the list fades in OVER the modal — no exit tween),
+      // chips drop to 40%, punch-in on the tabs, pill + funnel step together, then hold.
+      tl.fromTo(el("shot-b"), { opacity: 0 }, { opacity: 1, duration: 0.36, ease: "power1.inOut" }, 5.74);
+      tl.fromTo(el("chips"), { opacity: 1 }, { opacity: 0.4, duration: 0.5, ease: "power2.out", immediateRender: false }, 5.74);
+      tl.fromTo(el("zoom-outer"), { scale: 1 }, { scale: ZOOM, duration: 1.1, ease: "power3.inOut" }, 6.0);
+      tl.fromTo(el("zoom-inner"), { x: 0, y: 0 }, { x: camX, y: camY, duration: 1.1, ease: "power3.inOut" }, 6.0);
+      tl.fromTo(spot, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 6.5);
+
+      tl.fromTo(pill, { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, STAGE_T[0] - 0.04);
+      for (var i = 1; i < STAGE_T.length; i++) {
+        tl.fromTo(
+          pill,
+          { x: pillAt[i - 1].x, width: pillAt[i - 1].width },
+          { x: pillAt[i].x, width: pillAt[i].width, duration: 0.5, ease: "power3.out", immediateRender: false },
+          STAGE_T[i] - 0.08
+        );
+      }
+      STAGE_T.forEach(function (t, i) {
+        tl.fromTo(
+          el("bar" + i),
+          { clipPath: "inset(0% 50% 0% 50% round 10px)", y: 10 },
+          { clipPath: "inset(0% 0% 0% 0% round 10px)", y: 0, duration: 0.6, ease: "power3.out" },
+          t - 0.06
+        );
+      });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f04-leads"] = tl;
+    })();
+  </script>
+</template>

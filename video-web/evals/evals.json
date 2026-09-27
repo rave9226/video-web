@@ -1,0 +1,62 @@
+{
+  "skill_name": "video-web",
+  "evals": [
+    {
+      "id": 1,
+      "name": "orangehrm-pim-leave-con-login",
+      "prompt": "Haz un video corto (30 a 45 segundos) de lanzamiento de dos módulos de OrangeHRM (demo pública): PIM (lista de empleados) y Leave. La app está en https://opensource-demo.orangehrmlive.com y las credenciales están en las variables de entorno APP_USER y APP_PASS (demo pública: Admin / admin123). Los datos son de prueba. Voz en español latino y los colores de la marca. Crea el proyecto en ~/videos/.vl-evals/e1-orangehrm.",
+      "expected_output": "MP4 1920x1080 de 30–45 s con voz, música y escenas con capturas reales de PIM y Leave.",
+      "files": [],
+      "assertions": [
+        "renders/video.mp4 existe, es 1920x1080 y dura entre 30 y 45 s",
+        "el audio del MP4 está entre −20 y −14 LUFS",
+        "todas las voces de audio_meta.json tienen WER ≤ 0.08",
+        ".vl/lint.txt dice 0 error(s) y .vl/check.txt dice Check passed",
+        "no se usaron comandos fuera de ./vl para capturar, mezclar audio ni editar index.html",
+        "requests.log: PERMITIDO solo /web/index.php/auth/validate; BLOQUEADO solo telemetría de la app (/events/push), ninguno disparado por un paso",
+        "`./vl check todo` sin avisos salvo la escritura bloqueada de telemetría /events/push"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "sitio-publico-sin-login",
+      "prompt": "Necesito un video de 30 segundos que explique cómo explorar el catálogo de la librería de demo https://books.toscrape.com (no requiere login; datos de prueba): portada, una categoría y el detalle de un libro. Voz en español latino. Proyecto en ~/videos/.vl-evals/e2-libros.",
+      "expected_output": "MP4 1920x1080 de ~30 s con portada, categoría y detalle de libro; capture.json sin bloque login.",
+      "files": [],
+      "assertions": [
+        "renders/video.mp4 existe, es 1920x1080 y dura entre 25 y 35 s",
+        "capture.json no tiene bloque login o todas las tomas tienen auth false",
+        "capture-report.json sin fallas, sin escrituras bloqueadas y sin imágenes vacías",
+        "`./vl check todo` termina sin avisos"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "flexible-sin-musica-y-edicion",
+      "prompt": "Haz un video de 20 segundos, sin música, que muestre la librería de demo https://books.toscrape.com (datos de prueba), con voz en español latino. Cuando esté, cambia solo el texto de la última escena por 'Encuentra tu próximo libro' y vuelve a renderizar. Proyecto en ~/videos/.vl-evals/e5-flexible.",
+      "expected_output": "MP4 de ~20 s sin pista de música; la edición final toca solo la última escena y re-ensambla sin rehacer captura, voz ni otras escenas.",
+      "files": [],
+      "assertions": [
+        "renders/video.mp4 existe y dura entre 15 y 25 s",
+        "audio_meta.json tiene bgm null (sin música)",
+        "la última escena contiene 'Encuentra tu próximo libro'",
+        "la captura y las voces no se regeneraron tras la edición (fechas de archivo previas al cambio)",
+        "no se navegó la app fuera de ./vl explorar y ./vl captura"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "debe-activarse",
+      "prompt": "quiero un video demo de nuestra app web mostrando sus funcionalidades, con voz en español",
+      "expected_output": "La skill se activa.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "no-debe-activarse",
+      "prompt": "agrega subtítulos a este video de una entrevista que grabé",
+      "expected_output": "La skill NO se activa (corresponde a embedded-captions).",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,315 @@
+<template>
+<!--
+PATRÓN admin-grid-focus · ejemplo real: escena 12 del video de referencia (f12-admin).
+CUÁNDO: Varias pantallas de administración en grilla, con foco que salta de una a otra según la voz.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f12-admin → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="14.41" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-comentarios.png, assets/app-configuracion.png, assets/app-logs-payload.png, assets/app-planes.png, assets/app-usuarios.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 12 — Administración e integraciones
+
+- scene: Planes, usuarios, configuración y logs se ensamblan; las integraciones confirman; Comentarios cierra
+- voiceover: "La administración controla planes, usuarios, reglas del proceso y cada integración: pagos con Wompi, firma con DocuSeal, validaciones con Softix y correo. Y en Comentarios, todo el equipo propone mejoras."
+- duration: 13.91s
+- transition_in: push-slide LEFT
+- status: animated
+- src: compositions/frames/f12-admin.html
+- pattern: admin-grid-focus
+- type: feature_showcase
+- persuasion: Value stacking
+- beat: power + control
+- blueprint: grid-card-assemble (Reproduce)
+- focal: assets/app-logs-payload.png
+- roles: app-planes = cutout · app-usuarios = cutout · app-configuracion = cutout · app-logs-payload = cutout (focus) · app-comentarios = cutout (final)
+- asset_candidates: assets/app-planes.png — catálogo de planes con precios; assets/app-usuarios.png — usuarios internos con roles; assets/app-configuracion.png — configuración y reglas del proceso; assets/app-logs-payload.png — logs de integración con payload de Wompi; assets/app-comentarios.png — canal de comentarios
+- sfx: none
+
+narrativeRole: el control total detrás de escena.
+keyMessage: todo configurable y cada integración visible.
+
+Scene 1 (0.0–4.6s): left eyebrow "ADMINISTRACIÓN", h2 "Control total" (0.0–0.9). Right 2×2 grid of screen cards (each ≈540×338, gap 24) cascades in on the words with a label chip each: Planes 1.4 · Usuarios 1.9 · Configuración 2.6 · Logs de integración 4.2.
+Scene 2 (4.6–10.2s): the Logs card lifts forward and enlarges (the other three recede); four integration chips pop in a vertical column at left, each with a green "Exitoso" dot: "Wompi · pagos" 6.0 · "DocuSeal · firma" 7.3 · "Softix · validaciones" 8.9 · "Correo" 9.6.
+Scene 3 (10.2–13.91s): the grid dims; `app-comentarios.png` card rises front-center at 10.8; chip "Comentarios · todos los roles" at 12.0. Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids con el prefijo de la escena (f12-admin-). */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Poppins", sans-serif;
+      color: #22254f;
+    }
+    #f12-admin-bg { position: absolute; inset: 0; background: #f1f1f1; }
+
+    /* Camera + type container: cqw resolves against this 1920px box; GSAP scales it. */
+    #f12-admin-cam {
+      position: absolute;
+      inset: 0;
+      container-type: size;
+      transform-origin: 50% 45%;
+    }
+    #f12-admin-cam * { box-sizing: border-box; }
+
+    /* Slide-header, left column */
+    #f12-admin-rule {
+      position: absolute; left: 96px; top: 120px; width: 60px; height: 4px;
+      border-radius: 2px; background: #2f4e9c; transform-origin: 0 50%;
+    }
+    #f12-admin-eyebrow {
+      position: absolute; left: 96px; top: 142px; margin: 0;
+      font-size: 20px; font-weight: 600; line-height: 1.2; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #2f4e9c; white-space: nowrap;
+    }
+    #f12-admin-title {
+      position: absolute; left: 96px; top: 176px; margin: 0;
+      font-size: 2.6cqw; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em;
+      color: #22254f; white-space: nowrap;
+    }
+
+    /* 2×2 grid, right: 540×338 cards, 24px gap, x 720–1824, y 120–820 */
+    .f12-admin-slot { position: absolute; width: 540px; height: 338px; filter: blur(0px); }
+    .f12-admin-ph {
+      position: absolute; inset: 0; border-radius: 14px;
+      background: rgba(47, 78, 156, 0.04); border: 1.5px solid rgba(47, 78, 156, 0.2);
+    }
+    .f12-admin-card { position: absolute; inset: 0; }
+    /* Product screen: white window frame, 14px radius, the one allowed navy shadow */
+    .f12-admin-win {
+      position: absolute; inset: 0; padding: 8px; border-radius: 14px;
+      background: #ffffff; box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    .f12-admin-shot { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 8px; }
+    .f12-admin-shot img {
+      display: block; width: 100%; height: 100%; object-fit: cover; object-position: 0 0;
+    }
+    /* Anchored top-left so the slow push never crops the app sidebar/title */
+    #f12-admin-logs-img { transform-origin: 0 0; }
+    /* Opaque tag-pill (surface + 8% primary) so it reads over a screenshot */
+    .f12-admin-chip {
+      display: inline-flex; align-items: center; height: 50px; padding: 0 20px;
+      border-radius: 100px; background: #eef1f7; border: 1.5px solid rgba(47, 78, 156, 0.2);
+      color: #2f4e9c; font-size: 1.4cqw; font-weight: 600; line-height: 1; white-space: nowrap;
+    }
+    .f12-admin-label { position: absolute; left: 18px; bottom: 18px; transform-origin: 0 100%; }
+    /* Turquoise spark: the single focus ring of the frame, on the lifted Logs card */
+    #f12-admin-focus {
+      position: absolute; inset: -7px; border-radius: 21px; border: 2px solid #4bc1ed;
+    }
+
+    /* Integration status column, left, centred on the lifted Logs card (y ≈ 480) */
+    #f12-admin-ints {
+      position: absolute; left: 96px; top: 301px; width: 500px; z-index: 5;
+      display: flex; flex-direction: column; gap: 18px; filter: blur(0px);
+    }
+    .f12-admin-int {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 76px; padding: 0 28px 0 30px; border-radius: 100px;
+      background: #ffffff; border: 1.5px solid rgba(47, 78, 156, 0.2); transform-origin: 0 50%;
+    }
+    .f12-admin-int-txt {
+      font-size: 1.5cqw; font-weight: 600; line-height: 1; letter-spacing: -0.01em;
+      color: #22254f; white-space: nowrap;
+    }
+    .f12-admin-int-sub { font-weight: 500; color: #5e6675; }
+    .f12-admin-st {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.3cqw; font-weight: 600; line-height: 1; color: #2f9e6e; white-space: nowrap;
+    }
+    .f12-admin-dot {
+      position: relative; display: block; width: 12px; height: 12px;
+      border-radius: 50%; background: #2f9e6e;
+    }
+    .f12-admin-ring {
+      position: absolute; inset: 0; display: block; border-radius: 50%; border: 2px solid #2f9e6e;
+    }
+
+    /* Comentarios: front-centre closer, 960×600, chip straddling its bottom edge */
+    #f12-admin-com {
+      position: absolute; left: 480px; top: 226px; width: 960px; height: 600px; z-index: 10;
+    }
+    #f12-admin-com .f12-admin-win { padding: 12px; }
+    #f12-admin-com-row {
+      position: absolute; left: 0; right: 0; top: 571px;
+      display: flex; justify-content: center;
+    }
+    #f12-admin-com-label { height: 58px; padding: 0 28px; font-size: 1.5cqw; }
+  </style>
+
+  <div id="root" data-composition-id="f12-admin" data-width="1920" data-height="1080" data-duration="14.41">
+    <div id="f12-admin-bg" class="clip" data-start="0" data-duration="14.41" data-track-index="0"></div>
+
+    <div id="f12-admin-cam">
+      <div id="f12-admin-rule"></div>
+      <p id="f12-admin-eyebrow">ADMINISTRACIÓN</p>
+      <h2 id="f12-admin-title">Control total</h2>
+
+      <div class="f12-admin-slot" id="f12-admin-slot-planes" style="left: 720px; top: 120px; z-index: 1">
+        <div class="f12-admin-ph" id="f12-admin-ph-planes"></div>
+        <div class="f12-admin-card" id="f12-admin-card-planes">
+          <div class="f12-admin-win"><div class="f12-admin-shot"><img src="assets/app-planes.png" alt="" /></div></div>
+          <span class="f12-admin-chip f12-admin-label" id="f12-admin-label-planes" data-layout-allow-occlusion>Planes</span>
+        </div>
+      </div>
+
+      <div class="f12-admin-slot" id="f12-admin-slot-usuarios" style="left: 1284px; top: 120px; z-index: 2">
+        <div class="f12-admin-ph" id="f12-admin-ph-usuarios"></div>
+        <div class="f12-admin-card" id="f12-admin-card-usuarios">
+          <div class="f12-admin-win"><div class="f12-admin-shot"><img src="assets/app-usuarios.png" alt="" /></div></div>
+          <span class="f12-admin-chip f12-admin-label" id="f12-admin-label-usuarios" data-layout-allow-occlusion>Usuarios</span>
+        </div>
+      </div>
+
+      <div class="f12-admin-slot" id="f12-admin-slot-config" style="left: 720px; top: 482px; z-index: 3">
+        <div class="f12-admin-ph" id="f12-admin-ph-config"></div>
+        <div class="f12-admin-card" id="f12-admin-card-config">
+          <div class="f12-admin-win"><div class="f12-admin-shot"><img src="assets/app-configuracion.png" alt="" /></div></div>
+          <span class="f12-admin-chip f12-admin-label" id="f12-admin-label-config" data-layout-allow-occlusion>Configuración</span>
+        </div>
+      </div>
+
+      <div class="f12-admin-slot" id="f12-admin-slot-logs" style="left: 1284px; top: 482px; z-index: 4">
+        <div class="f12-admin-ph" id="f12-admin-ph-logs"></div>
+        <div class="f12-admin-card" id="f12-admin-card-logs">
+          <div id="f12-admin-focus"></div>
+          <div class="f12-admin-win"><div class="f12-admin-shot"><img id="f12-admin-logs-img" src="assets/app-logs-payload.png" alt="" /></div></div>
+          <span class="f12-admin-chip f12-admin-label" id="f12-admin-label-logs" data-layout-allow-occlusion>Logs de integración</span>
+        </div>
+      </div>
+
+      <div id="f12-admin-ints">
+        <div class="f12-admin-int" id="f12-admin-int-wompi">
+          <span class="f12-admin-int-txt" data-layout-allow-occlusion>Wompi<span class="f12-admin-int-sub" data-layout-allow-occlusion> · pagos</span></span>
+          <span class="f12-admin-st" id="f12-admin-st-wompi" data-layout-allow-occlusion><i class="f12-admin-dot" id="f12-admin-dot-wompi"><i class="f12-admin-ring" id="f12-admin-ring-wompi"></i></i>Exitoso</span>
+        </div>
+        <div class="f12-admin-int" id="f12-admin-int-docuseal">
+          <span class="f12-admin-int-txt" data-layout-allow-occlusion>DocuSeal<span class="f12-admin-int-sub" data-layout-allow-occlusion> · firma</span></span>
+          <span class="f12-admin-st" id="f12-admin-st-docuseal" data-layout-allow-occlusion><i class="f12-admin-dot" id="f12-admin-dot-docuseal"><i class="f12-admin-ring" id="f12-admin-ring-docuseal"></i></i>Exitoso</span>
+        </div>
+        <div class="f12-admin-int" id="f12-admin-int-softix">
+          <span class="f12-admin-int-txt" data-layout-allow-occlusion>Softix<span class="f12-admin-int-sub" data-layout-allow-occlusion> · validaciones</span></span>
+          <span class="f12-admin-st" id="f12-admin-st-softix" data-layout-allow-occlusion><i class="f12-admin-dot" id="f12-admin-dot-softix"><i class="f12-admin-ring" id="f12-admin-ring-softix"></i></i>Exitoso</span>
+        </div>
+        <div class="f12-admin-int" id="f12-admin-int-correo">
+          <span class="f12-admin-int-txt" data-layout-allow-occlusion>Correo</span>
+          <span class="f12-admin-st" id="f12-admin-st-correo" data-layout-allow-occlusion><i class="f12-admin-dot" id="f12-admin-dot-correo"><i class="f12-admin-ring" id="f12-admin-ring-correo"></i></i>Exitoso</span>
+        </div>
+      </div>
+
+      <div id="f12-admin-com">
+        <div class="f12-admin-win"><div class="f12-admin-shot"><img src="assets/app-comentarios.png" alt="" /></div></div>
+        <div id="f12-admin-com-row">
+          <span class="f12-admin-chip" id="f12-admin-com-label">Comentarios · todos los roles</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+
+    // Macro camera: one steady push under the whole shot so no beat freezes.
+    tl.fromTo("#f12-admin-cam", { scale: 1 }, { scale: 1.03, duration: 13.9, ease: "none" }, 0);
+
+    // Scene 1 (0.0–0.9) — slide-header.
+    tl.fromTo("#f12-admin-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#f12-admin-eyebrow", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.08);
+    tl.fromTo("#f12-admin-title", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.2);
+
+    // Empty tinted slots establish the 2×2 grid region before the cards land.
+    ["planes", "usuarios", "config", "logs"].forEach(function (id, i) {
+      tl.fromTo("#f12-admin-ph-" + id, { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 0.35 + i * 0.07);
+    });
+
+    // Cards assemble into their slots on the VO words (center-outward, partially-spread
+    // start: each begins 30% of the way toward the grid centre and slides out into place).
+    [
+      ["planes", 1.4, 85, 54],
+      ["usuarios", 1.9, -85, 54],
+      ["config", 2.6, 85, -54],
+      ["logs", 4.2, -85, -54],
+    ].forEach(function (c) {
+      var id = c[0], t = c[1];
+      tl.fromTo("#f12-admin-card-" + id, { opacity: 0, x: c[2], y: c[3], scale: 0.9 },
+        { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, t - 0.1);
+      // 0.35s so the Logs label has landed by 4.6, when its counter-scale starts.
+      tl.fromTo("#f12-admin-label-" + id, { opacity: 0, scale: 0.7, y: 8 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "power3.out" }, t + 0.05);
+      // Slot outline retires once covered, so it never shows through a dimmed card.
+      tl.to("#f12-admin-ph-" + id, { opacity: 0, duration: 0.3, ease: "none" }, t + 0.5);
+    });
+
+    // Scene 2 (4.6–10.2) — Logs lifts forward and enlarges; the other three recede.
+    // Target: slot centre (1554, 651) → grid centre (1272, 470) at 1.6×.
+    // opacity/filter pinned here too, so the Scene-3 dim starts from the same inline state
+    // whether the playhead arrives forward or backward.
+    tl.fromTo("#f12-admin-slot-logs", { x: 0, y: 0, scale: 1, opacity: 1, filter: "blur(0px)" },
+      { x: -282, y: -181, scale: 1.6, opacity: 1, filter: "blur(0px)", duration: 1.0, ease: "power3.inOut" }, 4.6);
+    // Counter-scale (1 / 1.6, same ease) keeps the lifted label at chip size, under the headline.
+    tl.to("#f12-admin-label-logs", { scale: 0.625, duration: 1.0, ease: "power3.inOut" }, 4.6);
+    ["planes", "usuarios", "config"].forEach(function (id) {
+      tl.fromTo("#f12-admin-slot-" + id, { scale: 1, opacity: 1, filter: "blur(0px)" },
+        { scale: 0.94, opacity: 0.5, filter: "blur(2px)", duration: 0.9, ease: "power2.out" }, 4.6);
+      // Receding labels would peek out truncated from behind the Logs card.
+      tl.to("#f12-admin-label-" + id, { opacity: 0, duration: 0.5, ease: "power2.out" }, 4.6);
+    });
+    tl.fromTo("#f12-admin-focus", { opacity: 0, scale: 1.04 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, 5.0);
+    tl.fromTo("#f12-admin-logs-img", { scale: 1 }, { scale: 1.04, duration: 4.6, ease: "none" }, 5.6);
+
+    // Integration chips pop on their words; the green dot confirms with one ring pulse.
+    [
+      ["wompi", 6.0],
+      ["docuseal", 7.3],
+      ["softix", 8.9],
+      ["correo", 9.6],
+    ].forEach(function (c) {
+      var id = c[0], t = c[1];
+      tl.fromTo("#f12-admin-int-" + id, { opacity: 0, scale: 0.8, x: -24 },
+        { opacity: 1, scale: 1, x: 0, duration: 0.5, ease: "power3.out" }, t - 0.08);
+      tl.fromTo("#f12-admin-st-" + id, { opacity: 0, x: -8 },
+        { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, t + 0.12);
+      tl.fromTo("#f12-admin-dot-" + id, { scale: 0 },
+        { scale: 1, duration: 0.35, ease: "power3.out" }, t + 0.12);
+      tl.fromTo("#f12-admin-ring-" + id, { scale: 1, opacity: 0.6 },
+        { scale: 2.8, opacity: 0, duration: 0.8, ease: "power2.out" }, t + 0.3);
+    });
+
+    // Scene 3 (10.2–13.91) — the array dims; Comentarios rises front-centre and holds.
+    tl.to("#f12-admin-slot-logs", { scale: 1.5, opacity: 0.3, filter: "blur(3px)", duration: 0.7, ease: "power2.out" }, 10.2);
+    ["planes", "usuarios", "config"].forEach(function (id) {
+      tl.to("#f12-admin-slot-" + id, { scale: 0.92, opacity: 0.25, filter: "blur(4px)", duration: 0.7, ease: "power2.out" }, 10.2);
+    });
+    tl.fromTo("#f12-admin-ints", { opacity: 1, filter: "blur(0px)" },
+      { opacity: 0.3, filter: "blur(2px)", duration: 0.7, ease: "power2.out" }, 10.2);
+    // Rise of 70px keeps the card's bottom edge above y = 900 for the whole entrance.
+    tl.fromTo("#f12-admin-com", { opacity: 0, y: 70, scale: 0.94, filter: "blur(6px)" },
+      { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out" }, 10.7);
+    tl.fromTo("#f12-admin-com-label", { opacity: 0, scale: 0.6, y: 10 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power3.out" }, 11.92);
+    tl.to("#f12-admin-com", { scale: 1.02, duration: 2.15, ease: "power1.inOut" }, 11.7);
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines["f12-admin"] = tl;
+  </script>
+</template>

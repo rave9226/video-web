@@ -1,0 +1,24 @@
+{
+  "base_url": "<URL BASE SIN BARRA FINAL>",
+  "brand": {"primary": null, "ink": null, "canvas": null, "dark": null, "spark": null},
+  "fonts": [{"family": "<FAMILIA DE LA APP EN GOOGLE FONTS>", "weights": [400, 500, 600, 700]}],
+  "login": {
+    "route": "/<RUTA DEL LOGIN>",
+    "user_env": "APP_USER",
+    "pass_env": "APP_PASS",
+    "fields": ["<ETIQUETA DEL CAMPO USUARIO>", "<ETIQUETA DEL CAMPO CLAVE>"],
+    "submit": "<TEXTO DEL BOTÓN DE INGRESO>",
+    "wait_url": "**/<RUTA A LA QUE LLEVA EL LOGIN>"
+  },
+  "allow_mutations": ["<RUTA DE LA API DE LOGIN>"],
+  "modal": "[role=dialog]",
+  "brand_assets": [
+    {"url": "/<RUTA DEL LOGO>", "name": "brand-logo", "white": true,
+     "desc": "<DESCRIPCIÓN DEL LOGO>"}
+  ],
+  "shots": [
+    {"name": "app-<PANTALLA>", "route": "/<RUTA>",
+     "desc": "<QUÉ SE VE EN LA PANTALLA>",
+     "regions": {"<CLAVE>": {"text": "<TEXTO VISIBLE DEL ELEMENTO>", "min": [200, 30]}}}
+  ]
+}

@@ -1,0 +1,590 @@
+<template>
+<!--
+PATRÓN hook-steps-to-logo · ejemplo real: escena 1 del video de referencia (f01-hook).
+CUÁNDO: Apertura: los pasos o dolores del problema aparecen como estaciones de un recorrido sobre fondo oscuro y colapsan en el logo.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f01-hook → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="20.35" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/brand-logo-blanco.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: CX, CY, LOGO_B_OFFSET_X, CAM_S, VIEW_Y, WORD_T, EYEBROW_S, EYEBROW_TOP, L1_TOP, L2_TOP, LINE_H, ST_T, LEG_T, XS, YS, H2_T → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 1 — Muchos pasos, un solo lugar
+
+- scene: Sobre navy, los pasos de una afiliación aparecen como estaciones de un recorrido y colapsan en el logo de Acme Salud
+- voiceover: "Una afiliación de salud visual tiene muchos pasos: el interesado, los términos, la firma, el pago, los documentos, la activación… y, un año después, la renovación. Ahora, todo ese recorrido vive en un solo lugar: la Plataforma de Afiliaciones de Acme Salud."
+- duration: 19.75s
+- transition_in: cut
+- status: animated
+- src: compositions/frames/f01-hook.html
+- pattern: hook-steps-to-logo
+- type: hook
+- persuasion: Pain validation → Future pacing
+- beat: overwhelm → relief
+- blueprint: spatial-pan-stations (Adapt)
+- focal: assets/brand-logo-blanco.png
+- roles: brand-logo-blanco = cutout (final lockup) · brand-icon-blanco = supporting (collapse target)
+- asset_candidates: assets/brand-logo-blanco.png — logo Acme Salud en blanco para fondo navy; assets/brand-icon-blanco.png — isotipo B en blanco
+- sfx: none
+
+narrativeRole: nombra el dolor (muchos pasos sueltos) y lo resuelve en la misma toma con la promesa y el nombre.
+keyMessage: todo el recorrido de la afiliación vive en un solo lugar.
+
+Adapt: keep the station-to-station camera pan with a drawn connecting line (signature); the stations are the seven lifecycle steps and the terminal station is not a knot but the collapse into the logo.
+Scene 1 (0.0–3.3s): full-bleed `brand-navy` ground with a faint 3×3 dot grid top-right (atmosphere, cover only). Centered upper third, white h1: "Una afiliación de salud visual" per-word reveal from 0.62 (each word a short rise + fade on its timestamp), then "tiene muchos pasos." at 2.4–3.1 with "muchos pasos" underlined in turquoise (`svg-path-draw`).
+Scene 2 (3.3–12.3s): the headline shrinks to a small eyebrow top-left. An oversized canvas holds seven stations along a gentle winding white path (2px, 45% opacity) that draws on as the camera travels (`svg-path-draw` + `viewport-change` pan, ease-in-out ~0.6s per leg). Each station = white line-icon in a 96px outlined circle + white Poppins 600 label, revealed as the camera centers it on its word: Interesado 3.7 (user icon) · Términos 5.0 (document-check) · Firma 6.2 (pen) · Pago 7.1 (card) · Documentos 8.0 (folder) · Activación 9.2 (check-shield) · at 10.2 a small turquoise tag "+1 año" rides the path · Renovación 11.6 (circular arrows). Layered depth: path behind, stations mid, eyebrow front.
+Scene 3 (12.3–16.2s): "Ahora, todo ese recorrido…" — at 12.7 the camera pulls back in one decelerating move until all seven stations and the whole path are visible (13.5–14.4). At 14.9 ("en un solo lugar") the stations converge to the center in lockstep (one shared tween driving every station toward center) and hand off to the white B isotipo via `scale-swap-transition` at 15.6.
+Scene 4 (16.2–19.75s): logo lockup centered: the isotipo slides left as the wordmark of `brand-logo-blanco.png` reveals by mask wipe (16.4–17.4); under it "Plataforma de Afiliaciones" (white, h2 600) per-word 16.4–17.5; at 18.1 a turquoise-outlined pill "B2C · B2B" settles below. Hold still to the end.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #ffffff;
+    }
+
+    /* brand-navy full-bleed ground (clip layer, never #root); navy-2 lifts the centre slightly. */
+    [id="f01-hook-bg"] {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 62% at 50% 38%, #22254f 0%, #1c2044 72%);
+    }
+
+    /* Cover atmosphere: faint 3x3 cobalt dot grid, top-right. */
+    [id="f01-hook-dots"] { position: absolute; right: 96px; top: 96px; width: 76px; height: 76px; }
+    [class~="f01-hook-dot"] {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2f4e9c;
+    }
+
+    /* Virtual camera (viewport-change): ONE wrapper carries the whole camera transform.
+       World space == the pulled-back overview (camera identity); Scene 2 flies it at 2x. */
+    [id="f01-hook-world"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: 50% 50%;
+    }
+    /* Path layer (behind the stations). Collapses toward the lockup centre (960, 400). */
+    [id="f01-hook-rail"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: 960px 400px;
+    }
+    [id="f01-hook-rail-svg"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: visible;
+    }
+    [class~="f01-hook-seg"] {
+      fill: none;
+      stroke: #ffffff;
+      stroke-opacity: 0.45;
+      stroke-width: 1;
+      stroke-linecap: round;
+    }
+    /* "+1 año" tag: zero-size anchor ridden along the path; pill centred on it without transforms. */
+    [id="f01-hook-tag"] { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+    [id="f01-hook-tag-box"] {
+      position: absolute;
+      left: -100px;
+      top: -20px;
+      width: 200px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    [id="f01-hook-tag-pill"] {
+      display: block;
+      padding: 3px 11px;
+      border-radius: 100px;
+      background: #4bc1ed;
+      color: #1c2044;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    /* Stations: zero-size anchors at the ring centre (world px set inline). */
+    [class~="f01-hook-st"] { position: absolute; width: 0; height: 0; }
+    [class~="f01-hook-node"] {
+      position: absolute;
+      left: -24px;
+      top: -24px;
+      width: 48px;
+      height: 48px;
+      transform-origin: 50% 50%;
+    }
+    [class~="f01-hook-node-svg"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 48px;
+      height: 48px;
+      overflow: visible;
+    }
+    [class~="f01-hook-disc"] { fill: #ffffff; fill-opacity: 0.06; stroke: none; }
+    [class~="f01-hook-ring"] { fill: none; stroke: #ffffff; stroke-width: 1.25; }
+    [class~="f01-hook-ico"] {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      width: 24px;
+      height: 24px;
+      overflow: visible;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    [class~="f01-hook-lbl"] {
+      position: absolute;
+      left: -110px;
+      top: 36px;
+      width: 220px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      color: #ffffff;
+    }
+
+    /* Scene 1 headline (h1 ramp, white on navy). Each line is centred by auto margins, so the
+       eyebrow move can use xPercent instead of a CSS transform. */
+    [class~="f01-hook-line"] {
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: max-content;
+      transform-origin: 0 0;
+      font-size: 80.64px;
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      color: #ffffff;
+    }
+    [class~="f01-hook-w"] { display: inline-block; }
+    [id="f01-hook-u"] { display: inline-block; position: relative; }
+    [id="f01-hook-uline"] {
+      position: absolute;
+      left: -1%;
+      top: 100%;
+      width: 102%;
+      height: 24px;
+      overflow: visible;
+    }
+    [id="f01-hook-uline-path"] {
+      fill: none;
+      stroke: #4bc1ed;
+      stroke-width: 7;
+      stroke-linecap: round;
+    }
+
+    /* Scene 4 lockup. Logo 280px tall (2434x965 source -> 706.24x280); the isotipo centre
+       (106.05px, 140px inside the slot) sits at (712.93, 400) when landed. */
+    [id="f01-hook-logo-slot"] {
+      position: absolute;
+      left: 606.88px;
+      top: 260px;
+      width: 706.24px;
+      height: 280px;
+    }
+    [id="f01-hook-logo-move"],
+    [id="f01-hook-logo-pop"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+    [id="f01-hook-logo-pop"] { transform-origin: 106.05px 140px; }
+    [id="f01-hook-logo-img"] { display: block; width: 100%; height: 100%; }
+    [id="f01-hook-h2"] {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 588px;
+      margin: 0 auto;
+      width: max-content;
+      font-size: 49.92px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      color: #ffffff;
+    }
+    [class~="f01-hook-h2w"] { display: inline-block; }
+    [id="f01-hook-pill-row"] {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 680px;
+      display: flex;
+      justify-content: center;
+    }
+    [id="f01-hook-pill"] {
+      display: block;
+      padding: 12px 34px;
+      border: 2px solid #4bc1ed;
+      border-radius: 100px;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      color: #ffffff;
+    }
+    [id="f01-hook-pill-sep"] { color: #4bc1ed; }
+  </style>
+
+  <div id="root" data-composition-id="f01-hook" data-start="0" data-duration="20.35" data-width="1920" data-height="1080">
+    <div id="f01-hook-bg" class="clip" data-start="0" data-duration="20.35" data-track-index="0"></div>
+
+    <div id="f01-hook-dots" aria-hidden="true">
+      <div class="f01-hook-dot" style="left:0;top:0"></div>
+      <div class="f01-hook-dot" style="left:32px;top:0"></div>
+      <div class="f01-hook-dot" style="left:64px;top:0"></div>
+      <div class="f01-hook-dot" style="left:0;top:32px"></div>
+      <div class="f01-hook-dot" style="left:32px;top:32px"></div>
+      <div class="f01-hook-dot" style="left:64px;top:32px"></div>
+      <div class="f01-hook-dot" style="left:0;top:64px"></div>
+      <div class="f01-hook-dot" style="left:32px;top:64px"></div>
+      <div class="f01-hook-dot" style="left:64px;top:64px"></div>
+    </div>
+
+    <!-- World (camera). Station anchors carry their world position inline; the script reads it. -->
+    <div id="f01-hook-world" data-layout-allow-overflow>
+      <div id="f01-hook-rail">
+        <svg id="f01-hook-rail-svg" viewBox="0 0 1920 1080" aria-hidden="true">
+          <path class="f01-hook-seg" d="M227 460 C316 460 316 360 405 360"/>
+          <path class="f01-hook-seg" d="M467 360 C556 360 556 460 645 460"/>
+          <path class="f01-hook-seg" d="M707 460 C796 460 796 360 885 360"/>
+          <path class="f01-hook-seg" d="M947 360 C1036 360 1036 460 1125 460"/>
+          <path class="f01-hook-seg" d="M1187 460 C1276 460 1276 360 1365 360"/>
+          <path class="f01-hook-seg" d="M1427 360 C1561 360 1561 460 1695 460"/>
+        </svg>
+        <div id="f01-hook-tag">
+          <div id="f01-hook-tag-box"><span id="f01-hook-tag-pill">+1 año</span></div>
+        </div>
+      </div>
+
+      <div class="f01-hook-st" style="left:196px;top:460px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Interesado</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:436px;top:360px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+            <path d="m9 15 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Términos</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:676px;top:460px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            <path d="M12 20h9"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Firma</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:916px;top:360px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M2 10h20"/>
+            <path d="M6 15h4"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Pago</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:1156px;top:460px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Documentos</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:1396px;top:360px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Activación</div>
+      </div>
+
+      <div class="f01-hook-st" style="left:1726px;top:460px">
+        <div class="f01-hook-node">
+          <svg class="f01-hook-node-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="f01-hook-disc" cx="24" cy="24" r="23.4"/>
+            <circle class="f01-hook-ring" cx="24" cy="24" r="23.4" transform="rotate(180 24 24)"/>
+          </svg>
+          <svg class="f01-hook-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+        </div>
+        <div class="f01-hook-lbl">Renovación</div>
+      </div>
+    </div>
+
+    <!-- Headline -> eyebrow (front layer). -->
+    <div id="f01-hook-l1" class="f01-hook-line" data-layout-allow-overlap style="top:284px"><span class="f01-hook-w" data-layout-allow-overlap>Una</span> <span class="f01-hook-w" data-layout-allow-overlap>afiliación</span> <span class="f01-hook-w" data-layout-allow-overlap>de</span> <span class="f01-hook-w" data-layout-allow-overlap>salud</span> <span class="f01-hook-w" data-layout-allow-overlap>visual</span></div>
+    <div id="f01-hook-l2" class="f01-hook-line" data-layout-allow-overlap style="top:371px"><span class="f01-hook-w" data-layout-allow-overlap>tiene</span> <span id="f01-hook-u" data-layout-allow-overlap><span class="f01-hook-w" data-layout-allow-overlap>muchos</span> <span class="f01-hook-w" data-layout-allow-overlap>pasos</span><svg id="f01-hook-uline" viewBox="0 0 600 24" preserveAspectRatio="none" aria-hidden="true"><path id="f01-hook-uline-path" d="M6 14 C170 6 400 5 594 11"/></svg></span><span class="f01-hook-w" data-layout-allow-overlap>.</span></div>
+
+    <!-- Logo lockup. -->
+    <div id="f01-hook-logo-slot">
+      <div id="f01-hook-logo-move">
+        <div id="f01-hook-logo-pop">
+          <img id="f01-hook-logo-img" src="assets/brand-logo-blanco.png" alt="Acme Salud" />
+        </div>
+      </div>
+    </div>
+    <div id="f01-hook-h2"><span class="f01-hook-h2w">Plataforma</span> <span class="f01-hook-h2w">de</span> <span class="f01-hook-h2w">Afiliaciones</span></div>
+    <div id="f01-hook-pill-row"><div id="f01-hook-pill">B2C <span id="f01-hook-pill-sep">·</span> B2B</div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="f01-hook"]');
+      var byId = function (id) { return document.getElementById("f01-hook-" + id); };
+      var byClass = function (cls, scope) {
+        return Array.prototype.slice.call((scope || root).getElementsByClassName("f01-hook-" + cls));
+      };
+
+      // Lockup centre: isotipo centre inside the logo slot (606.88 + 106.05, 260 + 140).
+      var CX = 960;
+      var CY = 400;
+      var LOGO_B_OFFSET_X = CX - (606.88 + 106.05); // slot x that centres the isotipo alone
+      // Close-up camera for Scene 2: 2x, station ring centred at (960, 430).
+      var CAM_S = 2;
+      var VIEW_Y = 430;
+
+      // svg-path-draw: dash = measured getTotalLength() (pad covers renderer rounding on circles),
+      // gap = 2x dash, and the hidden offset clears the round cap so no dot shows before the draw.
+      function prepDraw(el, pad, cap) {
+        var len = el.getTotalLength() * pad;
+        el.style.strokeDasharray = len + " " + 2 * len;
+        el.style.strokeDashoffset = String(len + cap);
+        return len;
+      }
+      // viewport-change, single-wrapper form: world point P lands on (960, VIEW_Y) at 2x.
+      function camOn(p) {
+        return {
+          x: -CAM_S * (p.x - 960),
+          y: VIEW_Y - 540 - CAM_S * (p.y - 540),
+          scale: CAM_S,
+          force3D: false,
+        };
+      }
+
+      var world = byId("world");
+      var stations = byClass("st");
+      var pos = stations.map(function (el) {
+        return { x: parseFloat(el.style.left), y: parseFloat(el.style.top) };
+      });
+      var nodes = byClass("node");
+      var segs = byClass("seg");
+      var segLen = segs.map(function (s) { return prepDraw(s, 1, 3); });
+      var l1 = byId("l1");
+      var l2 = byId("l2");
+
+      gsap.set(world, camOn(pos[0]));
+
+      // autoRound off: CSSPlugin would otherwise snap px props (stroke-width 1.25 -> 1, dash offsets)
+      // to whole pixels, which also made the reverted state depend on seek order.
+      var tl = gsap.timeline({ paused: true, defaults: { autoRound: false } });
+
+      // ---- Scene 1 (0-3.3s): atmosphere, per-word h1 on the voice, turquoise underline.
+      tl.fromTo(byClass("dot"), { opacity: 0, scale: 0.3 },
+        { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)", stagger: 0.035 }, 0.1);
+      // voiceover word starts: Una afiliación de salud visual / tiene muchos pasos .
+      var WORD_T = [0.62, 1.2, 1.8, 1.86, 2.04, 2.4, 2.68, 3.04, 3.04];
+      byClass("w").forEach(function (w, i) {
+        tl.fromTo(w, { opacity: 0, y: 26 },
+          { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, WORD_T[i] - 0.08);
+      });
+      var uline = byId("uline-path");
+      prepDraw(uline, 1, 8);
+      tl.to(uline, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 2.72);
+
+      // ---- Scene 2 (3.3-12.3s): headline shrinks to a top-left eyebrow (left edges land on x=96;
+      // 0.34 keeps it at the 1.4cqw legibility floor).
+      var EYEBROW_S = 0.34;
+      var EYEBROW_TOP = 72;
+      var L1_TOP = parseFloat(l1.style.top);
+      var L2_TOP = parseFloat(l2.style.top);
+      var LINE_H = 80.64 * 1.08;
+      tl.to(l1, { xPercent: 50, x: 96 - 960, y: EYEBROW_TOP - L1_TOP, scale: EYEBROW_S,
+        duration: 0.6, ease: "power3.inOut" }, 3.35);
+      tl.to(l2, { xPercent: 50, x: 96 - 960, y: EYEBROW_TOP + EYEBROW_S * LINE_H - L2_TOP,
+        scale: EYEBROW_S, duration: 0.6, ease: "power3.inOut" }, 3.35);
+
+      // Station reveals on their words: ring draws from 9 o'clock (where the path lands),
+      // icon strokes draw inside it, label rises.
+      var ST_T = [3.7, 5.0, 6.2, 7.1, 8.0, 9.2, 11.6];
+      stations.forEach(function (st, k) {
+        var t = ST_T[k];
+        var ring = byClass("ring", st)[0];
+        var ico = byClass("ico", st)[0];
+        prepDraw(ring, 1.02, 1);
+        tl.to(ring, { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" }, t);
+        tl.fromTo(byClass("disc", st)[0], { opacity: 0 },
+          { opacity: 1, duration: 0.35, ease: "power1.out" }, t);
+        tl.fromTo(ico, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, t + 0.08);
+        Array.prototype.slice.call(ico.querySelectorAll("path, circle, rect")).forEach(function (el, j) {
+          prepDraw(el, 1.05, 2);
+          tl.to(el, { strokeDashoffset: 0, duration: 0.4, ease: "power2.out" }, t + 0.08 + j * 0.06);
+        });
+        tl.fromTo(byClass("lbl", st)[0], { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t + 0.12);
+      });
+
+      // Camera legs into stations 2-6 (ease-in-out), each path segment drawing under the camera
+      // and landing on the next ring as it reveals.
+      var LEG_T = [4.5, 5.7, 6.6, 7.5, 8.7];
+      LEG_T.forEach(function (t0, i) {
+        tl.to(world, Object.assign(camOn(pos[i + 1]), { duration: 0.55, ease: "power2.inOut" }), t0);
+        tl.to(segs[i], { strokeDashoffset: 0, duration: 0.55, ease: "power2.inOut" }, t0);
+      });
+
+      // Activación -> Renovación: "+1 año" rides the drawing tip to the segment midpoint
+      // (camera follows), then the path finishes into Renovación.
+      var seg6 = segs[5];
+      var half = segLen[5] / 2;
+      var N = 24;
+      var XS = [];
+      var YS = [];
+      for (var i = 0; i <= N; i++) {
+        var pt = seg6.getPointAtLength(half * (i / N));
+        XS.push(pt.x);
+        YS.push(pt.y);
+      }
+      var tag = byId("tag");
+      gsap.set(tag, { x: XS[0], y: YS[0] });
+      tl.fromTo(byId("tag-pill"), { opacity: 0, scale: 0.4 },
+        { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 10.2);
+      tl.to(tag, { keyframes: { x: XS, y: YS, easeEach: "none" }, duration: 0.7, ease: "power2.inOut" }, 10.2);
+      tl.to(seg6, { strokeDashoffset: half, duration: 0.7, ease: "power2.inOut" }, 10.2);
+      tl.to(world, Object.assign(camOn({ x: XS[N], y: YS[N] }), { duration: 0.7, ease: "power2.inOut" }), 10.2);
+      tl.to(seg6, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, 11.05);
+      tl.to(world, Object.assign(camOn(pos[6]), { duration: 0.6, ease: "power2.inOut" }), 11.05);
+
+      // ---- Scene 3 (12.3-16.2s): one decelerating pull-back to the whole journey
+      // (strokes thicken so they keep ~2px on screen at 1x).
+      tl.to(world, { x: 0, y: 0, scale: 1, duration: 1.7, ease: "expo.out", force3D: false }, 12.7);
+      tl.to(segs, { strokeWidth: 2, duration: 1.7, ease: "expo.out" }, 12.7);
+      tl.to(byClass("ring"), { strokeWidth: 2, duration: 1.7, ease: "expo.out" }, 12.7);
+
+      // "en un solo lugar": one shared tween drives every station to the centre in lockstep;
+      // rings grow to the isotipo's footprint while labels, icons, path and eyebrow clear.
+      tl.to(stations, {
+        x: function (k) { return CX - pos[k].x; },
+        y: function (k) { return CY - pos[k].y; },
+        duration: 0.5,
+        ease: "power3.inOut",
+      }, 14.9);
+      tl.to(nodes, { scale: 5, duration: 0.5, ease: "power3.inOut" }, 14.9);
+      tl.to(byClass("lbl").concat(byClass("ico"), byClass("disc")),
+        { opacity: 0, duration: 0.22, ease: "power1.in" }, 14.9);
+      tl.to(byId("rail"), { scale: 0.02, duration: 0.5, ease: "power3.inOut" }, 14.9);
+      tl.to(byId("rail"), { opacity: 0, duration: 0.3, ease: "none" }, 14.9);
+      tl.to([l1, l2], { opacity: 0, duration: 0.4, ease: "power1.in" }, 14.9);
+
+      // scale-swap-transition: merged ring rushes out, white B isotipo pops in at 15.6.
+      tl.to(nodes, { scale: 3.5, opacity: 0, duration: 0.3, ease: "power2.in" }, 15.45);
+      tl.fromTo(byId("logo-pop"), { scale: 0.7, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.8)" }, 15.6);
+
+      // ---- Scene 4 (16.2-19.75s): isotipo slides left while the wordmark wipes in; h2 per word;
+      // B2C · B2B pill settles; hold.
+      tl.fromTo(byId("logo-move"), { x: LOGO_B_OFFSET_X },
+        { x: 0, duration: 0.95, ease: "power3.inOut" }, 16.35);
+      tl.fromTo(byId("logo-img"), { clipPath: "inset(0% 67.5% 0% 0%)" },
+        { clipPath: "inset(0% 0% 0% 0%)", duration: 0.95, ease: "power2.inOut" }, 16.45);
+      var H2_T = [16.4, 17.12, 17.5];
+      byClass("h2w").forEach(function (w, i) {
+        tl.fromTo(w, { opacity: 0, y: 22 },
+          { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, H2_T[i]);
+      });
+      tl.fromTo(byId("pill"), { opacity: 0, y: 18, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, 18.1);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f01-hook"] = tl;
+    })();
+  </script>
+</template>

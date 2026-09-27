@@ -1,0 +1,407 @@
+<template>
+<!--
+PATRÓN public-card-flow · ejemplo real: escena 7 del video de referencia (f07-firma).
+CUÁNDO: Flujo del cliente fuera del sistema: enlace o correo → tarjeta pública → confirmación (firma, aceptación, pago).
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f07-firma → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="11.93" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-sec-firma.png, assets/manual-firma-completada-card.png, assets/manual-firma-pendiente-card.png, assets/manual-terminos-card.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 7 — Acepta y firma en línea
+
+- scene: El cliente acepta términos y firma desde enlaces públicos; la plataforma guarda fecha, IP y huella
+- voiceover: "El cliente acepta los términos desde un enlace, sin usuario ni contraseña, y firma su contrato electrónicamente. Queda registrada la fecha, la IP y la huella del documento."
+- duration: 11.43s
+- transition_in: zoom-through
+- status: animated
+- src: compositions/frames/f07-firma.html
+- pattern: public-card-flow
+- type: feature_showcase
+- persuasion: Risk reversal (trust)
+- beat: ease → peace of mind
+- blueprint: device-surface-showcase (Adapt)
+- focal: assets/manual-firma-completada-card.png
+- roles: manual-terminos-card = cutout · manual-firma-pendiente-card = cutout · manual-firma-completada-card = cutout (payoff) · app-sec-firma = supporting (receipt strip)
+- asset_candidates: assets/manual-terminos-card.png — tarjeta pública de aceptación de términos; assets/manual-firma-pendiente-card.png — tarjeta Firma tu contrato; assets/manual-firma-completada-card.png — tarjeta Firma completada; assets/app-sec-firma.png — sección de firma completada con hash
+- sfx: none
+
+narrativeRole: la experiencia del cliente: sin fricción y con respaldo legal.
+keyMessage: acepta y firma en línea; todo queda registrado.
+
+Adapt: stepwise-flow variant — cursorless flow terms → sign → success completed inside the held surface, then the receipt (signature: the flow completes step by step with a confirming press).
+Scene 1 (0.0–2.8s): left eyebrow "EXPERIENCIA DEL AFILIADO", h2 "Acepta y firma en línea" (0.0–0.9). A link pill types "acmesalud.com/terminos/…" at 1.0–2.3 (`discrete-text-sequence` with caret); at 2.3 `manual-terminos-card.png` rises center-right (≈600px tall).
+Scene 2 (2.8–4.6s): chip "Sin usuario ni contraseña" (crossed-key icon) at 3.3; a primary check draws in the card's checkbox at 4.0 (checkbox rect [73,882,15,15] of the 703×1111 crop, scaled with the card; button rect [57,955,590,48]) and the "Aceptar términos" button fills primary with a press at 4.4 (`press-release-spring`).
+Scene 3 (4.6–6.9s): "firma su contrato" at 5.0 — the card scale-swaps to `manual-firma-pendiente-card.png`; "Firmar contrato ahora" press at 5.6 (button rect [57,309,430,44] of the 543×507 crop); at 6.2 swap to `manual-firma-completada-card.png`, its green check redraws (`svg-path-draw`).
+Scene 4 (6.9–11.43s): "Queda registrada" — `app-sec-firma.png` slides in as a wide strip under the card (7.0); three evidence chips pop left→right: "Fecha y hora" 8.2 · "Dirección IP" 8.9 · "Huella SHA-256" 9.7, the last one sweeping a turquoise highlight over the hash text of the strip (green strip rect [34,149,1176,84] of the 1244×270 crop). Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* ids/classes start with the frame id (a digit), so selectors use attribute form */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    [id="f07-firma-bg"] { width: 100%; height: 100%; background: #F1F1F1; }
+    [id="f07-firma-stage"] { width: 100%; height: 100%; }
+    #root img { display: block; max-width: none; max-height: none; }
+
+    /* ── left column: slide header + link pill + chip ── */
+    [id="f07-firma-left"] {
+      position: absolute;
+      left: 96px;
+      top: 180px;
+      width: 800px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    [id="f07-firma-rule"] { width: 60px; height: 4px; border-radius: 2px; background: #2F4E9C; margin-bottom: 22px; }
+    [id="f07-firma-eyebrow"] {
+      font-size: 0.8cqw;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.4;
+      text-transform: uppercase;
+      color: #2F4E9C;
+      margin-bottom: 14px;
+    }
+    [id="f07-firma-title"] {
+      margin: 0 0 44px;
+      font-size: 2.6cqw;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #22254F;
+    }
+    [class~="f07-firma-word"] { display: inline-block; }
+    [id="f07-firma-link"] {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 64px;
+      box-sizing: border-box;
+      padding: 0 28px 0 22px;
+      border-radius: 100px;
+      background: #FFFFFF;
+      border: 1.5px solid rgba(47, 78, 156, 0.2);
+      font-size: 1.4cqw;
+      font-weight: 500;
+      color: #22254F;
+    }
+    [id="f07-firma-link"] svg { flex-shrink: 0; color: #2F4E9C; }
+    /* min-width >= widest typed state, so the pill never resizes while typing */
+    [id="f07-firma-urlwrap"] { display: flex; align-items: center; min-width: 484px; white-space: pre; }
+    [id="f07-firma-caret"] {
+      display: inline-block;
+      width: 3px;
+      height: 1.15em;
+      margin-left: 3px;
+      border-radius: 2px;
+      background: #2F4E9C;
+    }
+    [class~="f07-firma-chip"] {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 24px 13px 18px;
+      border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08);
+      color: #2F4E9C;
+      font-size: 1.4cqw;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    [class~="f07-firma-chip"] svg { flex-shrink: 0; }
+    [id="f07-firma-nopass"] { margin-top: 22px; }
+
+    /* ── flow surface: each card box is in its crop's own pixel space, GSAP-scaled ── */
+    [class~="f07-firma-card"] { position: absolute; }
+    [class~="f07-firma-face"] { position: absolute; inset: 17px; border-radius: 14px; overflow: hidden; background: #FFFFFF; }
+    [class~="f07-firma-face"] img { position: absolute; left: -17px; top: -17px; }
+    [class~="f07-firma-plate"] { position: absolute; border-radius: 10px; background: #FFFFFF; }
+    [class~="f07-firma-burst"] {
+      position: absolute;
+      border-radius: 24px;
+      background: radial-gradient(closest-side, rgba(27, 47, 143, 0.9), rgba(27, 47, 143, 0));
+      filter: blur(8px);
+    }
+    [class~="f07-firma-btn"] { position: absolute; border-radius: 10px; overflow: hidden; }
+    [class~="f07-firma-btn"] img { position: absolute; }
+    [class~="f07-firma-draw"] { stroke-dasharray: 100 110; }
+
+    /* ── receipt strip + evidence chips ── */
+    [id="f07-firma-strip"] {
+      position: absolute;
+      left: 949.5px;
+      top: 555px;
+      padding: 10px;
+      border-radius: 14px;
+      background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    [id="f07-firma-stripin"] { position: relative; width: 821px; }
+    [id="f07-firma-stripin"] img { width: 821px; height: auto; }
+    [id="f07-firma-hl"] {
+      position: absolute;
+      left: 70.257%;
+      top: 64.074%;
+      width: 20.82%;
+      height: 14.815%;
+      border-radius: 6px;
+      background: #4BC1ED;
+      opacity: 0.55;
+      mix-blend-mode: multiply;
+      transform-origin: 0% 50%;
+    }
+    [id="f07-firma-evid"] {
+      position: absolute;
+      left: 949.5px;
+      top: 777px;
+      width: 841px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f07-firma" data-width="1920" data-height="1080" data-duration="11.93">
+    <div id="f07-firma-bg" class="clip" data-start="0" data-duration="11.93" data-track-index="0"></div>
+
+    <div id="f07-firma-stage" class="clip" data-start="0" data-duration="11.93" data-track-index="1">
+      <div id="f07-firma-left">
+        <div id="f07-firma-rule"></div>
+        <div id="f07-firma-eyebrow">EXPERIENCIA DEL AFILIADO</div>
+        <h2 id="f07-firma-title"><span class="f07-firma-word">Acepta</span> <span class="f07-firma-word">y</span> <span class="f07-firma-word">firma</span> <span class="f07-firma-word">en</span> <span class="f07-firma-word">línea</span></h2>
+        <div id="f07-firma-link">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span id="f07-firma-urlwrap"><span id="f07-firma-url"></span><span id="f07-firma-caret"></span></span>
+        </div>
+        <div id="f07-firma-nopass" class="f07-firma-chip">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+            <path d="m21 2-9.6 9.6"/>
+            <circle cx="7.5" cy="15.5" r="5.5"/>
+            <path d="M2 2l20 20"/>
+          </svg>
+          Sin usuario ni contraseña
+        </div>
+      </div>
+
+      <!-- State 1: public terms card. Pushed-in surface, so its overflow past the frame edge is intended. -->
+      <div id="f07-firma-terms" class="f07-firma-card" data-layout-allow-overflow style="left:1018.5px;top:-115.5px;width:703px;height:1111px">
+        <div class="f07-firma-face" style="box-shadow:0 54px 143px rgba(28,32,68,0.18)">
+          <img src="assets/manual-terminos-card.png" alt="" width="703" height="1111">
+        </div>
+        <!-- press rig over button rect [57,955,590,48]: white plate hides the original,
+             a clipped copy of the same pixels is what dips and flips to primary -->
+        <div class="f07-firma-plate" style="left:57px;top:955px;width:590px;height:48px"></div>
+        <div id="f07-firma-burst1" class="f07-firma-burst" style="left:57px;top:955px;width:590px;height:48px"></div>
+        <div id="f07-firma-btn1" class="f07-firma-btn" style="left:57px;top:955px;width:590px;height:48px">
+          <img src="assets/manual-terminos-card.png" alt="" width="703" height="1111" style="left:-57px;top:-955px">
+        </div>
+        <!-- checkbox rect [73,882,15,15] -->
+        <svg viewBox="0 0 15 15" width="15" height="15" style="position:absolute;left:73px;top:882px;overflow:visible" aria-hidden="true">
+          <rect id="f07-firma-boxfill" x="0.5" y="0.5" width="14" height="14" rx="2.5" fill="#2F4E9C"/>
+          <polyline id="f07-firma-tick" class="f07-firma-draw" points="3.6,7.8 6.3,10.4 11.4,4.8" pathLength="100" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- State 2: "Firma tu contrato" -->
+      <div id="f07-firma-pend" class="f07-firma-card" style="left:1098.5px;top:186.5px;width:543px;height:507px">
+        <div class="f07-firma-face" style="box-shadow:0 27px 71px rgba(28,32,68,0.18)">
+          <img src="assets/manual-firma-pendiente-card.png" alt="" width="543" height="507">
+        </div>
+        <!-- press rig over button rect [57,309,430,44] -->
+        <div class="f07-firma-plate" style="left:57px;top:309px;width:430px;height:44px"></div>
+        <div id="f07-firma-burst2" class="f07-firma-burst" style="left:57px;top:309px;width:430px;height:44px"></div>
+        <div id="f07-firma-btn2" class="f07-firma-btn" style="left:57px;top:309px;width:430px;height:44px">
+          <img src="assets/manual-firma-pendiente-card.png" alt="" width="543" height="507" style="left:-57px;top:-309px">
+        </div>
+      </div>
+
+      <!-- State 3 (focal payoff): "¡Firma completada!" — its green check is masked and redrawn -->
+      <div id="f07-firma-done" class="f07-firma-card" style="left:1098.5px;top:207.5px;width:543px;height:465px">
+        <div class="f07-firma-face" style="box-shadow:0 27px 71px rgba(28,32,68,0.18)">
+          <img src="assets/manual-firma-completada-card.png" alt="" width="543" height="465">
+        </div>
+        <svg viewBox="0 0 543 465" width="543" height="465" style="position:absolute;left:0;top:0" aria-hidden="true">
+          <circle cx="272" cy="204.5" r="30" fill="#FFFFFF"/>
+          <!-- ring as two arcs from 12 o'clock, clockwise (no rotate transform needed) -->
+          <path id="f07-firma-ring" class="f07-firma-draw" d="M272 181a23.5 23.5 0 1 1 0 47a23.5 23.5 0 1 1 0-47" pathLength="100" fill="none" stroke="#1F7A51" stroke-width="5"/>
+          <polyline id="f07-firma-check" class="f07-firma-draw" points="262.5,205 268,210.2 281,198" pathLength="100" fill="none" stroke="#1F7A51" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- Receipt strip (2x capture shown at 0.66) with the hash highlight -->
+      <div id="f07-firma-strip">
+        <div id="f07-firma-stripin">
+          <img src="assets/app-sec-firma.png" alt="" width="1244" height="270">
+          <div id="f07-firma-hl"></div>
+        </div>
+      </div>
+
+      <div id="f07-firma-evid">
+        <div id="f07-firma-ev1" class="f07-firma-chip">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          Fecha y hora
+        </div>
+        <div id="f07-firma-ev2" class="f07-firma-chip">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+            <path d="M2 12h20"/>
+          </svg>
+          Dirección IP
+        </div>
+        <div id="f07-firma-ev3" class="f07-firma-chip">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+            <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+            <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+            <path d="M2 12a10 10 0 0 1 18-6"/>
+            <path d="M2 16h.01"/>
+            <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+            <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+            <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+            <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+          </svg>
+          Huella SHA-256
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const $ = (name) => document.getElementById("f07-firma-" + name);
+      const tl = gsap.timeline({ paused: true });
+
+      // Surface slot geometry. Every card box is centred on the same slot point, so the
+      // swaps morph in place; S_* are display scales of each 1x crop (<= 1.35x native).
+      const S_T = 0.56; // terms card ~600 px tall
+      const Z = 2.2; // push-in factor onto checkbox + button
+      const FOCUS_Y = 940 - 555.5; // crop y of the push target minus the box centre
+      const S_P = 1.12;
+      const S_D = 1.12;
+      const S_F = 1.0; // payoff card after it makes room for the receipt
+
+      // Scene 1 (0.0–2.8): header, link pill typing, terms card rises
+      tl.fromTo($("rule"), { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo($("eyebrow"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05);
+      Array.from($("title").getElementsByClassName("f07-firma-word")).forEach((word, i) => {
+        tl.fromTo(word, { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.12 + i * 0.07);
+      });
+      tl.fromTo($("link"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.6);
+
+      // discrete-text-sequence: keystroke clusters, short holds at "." and "/", bulk "…" at 2.28
+      const SEQUENCE = [
+        [0, ""],
+        [1.0, "b"],
+        [1.05, "bio"],
+        [1.11, "bionic"],
+        [1.17, "acmesal"],
+        [1.24, "acmesalud"],
+        [1.4, "acmesalud.com"],
+        [1.52, "acmesalud.com"],
+        [1.68, "acmesalud.com/"],
+        [1.78, "acmesalud.com/ter"],
+        [1.87, "acmesalud.com/termin"],
+        [1.95, "acmesalud.com/terminos"],
+        [2.08, "acmesalud.com/terminos/"],
+        [2.28, "acmesalud.com/terminos/…"],
+      ];
+      const textAt = (t) => {
+        for (let i = SEQUENCE.length - 1; i >= 0; i--) {
+          if (t >= SEQUENCE[i][0]) return SEQUENCE[i][1];
+        }
+        return "";
+      };
+      const urlEl = $("url");
+      const caretEl = $("caret");
+      const driver = { t: 0 };
+      const paint = () => {
+        const t = driver.t;
+        urlEl.textContent = textAt(t);
+        // caret: solid while typing, 0.7 s square-wave blink after, gone once the card takes focus
+        const on = t >= 0.75 && t < 3.35 && (t < 2.3 || (t - 2.3) % 0.7 < 0.35);
+        caretEl.style.opacity = on ? "1" : "0";
+      };
+      // Driver spans the whole frame (as in the recipe): the runtime's seek nudges time by
+      // -1 ms with events on, so onUpdate repaints on any seek, even a cold jump past 3 s.
+      tl.to(driver, { t: 11.43, duration: 11.43, ease: "none", onUpdate: paint }, 0);
+      paint();
+
+      tl.fromTo($("terms"), { y: 130, opacity: 0, scale: S_T }, { y: 0, opacity: 1, scale: S_T, duration: 0.7, ease: "power3.out" }, 2.3);
+
+      // Scene 2 (2.8–4.6): no-password chip, push-in, check, press
+      tl.fromTo($("nopass"), { scale: 0, opacity: 0, y: 16 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 3.3);
+      // coordinate-target zoom: scale about the box centre + counter-translate keeps the target fixed
+      tl.to($("terms"), { scale: S_T * Z, y: -(Z - 1) * FOCUS_Y * S_T, duration: 0.53, ease: "power2.inOut" }, 3.45);
+      tl.fromTo($("boxfill"), { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.18, ease: "power3.out" }, 4.0);
+      tl.fromTo($("tick"), { strokeDashoffset: 102 }, { strokeDashoffset: 0, duration: 0.28, ease: "power2.out" }, 4.05);
+
+      // press-release-spring: linear dip, back.out release, burst behind the button
+      const press = (btn, burst, at) => {
+        tl.to(btn, { scale: 0.93, duration: 0.12, ease: "power1.in" }, at);
+        tl.to(btn, { scale: 1, duration: 0.42, ease: "back.out(1.8)" }, at + 0.12);
+        tl.fromTo(burst, { opacity: 0, scaleX: 1, scaleY: 1 }, { opacity: 0.55, scaleX: 1.12, scaleY: 2.2, duration: 0.3, ease: "power2.out" }, at + 0.12);
+        tl.to(burst, { opacity: 0, duration: 0.35, ease: "power2.in" }, at + 0.42);
+      };
+      press($("btn1"), $("burst1"), 4.4);
+      // disabled fill is primary at 60% over white: this linear map restores #2F4E9C and keeps white text white
+      tl.fromTo($("btn1"), { filter: "brightness(1) contrast(1)" }, { filter: "brightness(0.717) contrast(2.3)", duration: 0.12, ease: "none" }, 4.4);
+
+      // Scene 3 (4.6–6.9): scale-swap to "Firma tu contrato", press, swap to "¡Firma completada!", check redraw
+      tl.to($("terms"), { scale: S_T * Z * 0.7, y: 0, opacity: 0, duration: 0.3, ease: "power2.in" }, 4.9);
+      tl.fromTo($("pend"), { scale: S_P * 0.7, opacity: 0 }, { scale: S_P, opacity: 1, duration: 0.45, ease: "back.out(1.4)" }, 5.05);
+      press($("btn2"), $("burst2"), 5.6);
+      tl.fromTo($("btn2"), { filter: "brightness(1)" }, { filter: "brightness(0.82)", duration: 0.12, ease: "power1.in" }, 5.6);
+      tl.to($("btn2"), { filter: "brightness(1)", duration: 0.3, ease: "power2.out" }, 5.72);
+      tl.to($("pend"), { scale: S_P * 0.7, opacity: 0, duration: 0.3, ease: "power2.in" }, 6.05);
+      tl.fromTo($("done"), { scale: S_D * 0.7, opacity: 0 }, { scale: S_D, opacity: 1, duration: 0.45, ease: "back.out(1.4)" }, 6.2);
+      tl.fromTo($("ring"), { strokeDashoffset: 102 }, { strokeDashoffset: 0, duration: 0.42, ease: "power2.out" }, 6.55);
+      tl.fromTo($("check"), { strokeDashoffset: 102 }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 6.86);
+
+      // Scene 4 (6.9–11.43): the receipt slides in under the card and pushes it up in lock-step
+      // (same ease + duration, so the 24 px gap between card bottom and strip top never closes)
+      tl.to($("done"), { scale: S_F, y: -124.5, duration: 0.75, ease: "power3.out" }, 7.0);
+      tl.fromTo($("strip"), { y: 150, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, ease: "power3.out" }, 7.0);
+      [["ev1", 8.2], ["ev2", 8.9], ["ev3", 9.7]].forEach(([name, at]) => {
+        tl.fromTo($(name), { scale: 0, opacity: 0, y: 16 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+      });
+      tl.fromTo($("hl"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 9.78);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f07-firma"] = tl;
+    })();
+  </script>
+</template>

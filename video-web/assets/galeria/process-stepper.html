@@ -1,0 +1,363 @@
+<template>
+<!--
+PATRÓN process-stepper · ejemplo real: escena 10 del video de referencia (f10-renovaciones).
+CUÁNDO: Un ciclo o proceso por etapas con contador, arco o barras que avanzan con la voz.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f10-renovaciones → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="9.59" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-renovaciones.png, assets/app-sec-resumen-renovacion.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 10 — Renovaciones automáticas
+
+- scene: A 30 días del vencimiento arranca la campaña; el anillo del ciclo se cierra en un nuevo ciclo
+- voiceover: "Treinta días antes del vencimiento, el motor de renovaciones abre la campaña, envía recordatorios y, al confirmar el pago, crea el nuevo ciclo."
+- duration: 9.19s
+- transition_in: crossfade
+- status: animated
+- src: compositions/frames/f10-renovaciones.html
+- pattern: process-stepper
+- type: feature_showcase
+- persuasion: Automation (future pacing)
+- beat: confidence
+- blueprint: compose
+- focal: assets/app-renovaciones.png
+- roles: app-renovaciones = cutout (window) · app-sec-resumen-renovacion = supporting (overlay card) · app-sec-trazabilidad-renovacion = supporting
+- asset_candidates: assets/app-renovaciones.png — módulo Renovaciones con campaña Renovada; assets/app-sec-resumen-renovacion.png — resumen con ciclos encadenados #79 → #963
+- sfx: none
+
+narrativeRole: la afiliación no termina: se renueva sola, con control.
+keyMessage: la renovación crea el nuevo ciclo sin perder el histórico.
+
+Compose: counter → window → ring diagram closing on the new cycle, each piece on its word.
+Scene 1 (0.0–1.9s): left, a large stat-num "30" counts 0→30 (`counting-dynamic-scale`) at 0.0–1.2 with the label "días antes del vencimiento" (0.9).
+Scene 2 (1.9–4.4s): window `app-renovaciones.png` slides in right (2.0); turquoise ring on "Ejecutar ciclo de renovación (30 días)" (rect [2192,92,592,120] of 2880×1800) at 2.3. Below the counter, a cycle ring (4 nodes on a circle, primary strokes) starts drawing; node 1 "Campaña" lights at 3.8.
+Scene 3 (4.4–5.8s): node 2 "Recordatorios" lights at 5.0.
+Scene 4 (5.8–9.19s): node 3 "Pago confirmado" at 6.4; at 7.4–8.0 the ring closes (`svg-path-draw`) and node 4 "Nuevo ciclo" pops `positive`; `app-sec-resumen-renovacion.png` slides over the lower window at 7.6 with a highlight on "Ciclos encadenados #79 → #963" (rect ≈[430,430,400,110] of the 1244×562 crop); the campaign row "María Pérez … Renovada" of the window (rect [642,746,2108,120]) gets a `positive` ring. Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    /* Clases con el prefijo de la escena (f10-renovaciones-). */
+    .f10-renovaciones-abs {
+      position: absolute;
+      box-sizing: border-box;
+      margin: 0;
+    }
+    .f10-renovaciones-count {
+      font-weight: 700;
+      font-size: 220px;
+      line-height: 220px;
+      color: #2F4E9C;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      transform-origin: 0% 50%;
+    }
+    .f10-renovaciones-label {
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 46px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    .f10-renovaciones-label span {
+      display: block;
+    }
+    .f10-renovaciones-chip {
+      height: 52px;
+      border-radius: 100px;
+      background: #2F4E9C;
+      color: #F1F1F1;
+      font-weight: 600;
+      font-size: 28px;
+      line-height: 52px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .f10-renovaciones-frame {
+      left: 0;
+      top: 0;
+      width: 1080px;
+      height: 705px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    .f10-renovaciones-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-sizing: border-box;
+      height: 30px;
+      padding-left: 16px;
+      border-bottom: 1px solid rgba(47, 78, 156, 0.08);
+    }
+    .f10-renovaciones-bar i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(47, 78, 156, 0.2);
+    }
+    .f10-renovaciones-shot {
+      display: block;
+    }
+    .f10-renovaciones-ring {
+      border: 3px solid #4BC1ED;
+      border-radius: 12px;
+    }
+    .f10-renovaciones-overlay {
+      padding: 20px;
+      background: #FFFFFF;
+      border: 1.5px solid rgba(47, 78, 156, 0.2);
+      border-radius: 14px;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    .f10-renovaciones-hl {
+      background: rgba(47, 78, 156, 0.08);
+      border-left: 4px solid #2F4E9C;
+      border-radius: 10px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f10-renovaciones" data-width="1920" data-height="1080" data-duration="9.59">
+    <div
+      id="f10-renovaciones-bg"
+      class="clip"
+      data-start="0"
+      data-duration="9.59"
+      data-track-index="0"
+      style="position: absolute; inset: 0; background: #F1F1F1"
+    ></div>
+
+    <!-- ponytail: stage is untimed on purpose so content holds through an outgoing transition tail -->
+    <div id="f10-renovaciones-stage" style="position: absolute; inset: 0">
+      <!-- Scene 1: counter lockup (digit cap-top aligned to the window top at y=104) -->
+      <div
+        id="f10-renovaciones-count"
+        class="f10-renovaciones-abs f10-renovaciones-count"
+        style="left: 96px; top: 72px; width: 277px; height: 220px"
+      >0</div>
+      <div
+        id="f10-renovaciones-label"
+        class="f10-renovaciones-abs f10-renovaciones-label"
+        style="left: 401px; top: 135px"
+      ><span>días antes del</span><span>vencimiento</span></div>
+
+      <!-- Scenes 2–4: cycle ring. Center (389,585) on canvas, R=186; chips sit on the 4 nodes -->
+      <div class="f10-renovaciones-abs" style="left: 96px; top: 373px; width: 604px; height: 424px">
+        <svg
+          class="f10-renovaciones-abs"
+          style="left: 93px; top: 12px; overflow: visible"
+          width="400"
+          height="400"
+          viewBox="0 0 400 400"
+          fill="none"
+          stroke-linecap="round"
+        >
+          <path
+            id="f10-renovaciones-track"
+            d="M200 14A186 186 0 0 1 200 386A186 186 0 0 1 200 14"
+            stroke="#2F4E9C"
+            stroke-opacity="0.15"
+            stroke-width="6"
+          />
+          <path id="f10-renovaciones-arc-1" d="M200 14A186 186 0 0 1 386 200" stroke="#2F4E9C" stroke-width="6" />
+          <path id="f10-renovaciones-arc-2" d="M386 200A186 186 0 0 1 200 386" stroke="#2F4E9C" stroke-width="6" />
+          <path
+            id="f10-renovaciones-arc-3"
+            d="M200 386A186 186 0 0 1 14 200A186 186 0 0 1 200 14"
+            stroke="#2F4E9C"
+            stroke-width="6"
+          />
+          <g fill="#FFFFFF" stroke="#2F4E9C" stroke-width="3">
+            <circle id="f10-renovaciones-dot-1" cx="200" cy="14" r="9" />
+            <circle id="f10-renovaciones-dot-2" cx="386" cy="200" r="9" />
+            <circle id="f10-renovaciones-dot-3" cx="200" cy="386" r="9" />
+            <circle id="f10-renovaciones-dot-4" cx="14" cy="200" r="9" />
+          </g>
+        </svg>
+        <div
+          id="f10-renovaciones-chip-1"
+          class="f10-renovaciones-abs f10-renovaciones-chip"
+          style="left: 196px; top: 0; width: 194px"
+        >Campaña</div>
+        <div
+          id="f10-renovaciones-chip-2"
+          class="f10-renovaciones-abs f10-renovaciones-chip"
+          style="left: 354px; top: 186px; width: 250px"
+        >Recordatorios</div>
+        <div
+          id="f10-renovaciones-chip-3"
+          class="f10-renovaciones-abs f10-renovaciones-chip"
+          style="left: 145px; top: 372px; width: 296px"
+        >Pago confirmado</div>
+        <div
+          id="f10-renovaciones-chip-4"
+          class="f10-renovaciones-abs f10-renovaciones-chip"
+          style="left: 0; top: 186px; width: 214px; background: #2F9E6E"
+        >Nuevo ciclo</div>
+      </div>
+
+      <!-- Product window: screenshot 2880x1800 shown at 0.375 (1080x675) under a 30px bar.
+           Measured rects are scaled by 0.375 and offset +30px in y for the bar. -->
+      <div
+        id="f10-renovaciones-window"
+        class="f10-renovaciones-abs"
+        style="left: 744px; top: 104px; width: 1080px; height: 770px; transform-origin: 810px 352px"
+      >
+        <div class="f10-renovaciones-abs f10-renovaciones-frame">
+          <div class="f10-renovaciones-bar"><i></i><i></i><i></i></div>
+          <img
+            class="f10-renovaciones-shot"
+            src="assets/app-renovaciones.png"
+            alt=""
+            width="1080"
+            height="675"
+            style="width: 1080px; height: 675px"
+          />
+        </div>
+        <!-- "Ejecutar ciclo de renovación (30 días)": rect [2192,92,592,120] -> [822,64.5,222,45], 4px outset -->
+        <div
+          id="f10-renovaciones-ring-cta"
+          class="f10-renovaciones-abs f10-renovaciones-ring"
+          style="left: 818px; top: 60px; width: 230px; height: 54px"
+        ></div>
+        <!-- "María Pérez … Renovada" row card [609,713,2173,186] -> [228.4,297.4,815,70], 5px outset -->
+        <div
+          id="f10-renovaciones-ring-row"
+          class="f10-renovaciones-abs f10-renovaciones-ring"
+          style="left: 223px; top: 292px; width: 826px; height: 81px; border-color: #2F9E6E; border-radius: 17px"
+        ></div>
+        <!-- Resumen crop 1244x562 shown at 0.5997 (746x337), over the lower window -->
+        <div
+          id="f10-renovaciones-overlay"
+          class="f10-renovaciones-abs f10-renovaciones-overlay"
+          style="left: 228px; top: 388px; width: 789px; height: 380px"
+        >
+          <img
+            class="f10-renovaciones-shot"
+            src="assets/app-sec-resumen-renovacion.png"
+            alt=""
+            width="746"
+            height="337"
+            style="width: 746px; height: 337px"
+          />
+          <!-- "Ciclos encadenados #79 → #963": crop rect [428,458,266,96] x0.5997 + 20px padding -->
+          <div
+            id="f10-renovaciones-hl"
+            class="f10-renovaciones-abs f10-renovaciones-hl"
+            style="left: 277px; top: 295px; width: 160px; height: 58px"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    const el = (id) => document.getElementById("f10-renovaciones-" + id);
+    const tl = gsap.timeline({ paused: true });
+
+    // Scene 1 (0.0–1.9): "30" counts 0→30 while scaling 0.5→1 (counting-dynamic-scale); label on "del" (0.9).
+    // Direct innerText tween (recipe variation): no onUpdate, so it renders even on event-suppressed seeks.
+    const count = el("count");
+    tl.fromTo(
+      count,
+      { innerText: 0, scale: 0.5 },
+      { innerText: 30, snap: { innerText: 1 }, scale: 1, duration: 1.2, ease: "power3.out" },
+      0,
+    );
+    tl.fromTo(el("label"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }, 0.9);
+
+    // Scene 2 (1.9–4.4): window slides in from the right (2.0), slow push underneath; turquoise ring (2.3).
+    const win = el("window");
+    tl.fromTo(win, { x: 160, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 2.0);
+    tl.fromTo(win, { scale: 1 }, { scale: 1.02, duration: 7.19, ease: "none" }, 2.0);
+    tl.fromTo(
+      el("ring-cta"),
+      { opacity: 0, scale: 1.12 },
+      { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" },
+      2.3,
+    );
+
+    // svg-path-draw: dash = measured length; offset starts one unit past the start so no round-cap dot shows.
+    const draw = (path, at, duration) => {
+      const len = path.getTotalLength();
+      path.style.strokeDasharray = `${len} ${len + 2}`;
+      tl.fromTo(path, { strokeDashoffset: len + 1 }, { strokeDashoffset: 0, duration, ease: "none" }, at);
+    };
+    const light = (n, at, fromScale = 0.6, ease = "back.out(1.8)") =>
+      tl.fromTo(
+        el(`chip-${n}`),
+        { opacity: 0, scale: fromScale },
+        { opacity: 1, scale: 1, duration: 0.45, ease },
+        at,
+      );
+
+    // Faint track draws clockwise from the top; each node dot pops as the track passes it.
+    draw(el("track"), 2.7, 0.9);
+    [1, 2, 3, 4].forEach((n, i) =>
+      tl.fromTo(
+        el(`dot-${n}`),
+        { attr: { r: 0 } },
+        { attr: { r: 9 }, duration: 0.35, ease: "back.out(2)" },
+        2.7 + i * 0.225,
+      ),
+    );
+    light(1, 3.84); // "campaña"
+    draw(el("arc-1"), 3.84, 1.2);
+
+    // Scene 3 (4.4–5.8)
+    light(2, 5.04); // "recordatorios"
+    draw(el("arc-2"), 5.04, 1.36);
+
+    // Scene 4 (5.8–9.19)
+    light(3, 6.4); // "confirmar"
+    draw(el("arc-3"), 7.4, 0.65); // ring closes through node 4 back to node 1 ("crea el nuevo ciclo")
+    // short rise keeps the card's bottom (y≈880) inside the 900px keep-out while it slides in
+    tl.fromTo(el("overlay"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 7.6);
+    light(4, 7.8, 0.4, "back.out(2.2)"); // "nuevo" — pops positive
+    tl.fromTo(
+      el("ring-row"),
+      { opacity: 0, scale: 1.03 },
+      { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" },
+      8.05,
+    );
+    tl.fromTo(
+      el("hl"),
+      { clipPath: "inset(0% 100% 0% 0%)" },
+      { clipPath: "inset(0% 0% 0% 0%)", duration: 0.45, ease: "power2.out" },
+      8.3,
+    );
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines["f10-renovaciones"] = tl;
+  </script>
+</template>

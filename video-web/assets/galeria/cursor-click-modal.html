@@ -1,0 +1,387 @@
+<template>
+<!--
+PATRÓN cursor-click-modal · ejemplo real: escena 6 del video de referencia (f06-suscripcion).
+CUÁNDO: Un clic abre un formulario o modal y el proceso sigue por etapas (cursor, clic, modal, stepper, código que se revela).
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f06-suscripcion → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="14.95" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-suscripciones-nueva-empresa.png, assets/app-suscripciones-nueva.png, assets/app-suscripciones.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: START, BTN, PLAN, VIG, WORD_AT, FLIP_AT, REVEAL, SWAP, DIGITS, RAIL_AT, REACH → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 6 — De lead a suscripción
+
+- scene: Nueva suscripción en un clic, código automático y el avance por etapas hasta Activa
+- voiceover: "Cuando el cliente dice que sí, el lead se convierte en suscripción: eliges plan y vigencia, y el código se asigna solo. Luego avanza por etapas claras: términos, pago, revisión documental… hasta quedar activa."
+- duration: 14.55s
+- transition_in: crossfade
+- status: animated
+- src: compositions/frames/f06-suscripcion.html
+- pattern: cursor-click-modal
+- type: feature_showcase
+- persuasion: Friction reduction
+- beat: achievement → clarity
+- blueprint: cursor-ui-demo (Adapt)
+- focal: assets/app-suscripciones-nueva.png
+- roles: app-suscripciones = supporting (establish) · app-suscripciones-nueva = cutout (modal) · app-suscripciones-nueva-empresa = supporting
+- asset_candidates: assets/app-suscripciones.png — listado de suscripciones con pestañas por estado; assets/app-suscripciones-nueva.png — modal Nueva suscripción Desde Lead; assets/app-suscripciones-nueva-empresa.png — modal Desde Empresa (Convenio)
+- sfx: none
+
+narrativeRole: el momento del sí y cómo la afiliación toma forma.
+keyMessage: crear la suscripción es un paso; luego todo avanza por etapas claras.
+
+Adapt: locked static stage — one cursor click opens the modal, element swaps do the camera work (signature: cursor-driven state change); the second half hands off to a stepper built from `stat-bars-and-fills`.
+Scene 1 (0.0–2.0s): window with `app-suscripciones.png`; left eyebrow "SUSCRIPCIONES". A small cursor glides to the "Nueva suscripción" button (rect [2460,124,324,88]) and clicks at 1.4 ("sí") with a ripple (`cursor-click-ripple`).
+Scene 2 (2.0–4.0s): at 2.1 the window swaps to `app-suscripciones-nueva.png` (modal "Desde Lead"); left h2 "De lead a suscripción" per-word 2.1–3.2; at 3.0 the modal's tabs flick to `app-suscripciones-nueva-empresa.png` and back at 3.6; chip "Desde un lead o un convenio".
+Scene 3 (4.0–7.8s): "eliges plan y vigencia" — turquoise ring on the Plan select at 4.6 (rect [818,1010,1244,72] of 2880×1800), then on Inicio de vigencia + Duración at 5.2 (rect [818,1114,1244,124]). "el código se asigna solo" — at 6.6 a code chip beside the window decodes "S0····" → "S02973" (`hacker-flip-3d`, finishes 7.4).
+Scene 4 (7.8–14.55s): window scales to 70% and lifts; a six-step horizontal stepper builds across the middle (y≈760): Captura · Términos y condiciones · Pago · Revisión documental · Lista para activar · Activa. Rail draws at 8.2 ("etapas claras"); primary progress fill advances on the words: Términos 10.1 · Pago 10.8 · Revisión documental 11.3–11.9; at 13.1–13.4 ("hasta quedar activa") the fill runs to Activa, which turns `positive` green with a check drawing (`svg-path-draw`). Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids/clases con el prefijo de la escena; los selectores [id=…]/[class~=…] equivalen a #id/.clase. Type sizes are frame.md cqw
+       tokens against the root container (1cqw = 19.2px).
+       Screen geometry: the 2880×1800 captures render at 1200×750 (s = 5/12); every measured
+       capture rect below is rect × s. */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    #root *, #root *::before, #root *::after { box-sizing: border-box; }
+    [class~="f06-suscripcion-ground"] { position: absolute; inset: 0; background: #F1F1F1; }
+    [class~="f06-suscripcion-stage"] { position: absolute; inset: 0; }
+
+    /* Left column — slide-header rhythm (accent-line · eyebrow · h2) + chip + code chip,
+       laid out in its final state and centred on the window (y 62–842). */
+    [class~="f06-suscripcion-col"] {
+      position: absolute; left: 96px; top: 62px; width: 476px; height: 780px;
+      display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+    }
+    [class~="f06-suscripcion-accent"] {
+      width: 60px; height: 4px; margin-bottom: 18px; border-radius: 2px; background: #2F4E9C;
+      transform-origin: 0% 50%;
+    }
+    [class~="f06-suscripcion-eyebrow"] {
+      margin-bottom: 22px; font-size: 0.8cqw; font-weight: 600; line-height: 1.2;
+      letter-spacing: 0.08em; color: #2F4E9C;
+    }
+    [class~="f06-suscripcion-title"] {
+      margin: 0 0 32px; font-size: 2.6cqw; font-weight: 600; line-height: 1.1;
+      letter-spacing: -0.02em; color: #22254F;
+    }
+    [class~="f06-suscripcion-word"] { display: inline-block; }
+    [class~="f06-suscripcion-tag"] {
+      margin-bottom: 28px; padding: 10px 24px; border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08); color: #2F4E9C;
+      font-size: 1.4cqw; font-weight: 500; line-height: 1.3; white-space: nowrap;
+    }
+    [class~="f06-suscripcion-code"] {
+      padding: 8px 30px; border-radius: 100px;
+      background: rgba(47, 78, 156, 0.04); border: 1.5px solid rgba(47, 78, 156, 0.2);
+    }
+    /* hacker-flip-3d: perspective on the flipping chars' parent; fixed cells hold the width
+       while proportional Poppins digits flicker */
+    [class~="f06-suscripcion-code-txt"] {
+      display: flex; perspective: 420px;
+      font-size: 3cqw; font-weight: 700; line-height: 1.15; color: #2F4E9C;
+    }
+    [class~="f06-suscripcion-ch"] { display: block; width: 0.68em; text-align: center; }
+    [class~="f06-suscripcion-flip"] { transform-origin: 50% 100%; }
+
+    /* Product window: white frame, 14px radius, soft navy shadow (frame.md Acme extension) */
+    [class~="f06-suscripcion-win"] {
+      position: absolute; left: 624px; top: 62px; width: 1200px; height: 780px;
+      border-radius: 14px; overflow: hidden; background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+      transform-origin: 100% 0%;
+    }
+    [class~="f06-suscripcion-bar"] {
+      height: 30px; padding-left: 14px; display: flex; align-items: center; gap: 7px;
+      border-bottom: 1px solid rgba(28, 32, 68, 0.06);
+    }
+    [class~="f06-suscripcion-dot"] {
+      display: block; width: 10px; height: 10px; border-radius: 50%; background: rgba(28, 32, 68, 0.14);
+    }
+    [class~="f06-suscripcion-screen"] { position: relative; width: 1200px; height: 750px; }
+    [class~="f06-suscripcion-shot"] {
+      position: absolute; left: 0; top: 0; display: block; width: 1200px; height: 750px; max-width: none;
+    }
+    /* "Nueva suscripción" button [2460,124,324,88]: a page-colour patch under a crop of the
+       button, so the crop can depress on the click without revealing the baked-in button */
+    [class~="f06-suscripcion-patch"], [class~="f06-suscripcion-btn"] {
+      position: absolute; left: 1025px; top: 51.667px; width: 135px; height: 36.667px;
+    }
+    [class~="f06-suscripcion-patch"] { background: #F1F1F1; }
+    [class~="f06-suscripcion-crop"] { position: absolute; overflow: hidden; }
+    /* Modal backdrop, measured from the captures: dimmed = 0.5·list + 0.5·#22254F */
+    [class~="f06-suscripcion-dim"] { position: absolute; inset: 0; background: rgba(34, 37, 79, 0.5); opacity: 0; }
+    /* Modal crops (outer rect incl. 1px border, 16px CSS radius, shadow-2xl at 5/6 scale) */
+    [class~="f06-suscripcion-modal"] {
+      left: 320px; width: 560px; border-radius: 13.333px;
+      box-shadow: 0 21px 42px -10px rgba(0, 0, 0, 0.25);
+    }
+    [class~="f06-suscripcion-modal-lead"] { top: 130px; height: 490px; }          /* [768,312,1344,1176] */
+    [class~="f06-suscripcion-modal-emp"] { top: 175.833px; height: 398.333px; }   /* [768,422,1344,956] */
+    /* Turquoise focus rings, 5px outside the measured field rects */
+    [class~="f06-suscripcion-ring"] {
+      position: absolute; left: 335.833px; width: 528.333px;
+      border: 3px solid #4BC1ED; border-radius: 9px; box-shadow: 0 0 0 5px rgba(75, 193, 237, 0.2);
+    }
+    [class~="f06-suscripcion-ring-plan"] { top: 415.833px; height: 40px; }      /* Plan [818,1010,1244,72] */
+    [class~="f06-suscripcion-ring-vig"] { top: 459.167px; height: 61.667px; }   /* Vigencia+Duración [818,1114,1244,124] */
+    /* Ripple rings live at the button centre (1092.5, 70) from t=0, hidden */
+    [class~="f06-suscripcion-ripple"] {
+      position: absolute; left: 1068.5px; top: 46px; width: 48px; height: 48px;
+      border-radius: 50%; border: 3px solid #4BC1ED; opacity: 0;
+    }
+    /* Cursor: the arrow tip sits on the element's translate point */
+    [class~="f06-suscripcion-cursor"] {
+      position: absolute; left: -1.5px; top: -1.5px; width: 22px; height: 31px;
+      transform-origin: 1.5px 1.5px;
+    }
+    [class~="f06-suscripcion-cursor"] svg { display: block; width: 22px; height: 31px; }
+
+    /* Stepper — rail across the middle (y 760), node centres 200 + 304·i */
+    [class~="f06-suscripcion-rail"], [class~="f06-suscripcion-fill"] {
+      position: absolute; left: 200px; top: 757px; width: 1520px; height: 6px;
+      border-radius: 3px; transform-origin: 0% 50%;
+    }
+    [class~="f06-suscripcion-rail"] { background: rgba(47, 78, 156, 0.15); }
+    [class~="f06-suscripcion-fill"] { background: #2F4E9C; }
+    [class~="f06-suscripcion-steps"] {
+      position: absolute; left: 48px; top: 732px; width: 1824px;
+      display: grid; grid-template-columns: repeat(6, 1fr);
+    }
+    [class~="f06-suscripcion-step"] { display: flex; flex-direction: column; align-items: center; }
+    [class~="f06-suscripcion-node"] {
+      position: relative; width: 56px; height: 56px; border-radius: 50%;
+      border: 2px solid rgba(47, 78, 156, 0.25); background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+    }
+    [class~="f06-suscripcion-on"], [class~="f06-suscripcion-done"] {
+      position: absolute; inset: -2px; border-radius: 50%;
+    }
+    [class~="f06-suscripcion-on"] { background: #2F4E9C; }
+    [class~="f06-suscripcion-done"] { background: #2F9E6E; }
+    [class~="f06-suscripcion-done"] svg { display: block; width: 100%; height: 100%; }
+    [class~="f06-suscripcion-check"] {
+      fill: none; stroke: #FFFFFF; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+    }
+    [class~="f06-suscripcion-num"] {
+      position: relative; font-size: 1.15cqw; font-weight: 600; line-height: 1; color: #5E6675;
+    }
+    [class~="f06-suscripcion-num-on"] { color: #F1F1F1; }
+    [class~="f06-suscripcion-label"] {
+      margin-top: 16px; width: 210px; text-align: center;
+      font-size: 1.4cqw; font-weight: 500; line-height: 1.25; color: #5E6675;
+    }
+    [class~="f06-suscripcion-label-on"] { color: #22254F; }
+  </style>
+
+  <div id="root" data-composition-id="f06-suscripcion" data-width="1920" data-height="1080" data-duration="14.95">
+    <div class="clip f06-suscripcion-ground" data-start="0" data-duration="14.95" data-track-index="0"></div>
+
+    <div class="clip f06-suscripcion-stage" data-start="0" data-duration="14.95" data-track-index="1">
+      <div class="f06-suscripcion-col">
+        <div class="f06-suscripcion-accent"></div>
+        <div class="f06-suscripcion-eyebrow">SUSCRIPCIONES</div>
+        <h2 class="f06-suscripcion-title"><span class="f06-suscripcion-word">De</span> <span class="f06-suscripcion-word">lead</span> <span class="f06-suscripcion-word">a</span> <span class="f06-suscripcion-word">suscripción</span></h2>
+        <div class="f06-suscripcion-tag">Desde un lead o un convenio</div>
+        <div class="f06-suscripcion-code">
+          <div class="f06-suscripcion-code-txt"><span class="f06-suscripcion-ch">S</span><span class="f06-suscripcion-ch">0</span><span class="f06-suscripcion-ch f06-suscripcion-flip" data-target="2">·</span><span class="f06-suscripcion-ch f06-suscripcion-flip" data-target="9">·</span><span class="f06-suscripcion-ch f06-suscripcion-flip" data-target="7">·</span><span class="f06-suscripcion-ch f06-suscripcion-flip" data-target="3">·</span></div>
+        </div>
+      </div>
+
+      <div class="f06-suscripcion-rail"></div>
+      <div class="f06-suscripcion-fill"></div>
+      <div class="f06-suscripcion-steps">
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><div class="f06-suscripcion-on"></div><span class="f06-suscripcion-num f06-suscripcion-num-on">1</span></div>
+          <div class="f06-suscripcion-label f06-suscripcion-label-on">Captura</div>
+        </div>
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><div class="f06-suscripcion-on"></div><span class="f06-suscripcion-num">2</span></div>
+          <div class="f06-suscripcion-label">Términos y condiciones</div>
+        </div>
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><div class="f06-suscripcion-on"></div><span class="f06-suscripcion-num">3</span></div>
+          <div class="f06-suscripcion-label">Pago</div>
+        </div>
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><div class="f06-suscripcion-on"></div><span class="f06-suscripcion-num">4</span></div>
+          <div class="f06-suscripcion-label">Revisión documental</div>
+        </div>
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><div class="f06-suscripcion-on"></div><span class="f06-suscripcion-num">5</span></div>
+          <div class="f06-suscripcion-label">Lista para activar</div>
+        </div>
+        <div class="f06-suscripcion-step">
+          <div class="f06-suscripcion-node"><span class="f06-suscripcion-num">6</span><div class="f06-suscripcion-done"><svg viewBox="0 0 56 56" aria-hidden="true"><path class="f06-suscripcion-check" d="M17 29 L24.5 36.5 L39 21.5" /></svg></div></div>
+          <div class="f06-suscripcion-label">Activa</div>
+        </div>
+      </div>
+
+      <div class="f06-suscripcion-win">
+        <div class="f06-suscripcion-bar"><span class="f06-suscripcion-dot"></span><span class="f06-suscripcion-dot"></span><span class="f06-suscripcion-dot"></span></div>
+        <div class="f06-suscripcion-screen">
+          <img class="f06-suscripcion-shot" src="assets/app-suscripciones.png" alt="Suscripciones: listado con pestañas por estado" />
+          <div class="f06-suscripcion-patch"></div>
+          <div class="f06-suscripcion-crop f06-suscripcion-btn" data-layout-allow-overflow><img class="f06-suscripcion-shot" src="assets/app-suscripciones.png" alt="" style="left: -1025px; top: -51.667px" /></div>
+          <div class="f06-suscripcion-dim"></div>
+          <div class="f06-suscripcion-crop f06-suscripcion-modal f06-suscripcion-modal-lead" data-layout-allow-overflow><img class="f06-suscripcion-shot" src="assets/app-suscripciones-nueva.png" alt="Nueva suscripción desde lead" style="left: -320px; top: -130px" /></div>
+          <div class="f06-suscripcion-crop f06-suscripcion-modal f06-suscripcion-modal-emp" data-layout-allow-overflow><img class="f06-suscripcion-shot" src="assets/app-suscripciones-nueva-empresa.png" alt="Nueva suscripción desde empresa (convenio)" style="left: -320px; top: -175.833px" /></div>
+          <div class="f06-suscripcion-ring f06-suscripcion-ring-plan"></div>
+          <div class="f06-suscripcion-ring f06-suscripcion-ring-vig"></div>
+          <div class="f06-suscripcion-ripple"></div>
+          <div class="f06-suscripcion-ripple"></div>
+          <div class="f06-suscripcion-cursor"><svg viewBox="0 0 22 31" aria-hidden="true"><path d="M1.5 1.5 L1.5 25.5 L7.4 19.9 L11.6 29.2 L15.6 27.5 L11.5 18.4 L19.6 18.4 Z" fill="#1C2044" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round" /></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var P = "f06-suscripcion-";
+      var all = function (k) {
+        return Array.prototype.slice.call(document.querySelectorAll('[class~="' + P + k + '"]'));
+      };
+      var one = function (k) { return all(k)[0]; };
+
+      // Cursor targets in screen px (capture rect × 5/12)
+      var START = { x: 860, y: 430 };  // enters over the list
+      var BTN = { x: 1092.5, y: 70 };   // "Nueva suscripción" centre
+      var PLAN = { x: 700, y: 440 };    // inside the Plan select
+      var VIG = { x: 540, y: 502 };     // inside "Inicio de vigencia"
+
+      var win = one("win"), col = one("col"), cursor = one("cursor");
+      var lead = one("modal-lead"), emp = one("modal-emp");
+      var ringPlan = one("ring-plan"), ringVig = one("ring-vig");
+      var fill = one("fill"), labels = all("label"), nums = all("num");
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–2.0s): list window settles, eyebrow; cursor glides to "Nueva suscripción"
+      // and clicks on "sí" (1.4) — cursor-click-ripple: cursor + button depress together.
+      tl.fromTo(win, { y: 26, scale: 0.985 }, { y: 0, scale: 1, duration: 0.9, ease: "power3.out" }, 0);
+      tl.fromTo(one("accent"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+      tl.fromTo(one("eyebrow"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.18);
+      tl.fromTo(cursor, { x: START.x, y: START.y, opacity: 0 }, { x: START.x, y: START.y, opacity: 1, duration: 0.25, ease: "power1.out" }, 0.2);
+      tl.to(cursor, { x: BTN.x, y: BTN.y, duration: 0.75, ease: "power2.inOut" }, 0.45);
+      tl.to(cursor, { scale: 0.85, duration: 0.08, ease: "power2.in" }, 1.4);
+      tl.to(cursor, { scale: 1, duration: 0.08, ease: "power2.out" }, 1.48);
+      tl.to(one("btn"), { scale: 0.95, duration: 0.08, ease: "power2.in" }, 1.4);
+      tl.to(one("btn"), { scale: 1, duration: 0.08, ease: "power2.out" }, 1.48);
+      tl.fromTo(all("ripple"), { scale: 0, opacity: 1 },
+        { scale: 3, opacity: 0, duration: 0.7, ease: "power2.out", stagger: 0.1, immediateRender: false }, 1.42);
+
+      // Scene 2 (2.0–4.0s): modal "Desde Lead" springs from centre over the dimmed list;
+      // h2 per word 2.1–3.2; tabs flick to "Desde Empresa (Convenio)" at 3.0 and back at 3.6.
+      tl.fromTo(one("dim"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, 2.0);
+      tl.fromTo(lead, { opacity: 0, scale: 0.92, y: 18 }, { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: "back.out(1.4)" }, 2.1);
+      var WORD_AT = [2.1, 2.3, 2.55, 2.85];
+      all("word").forEach(function (w, i) {
+        tl.fromTo(w, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, WORD_AT[i]);
+      });
+      // hard swaps, like the real tab switch (the shorter Convenio modal re-centres)
+      tl.to(lead, { opacity: 0, duration: 0.04, ease: "none" }, 3.0);
+      tl.fromTo(emp, { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none" }, 3.0);
+      tl.to(emp, { opacity: 0, duration: 0.04, ease: "none" }, 3.6);
+      tl.to(lead, { opacity: 1, duration: 0.04, ease: "none" }, 3.6);
+      tl.fromTo(one("tag"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.0);
+
+      // Scene 3 (4.0–7.8s): focus ring on Plan (4.6) then Vigencia + Duración (5.2), the cursor
+      // hovering each; code chip decodes S0···· → S02973 (hacker-flip-3d, 6.6 → 7.4).
+      tl.to(cursor, { x: PLAN.x, y: PLAN.y, duration: 0.5, ease: "power2.inOut" }, 4.05);
+      tl.fromTo(ringPlan, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 4.6);
+      tl.to(cursor, { x: VIG.x, y: VIG.y, duration: 0.3, ease: "power2.inOut" }, 4.85);
+      tl.to(ringPlan, { opacity: 0, duration: 0.15, ease: "power1.out" }, 5.2);
+      tl.fromTo(ringVig, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 5.2);
+      tl.fromTo(one("code"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 6.3);
+
+      var FLIP_AT = 6.6, FLIP_DUR = 0.56, FLIP_STAGGER = 0.08; // last digit lands at 6.6 + 3×0.08 + 0.56 = 7.4
+      var REVEAL = 0.6; // real digit lands at 60% of the flip (flap ~6° from upright)
+      var SWAP = 0.1;   // flicker glyph changes every 0.1s (3 frames at 30fps)
+      var DIGITS = "0123456789";
+      var glyph = function (seed) {
+        return DIGITS[Math.floor((((seed * 9301 + 49297) % 233280) / 233280) * DIGITS.length)];
+      };
+      all("flip").forEach(function (el, i) {
+        var st = { u: 0 };
+        tl.to(st, {
+          u: 1,
+          duration: FLIP_DUR,
+          ease: "none",
+          onUpdate: function () {
+            var u = st.u;
+            if (u <= 0) {
+              el.textContent = "·";
+              el.style.transform = "";
+              el.style.opacity = "";
+              return;
+            }
+            var e = 1 - Math.pow(1 - u, 3); // power3.out flap
+            el.textContent = u < REVEAL ? glyph(i * 1000 + Math.floor((u * FLIP_DUR) / SWAP)) : el.getAttribute("data-target");
+            el.style.transform = "rotateX(" + (90 - 90 * e).toFixed(2) + "deg)";
+            el.style.opacity = Math.min(1, e * 2).toFixed(3);
+          }
+        }, FLIP_AT + i * FLIP_STAGGER);
+      });
+
+      // Scene 4 (7.8–14.55s): window to 70% and lifts; six-step stepper builds as the rail draws
+      // (8.2); the primary fill advances on the words; Activa turns green with a drawn check.
+      tl.to(win, { scale: 0.7, y: -22, duration: 0.8, ease: "power3.inOut" }, 7.8);
+      tl.to(col, { y: -60, duration: 0.8, ease: "power3.inOut" }, 7.8);
+      var RAIL_AT = 8.2, NODE_GAP = 0.22; // constant-speed rail; each node pops as the rail reaches it
+      tl.fromTo(one("rail"), { scaleX: 0 }, { scaleX: 1, duration: NODE_GAP * 5, ease: "none" }, RAIL_AT);
+      all("node").forEach(function (n, i) {
+        var at = RAIL_AT + i * NODE_GAP - 0.06;
+        tl.fromTo(n, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.7)" }, at);
+        tl.fromTo(labels[i], { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, at + 0.05);
+      });
+      // Captura is the new subscription's current stage; then Términos 10.1 · Pago 10.8 ·
+      // Revisión documental 11.3–11.9 · Lista para activar on the run to Activa (13.1–13.4)
+      var REACH = [8.2, 10.1, 10.76, 11.85, 13.22];
+      all("on").forEach(function (o, i) {
+        tl.fromTo(o, { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(2)" }, REACH[i]);
+        if (i > 0) {
+          tl.to(nums[i], { color: "#F1F1F1", duration: 0.2, ease: "power1.out" }, REACH[i]);
+          tl.to(labels[i], { color: "#22254F", duration: 0.25, ease: "power1.out" }, REACH[i]);
+        }
+      });
+      tl.fromTo(fill, { scaleX: 0 }, { scaleX: 0.2, duration: 0.3, ease: "power2.inOut" }, 9.85);
+      tl.to(fill, { scaleX: 0.4, duration: 0.3, ease: "power2.inOut" }, 10.5);
+      tl.to(fill, { scaleX: 0.6, duration: 0.6, ease: "power1.inOut" }, 11.3);
+      tl.to(fill, { scaleX: 1, duration: 0.3, ease: "power1.inOut" }, 13.1);
+      tl.to(nums[5], { opacity: 0, duration: 0.15, ease: "power1.out" }, 13.38);
+      tl.fromTo(one("done"), { scale: 0 }, { scale: 1, duration: 0.45, ease: "back.out(1.8)" }, 13.38);
+      tl.to(labels[5], { color: "#22254F", duration: 0.25, ease: "power1.out" }, 13.38);
+      // svg-path-draw: measured length, dash hidden then drawn
+      var check = one("check");
+      var checkLen = check.getTotalLength() || 32;
+      check.style.strokeDasharray = String(checkLen);
+      tl.fromTo(check, { strokeDashoffset: checkLen }, { strokeDashoffset: 0, duration: 0.35, ease: "power2.out" }, 13.45);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f06-suscripcion"] = tl;
+    })();
+  </script>
+</template>

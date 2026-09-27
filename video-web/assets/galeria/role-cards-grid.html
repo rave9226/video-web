@@ -1,0 +1,318 @@
+<template>
+<!--
+PATRÓN role-cards-grid · ejemplo real: escena 3 del video de referencia (f03-roles).
+CUÁNDO: Presentar de 3 a 6 roles, planes o perfiles como tarjetas en grilla que se encienden una a una con la voz.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f03-roles → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="11.85" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-login-card.png, assets/manual-cambio-contrasena-card.png, assets/manual-rol-admin.png, assets/manual-rol-comercial.png, assets/manual-rol-director-comercial.png, assets/manual-rol-director-tecnico.png, assets/manual-rol-gerencia.png, assets/manual-rol-tecnica.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: CHIP_SHIFT, LAND, MENU_ITEMS → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 3 — Cada equipo ve lo que necesita
+
+- scene: Seis tarjetas con el menú real de cada rol se alinean y luego ceden al acceso seguro
+- voiceover: "Cada equipo ve lo que necesita: seis roles, de Comercial y Área Técnica a Dirección, Gerencia y Administración, cada uno con su menú, sus permisos y acceso seguro."
+- duration: 11.35s
+- transition_in: push-slide LEFT
+- status: animated
+- src: compositions/frames/f03-roles.html
+- pattern: role-cards-grid
+- type: feature_showcase
+- persuasion: Personalization (role fit)
+- beat: belonging + control
+- blueprint: grid-card-assemble (Adapt)
+- focal: assets/app-login-card.png
+- roles: manual-rol-* = supporting (sidebar crops) · app-login-card = cutout (final) · manual-cambio-contrasena-card = supporting
+- asset_candidates: assets/manual-rol-comercial.png — menú rol Comercial; assets/manual-rol-tecnica.png — menú rol Área Técnica (WFE); assets/manual-rol-director-comercial.png — menú Dirección Comercial; assets/manual-rol-director-tecnico.png — menú Dirección Técnica; assets/manual-rol-gerencia.png — menú Gerencia; assets/manual-rol-admin.png — menú Admin completo; assets/app-login-card.png — tarjeta de inicio de sesión; assets/manual-cambio-contrasena-card.png — cambio obligatorio de contraseña
+- sfx: none
+
+narrativeRole: la plataforma se adapta a cada equipo; seguridad incluida.
+keyMessage: seis roles, cada uno con su menú y permisos.
+
+Adapt: keep the staggered cascade into a row and the hold (signature); items are six tall sidebar cards cropped from the role captures, each arriving on its spoken name.
+Crop: each `manual-rol-*.png` is 1440×900 at 1x — show only the navy sidebar region x 0–256, y 0–600 (logo + menu) inside a card with 14px radius; label below each card in h3 600 `text`.
+Scene 1 (0.0–2.0s): centered top, h2 "Cada equipo ve lo que necesita" per-word 0.0–1.3.
+Scene 2 (2.0–6.9s): chip "6 roles" at 2.1 under the title. A centered row of six sidebar cards (≈220px wide, ≈515px tall, 26px gaps) cascades in left→right on their words (rise + settle): Comercial 3.5 · Área Técnica 4.2 · Dirección Comercial and Dirección Técnica together at 5.0 · Gerencia 5.6 · Admin 6.5.
+Scene 3 (6.9–9.6s): "cada uno con su menú" at 8.4 — on every card a turquoise highlight bar steps down its own menu items (short stagger, cards in sequence); chip "Menú y permisos por rol" at 9.1.
+Scene 4 (9.6–11.35s): "y acceso seguro" at 9.8 — the row dims and softens (`depth-of-field-blur`); `app-login-card.png` rises front-center with a small primary lock badge; at 10.3 `manual-cambio-contrasena-card.png` slides in slightly behind-right; chip "Contraseña cifrada · cambio en el primer ingreso". Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids/clases con el prefijo de la escena; los selectores [id=…]/[class~=…] equivalen a #id/.clase. */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    [id="f03-roles-bg"] { position: absolute; inset: 0; background: #F1F1F1; }
+    [id="f03-roles-stage"] { position: absolute; inset: 0; }
+
+    /* Header — h2 centered top + chip row */
+    [id="f03-roles-title"] {
+      position: absolute; top: 60px; left: 0; right: 0; margin: 0; z-index: 4;
+      text-align: center; font-size: 50px; font-weight: 600; line-height: 1.1;
+      letter-spacing: -0.02em; color: #22254F;
+    }
+    [class~="f03-roles-word"] { display: inline-block; }
+    [id="f03-roles-chips"] {
+      position: absolute; top: 134px; left: 0; right: 0; z-index: 4;
+      display: flex; justify-content: center; gap: 14px;
+    }
+    [class~="f03-roles-chip"] {
+      height: 51px; padding: 0 28px; box-sizing: border-box; border-radius: 100px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(47, 78, 156, 0.08); color: #2F4E9C;
+      font-size: 27px; font-weight: 600; line-height: 1; white-space: nowrap;
+    }
+    /* Fixed widths (Poppins 600 27px measured: 90.7px / 329.1px + 56px padding) so the
+       make-room shift at 9.1s is deterministic: shift = (388 + 14) / 2. */
+    [id="f03-roles-chip-count"] { width: 148px; }
+    [id="f03-roles-chip-menu"] { width: 388px; }
+
+    /* Row of six role sidebars: 6 × 220 + 5 × 26 = 1450px, centered. Sized to its content
+       (not full-bleed) so the push-in scale never pushes its box past the canvas edges. */
+    [id="f03-roles-row"] {
+      position: absolute; top: 218px; left: 235px; width: 1450px; z-index: 1;
+      display: flex; justify-content: center; align-items: flex-start; gap: 26px;
+      transform-origin: 50% 270px;
+    }
+    /* DoF is grouped per column (card + slot + label) so the slot never shows through the
+       dimmed card. No will-change: the row scales all shot long and a cached layer renders
+       ~8% softer under that transform. */
+    [class~="f03-roles-col"] {
+      --dof: 0px;
+      position: relative; width: 220px;
+      filter: blur(var(--dof));
+    }
+    [class~="f03-roles-slot"] {
+      position: absolute; top: 0; left: 0; width: 220px; height: 518px; box-sizing: border-box;
+      border-radius: 14px; background: rgba(47, 78, 156, 0.04);
+      border: 1.5px solid rgba(47, 78, 156, 0.2);
+    }
+    /* Crops: the <img> box IS the crop rect in the image's own px (object-fit: none +
+       object-position), then scaled down — so no img box overflows its card or the canvas.
+       Real <img> (not background-image) because the runtime waits for <img> decode only. */
+    [class~="f03-roles-card"] {
+      position: relative; width: 220px; height: 518px; border-radius: 14px; overflow: hidden;
+      background: #1C2044; box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    /* Sidebar x 0–255, y 0–600.4 of the 1440×900 capture at 220/255 */
+    [class~="f03-roles-card"] img {
+      position: absolute; left: 0; top: 0; display: block; max-width: none;
+      width: 255px; height: 600.41px; object-fit: none; object-position: 0 0;
+      transform: scale(0.862745); transform-origin: 0 0;
+    }
+    /* Turquoise focus bar over menu item 0 (capture rect x 13, y 117.5, 229 × 36) */
+    [class~="f03-roles-hl"] {
+      position: absolute; left: 11.22px; top: 101.37px; width: 197.57px; height: 31.06px;
+      border-radius: 6px; background: rgba(75, 193, 237, 0.2);
+      box-shadow: inset 0 0 0 1.5px #4BC1ED; transform-origin: 0 50%;
+    }
+    [class~="f03-roles-label"] {
+      max-width: 200px; margin: 18px auto 0; text-align: center;
+      font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -0.02em; color: #22254F;
+    }
+
+    /* Security cluster — login card front-center, password-change card behind-right */
+    [class~="f03-roles-crop"] {
+      position: absolute; inset: 0; overflow: hidden; background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    [class~="f03-roles-crop"] img {
+      position: absolute; left: 0; top: 0; display: block; max-width: none;
+      object-fit: none; transform-origin: 0 0;
+    }
+    /* app-login-card.png 959×1195 (2x); card rect [32, 32, 896, 1132] at 0.52 */
+    [id="f03-roles-login"] {
+      position: absolute; left: 727.04px; top: 224px; width: 465.92px; height: 588.64px; z-index: 3;
+    }
+    [id="f03-roles-login"] [class~="f03-roles-crop"] { border-radius: 16px; }
+    [id="f03-roles-login"] img {
+      width: 896px; height: 1132px; object-position: -32px -32px; transform: scale(0.52);
+    }
+    [id="f03-roles-lock"] {
+      position: absolute; right: -14px; top: -14px; width: 56px; height: 56px; box-sizing: border-box;
+      border-radius: 50%; background: #2F4E9C; border: 4px solid #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+    }
+    [id="f03-roles-lock"] svg { display: block; width: 24px; height: 24px; }
+    /* manual-cambio-contrasena-card.png 479×671 (1x); card rect [16, 16, 448, 640] at 0.73.
+       Tucked 27px behind the login card's right edge so its field labels stay readable. */
+    [id="f03-roles-cambio"] {
+      position: absolute; left: 1166px; top: 300px; width: 327.04px; height: 467.2px; z-index: 2;
+    }
+    [id="f03-roles-cambio"] [class~="f03-roles-crop"] { border-radius: 12px; }
+    [id="f03-roles-cambio"] img {
+      width: 448px; height: 640px; object-position: -16px -16px; transform: scale(0.73);
+    }
+    [id="f03-roles-sec"] {
+      position: absolute; top: 832px; left: 0; right: 0; z-index: 4;
+      display: flex; justify-content: center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f03-roles" data-width="1920" data-height="1080" data-duration="11.85">
+    <div id="f03-roles-bg" class="clip" data-start="0" data-duration="11.85" data-track-index="0"></div>
+
+    <div id="f03-roles-stage" class="clip" data-start="0" data-duration="11.85" data-track-index="1">
+      <h2 id="f03-roles-title"><span class="f03-roles-word">Cada</span> <span class="f03-roles-word">equipo</span> <span class="f03-roles-word">ve</span> <span class="f03-roles-word">lo</span> <span class="f03-roles-word">que</span> <span class="f03-roles-word">necesita</span></h2>
+
+      <div id="f03-roles-chips">
+        <div id="f03-roles-chip-count" class="f03-roles-chip">6 roles</div>
+        <div id="f03-roles-chip-menu" class="f03-roles-chip">Menú y permisos por rol</div>
+      </div>
+
+      <div id="f03-roles-row">
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-comercial.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Comercial</div>
+        </div>
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-tecnica.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Área Técnica</div>
+        </div>
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-director-comercial.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Dirección Comercial</div>
+        </div>
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-director-tecnico.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Dirección Técnica</div>
+        </div>
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-gerencia.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Gerencia</div>
+        </div>
+        <div class="f03-roles-col">
+          <div class="f03-roles-slot"></div>
+          <div class="f03-roles-card"><img src="assets/manual-rol-admin.png" alt="" /><div class="f03-roles-hl"></div></div>
+          <div class="f03-roles-label">Admin</div>
+        </div>
+      </div>
+
+      <div id="f03-roles-cambio">
+        <div class="f03-roles-crop"><img src="assets/manual-cambio-contrasena-card.png" alt="" /></div>
+      </div>
+
+      <div id="f03-roles-login">
+        <div class="f03-roles-crop"><img src="assets/app-login-card.png" alt="" /></div>
+        <div id="f03-roles-lock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5" />
+            <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
+      </div>
+
+      <div id="f03-roles-sec">
+        <div id="f03-roles-chip-sec" class="f03-roles-chip">Contraseña cifrada · cambio en el primer ingreso</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var stage = document.getElementById("f03-roles-stage");
+      var all = function (cls) {
+        return Array.prototype.slice.call(stage.querySelectorAll('[class~="' + cls + '"]'));
+      };
+      var byId = function (id) { return document.getElementById("f03-roles-" + id); };
+
+      var words = all("f03-roles-word");
+      var cols = all("f03-roles-col");
+      var slots = all("f03-roles-slot");
+      var cards = all("f03-roles-card");
+      var bars = all("f03-roles-hl");
+      var labels = all("f03-roles-label");
+      var row = byId("row");
+      var chipCount = byId("chip-count");
+      var chipMenu = byId("chip-menu");
+      var login = byId("login");
+      var lock = byId("lock");
+      var cambio = byId("cambio");
+      var chipSec = byId("chip-sec");
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0.0–2.0) — headline per word, 0.0 → 1.3
+      words.forEach(function (w, i) {
+        tl.fromTo(w, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, i * 0.15);
+      });
+
+      // Scene 2 (2.0–6.9) — "6 roles" @2.1 (sits centered until chip 2 makes room at 9.1),
+      // six empty slots establish the grid, slow push-in on the row runs underneath.
+      var CHIP_SHIFT = (388 + 14) / 2;
+      tl.fromTo(chipCount, { x: CHIP_SHIFT, scale: 0.85, opacity: 0 },
+        { x: CHIP_SHIFT, scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)" }, 2.1);
+      slots.forEach(function (s, k) {
+        tl.fromTo(s, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 2.2 + k * 0.05);
+      });
+      tl.fromTo(row, { scale: 1 }, { scale: 1.03, duration: 7.7, ease: "sine.inOut" }, 2.1);
+
+      // Cards cascade left→right on their spoken names (rise + settle into the slot)
+      var LAND = [3.5, 4.2, 5.0, 5.06, 5.6, 6.5];
+      cards.forEach(function (c, k) {
+        var t = LAND[k];
+        tl.fromTo(c, { y: 90 }, { y: 0, duration: 0.8, ease: "back.out(1.3)" }, t);
+        tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, t);
+        tl.fromTo(labels[k], { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, t + 0.12);
+      });
+
+      // Scene 3 (6.9–9.6) — "cada uno con su menú" @8.4: a turquoise bar steps down each
+      // card's own menu (cards in sequence). Item pitch 36px, +40px jump over Admin's
+      // "Administración" header, scaled by 220/255.
+      var S = 220 / 255;
+      var MENU_ITEMS = [7, 4, 8, 4, 5, 12];
+      var itemY = function (i) { return (i * 36 + (i >= 8 ? 40 : 0)) * S; };
+      bars.forEach(function (b, k) {
+        var t0 = 8.4 + k * 0.08;
+        tl.fromTo(b, { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.14, ease: "power2.out" }, t0);
+        for (var i = 1; i < MENU_ITEMS[k]; i++) {
+          tl.to(b, { y: itemY(i), duration: 0.05, ease: "power2.out" }, t0 + 0.12 + (i - 1) * 0.07);
+        }
+      });
+      // "sus permisos" @9.1 — second chip joins, first chip slides left to make room
+      tl.to(chipCount, { x: 0, duration: 0.5, ease: "power3.inOut" }, 9.1);
+      tl.fromTo(chipMenu, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 9.1);
+
+      // Scene 4 (9.6–11.35) — "y acceso seguro" @9.8: depth-of-field focal pull.
+      // The row (grouped per column) blurs + dims and recedes; the login card rises sharp.
+      cols.forEach(function (col) {
+        tl.to(col, { "--dof": "8px", opacity: 0.5, duration: 0.8, ease: "power2.inOut" }, 9.8);
+      });
+      tl.to(row, { scale: 0.96, duration: 0.9, ease: "power2.inOut" }, 9.8);
+      tl.fromTo(login, { y: 90, scale: 0.94, opacity: 0 },
+        { y: 0, scale: 1, opacity: 1, duration: 0.85, ease: "power3.out" }, 9.8);
+      tl.fromTo(lock, { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, 10.15);
+      tl.fromTo(cambio, { x: 90, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 10.3);
+      tl.fromTo(chipSec, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power2.out" }, 10.45);
+      // Hold to 11.35 — no exit (the root transition owns it).
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f03-roles"] = tl;
+    })();
+  </script>
+</template>

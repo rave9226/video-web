@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# vl — único punto de entrada de la skill video-web.
+# Se corre desde la carpeta del proyecto como ./vl (vl init crea ese enlace).
+# Herramientas independientes: cada comando revisa solo sus propios insumos. El orden del
+# trabajo lo decide el modelo; `./vl estado` dice qué hay hecho según los archivos.
+set -uo pipefail
+
+VL_SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+S="$(dirname "$VL_SELF")"
+SKILL="$(dirname "$S")"
+PY="${VL_PY:-$(command -v python3)}"
+QWEN="${VL_QWEN_VENV:-$HOME/.venvs/qwen-tts}"
+AGENTS="${VL_AGENTS_SKILLS:-$HOME/.agents/skills}"
+PLV="${VL_PLV_DIR:-$AGENTS/product-launch-video}"
+MEDIA="${VL_MEDIA_USE_DIR:-$AGENTS/media-use}"
+HF_HUB="${HF_HOME:-$HOME/.cache/huggingface}/hub"
+export PYTHONPATH="$S${PYTHONPATH:+:$PYTHONPATH}" VL_PLV_DIR="$PLV" VL_MEDIA_USE_DIR="$MEDIA" \
+  VL_QWEN_VENV="$QWEN" VL_AGENTS_SKILLS="$AGENTS"
+
+die() { echo "✗ $*" >&2; exit 1; }
+chk() { "$PY" "$S/checks.py" "$@"; }
+hf_version() { sed -n 's/.*"hyperframes": *"\([0-9.]*\)".*/\1/p' "$SKILL/compat.json"; }
+# proyectos nuevos nacen con la versión probada (compat.json); los viejos, con la suya
+pin() { grep -o 'hyperframes@[0-9.]*' package.json 2>/dev/null | head -1 ||
+  echo "hyperframes@$(hf_version)"; }
+hf() { npx --yes "$(pin)" "$@"; }
+
+# Tareas largas (voz, música, render) en segundo plano: sobreviven al límite de tiempo del
+# agente. `./vl esperar NOMBRE` espera de a poco y muestra el final del log.
+if [[ "${1:-}" == _run ]]; then
+  name="$2"; shift 2
+  "$@"; echo $? > ".vl/tareas/$name.estado"; exit 0
+fi
+
+bg() {
+  local name="$1"; shift
+  mkdir -p .vl/tareas
+  [[ "$(cat ".vl/tareas/$name.estado" 2>/dev/null)" == corriendo ]] &&
+    die "'$name' ya está corriendo: ./vl esperar $name"
+  echo corriendo > ".vl/tareas/$name.estado"
+  # setsid no existe en macOS: nohup basta para sobrevivir al fin del agente
+  $(command -v setsid || echo nohup) "$VL_SELF" _run "$name" "$@" > ".vl/tareas/$name.log" 2>&1 < /dev/null &
+  echo "⏳ '$name' corre en segundo plano (log: .vl/tareas/$name.log)"
+  echo "SIGUIENTE: ./vl esperar $name"
+}
+
+cmd_esperar() {
+  local name="${1:?uso: ./vl esperar voz|musica|render}" max="${VL_ESPERA_S:-100}" t=0
+  local st=".vl/tareas/$name.estado"
+  [[ -f "$st" ]] || die "no hay tarea '$name'"
+  # ponytail: espera corta y repetible; el agente vuelve a llamar si sigue corriendo
+  while [[ "$(cat "$st")" == corriendo && $t -lt $max ]]; do sleep 5; t=$((t + 5)); done
+  tail -n 20 ".vl/tareas/$name.log"
+  local code; code="$(cat "$st")"
+  if [[ "$code" == corriendo ]]; then
+    echo "⏳ '$name' sigue corriendo."; echo "SIGUIENTE: ./vl esperar $name"; return 0
+  fi
+  [[ "$code" == 0 ]] && echo "✅ '$name' terminó." ||
+    echo "✗ '$name' terminó con error ($code): lee .vl/tareas/$name.log"
+  return "$code"
+}
+
+cmd_doctor() {
+  local bad=0
+  ok() { echo "✓ $1"; }
+  ko() { echo "✗ $1"; bad=1; }
+  warn() { echo "⚠ $1"; }
+  command -v node > /dev/null && ok "node $(node --version)" || ko "node (instala Node ≥ 18)"
+  for b in npx ffmpeg ffprobe; do command -v "$b" > /dev/null && ok "$b" || ko "$b"; done
+  command -v pdftotext > /dev/null && ok pdftotext || warn "pdftotext (opcional, poppler-utils)"
+  "$PY" -c "import playwright, PIL, numpy" 2> /dev/null && ok "venv general $PY" ||
+    ko "venv general $PY sin playwright/Pillow/numpy (o define VL_PY)"
+  ls "$HOME/.cache/ms-playwright" 2> /dev/null | grep -q '^chromium' && ok "chromium de Playwright" ||
+    ko "chromium de Playwright: $PY -m playwright install chromium"
+  "$QWEN/bin/python" -c "import qwen_tts, faster_whisper, librosa, soundfile" > /dev/null 2>&1 &&
+    ok "venv TTS $QWEN" || ko "venv TTS: corre ./vl setup-tts"
+  for m in Qwen--Qwen3-TTS-12Hz-1.7B-Base Qwen--Qwen3-TTS-12Hz-1.7B-VoiceDesign \
+    Systran--faster-whisper-large-v3 facebook--musicgen-small; do
+    [[ -d "$HF_HUB/models--$m" ]] && ok "modelo $m" || warn "modelo $m: se descarga en el primer uso"
+  done
+  local free
+  free="$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2> /dev/null | head -1)"
+  if [[ -z "$free" ]]; then
+    warn "sin GPU NVIDIA: voz en CPU/MPS (≈ 6× la duración del audio con 16 núcleos; 10 GB de RAM)"
+  elif ((free < 6000)); then warn "GPU con ${free} MiB libres: cierra otros procesos que usen la GPU"
+  else ok "GPU con ${free} MiB libres"; fi
+  for f in build-frame.mjs stage-assets.mjs audio.mjs assemble-index.mjs transitions.mjs \
+    frame-packets.mjs; do
+    [[ -f "$PLV/scripts/$f" ]] && ok "product-launch-video/$f" || ko "falta $PLV/scripts/$f"
+  done
+  for f in audio/scripts/audio.mjs audio/scripts/wait-bgm.mjs; do
+    [[ -f "$MEDIA/$f" ]] && ok "media-use/$f" || ko "falta $MEDIA/$f"
+  done
+  [[ -f "$AGENTS/hyperframes/references/frame-worker-core.md" ]] && ok "contrato frame-worker-core" ||
+    ko "falta hyperframes/references/frame-worker-core.md"
+  echo "video-web $(cat "$SKILL/VERSION") · probada con hyperframes@$(hf_version)"
+  chk compat "$AGENTS" && ok "skills de HyperFrames iguales a las probadas" ||
+    warn "skills de HyperFrames distintas a las probadas (ver arriba)"
+  ((bad)) && echo "SIGUIENTE: corrige los ✗ y repite ./vl doctor" ||
+    echo "SIGUIENTE: ./vl init <ruta-sin-espacios> [--manual manual.pdf]"
+  return "$bad"
+}
+
+cmd_setup_tts() {
+  if "$QWEN/bin/python" -c "import qwen_tts, faster_whisper, librosa, soundfile" > /dev/null 2>&1; then
+    echo "✓ venv TTS listo: $QWEN"; return 0
+  fi
+  # ponytail: instalación guiada, no automática (PyTorch CUDA depende del equipo)
+  cat << EOF
+✗ falta el venv de TTS ($QWEN). Pide al usuario que lo cree una vez (≈ 6 GB):
+  uv venv "$QWEN" --python 3.12
+  uv pip install --python "$QWEN/bin/python" torch qwen-tts faster-whisper librosa soundfile transformers
+Luego: ./vl doctor
+EOF
+  return 1
+}
+
+ROUTING='<!-- vl:ruteo -->
+# Proyecto de la skill video-web
+
+Este video se construye con la skill `video-web` y su comando `./vl`.
+Al retomar: corre `./vl estado` (qué hay hecho) y lee la skill. Nunca navegues la app del
+cliente con MCP, Playwright ni el navegador: `./vl explorar` y `./vl captura` lo hacen en solo
+lectura.
+<!-- /vl:ruteo -->'
+
+cmd_init() {
+  local dir="${1:?uso: vl init <ruta-del-proyecto> [--manual manual.pdf]}" manual=""
+  [[ "${2:-}" == --manual ]] && manual="$(readlink -f "${3:?falta el PDF}")"
+  [[ "$dir" == *" "* ]] && die "la ruta tiene espacios (HyperFrames y ffmpeg fallan): usa otra"
+  if [[ ! -f "$dir/hyperframes.json" ]]; then
+    npx --yes "hyperframes@$(hf_version)" init "$dir" --non-interactive --example=blank \
+      --skill=product-launch-video || die "falló hyperframes init"
+  fi
+  cd "$dir" || die "no pude entrar a $dir"
+  ln -sfn "$VL_SELF" vl
+  mkdir -p compositions/frames
+  # credenciales opcionales en .env: nunca al repositorio
+  grep -qx '.env' .gitignore 2> /dev/null || echo '.env' >> .gitignore
+  for f in BRIEF.md capture.json audio.json; do
+    [[ -f "$f" ]] || cp "$SKILL/assets/templates/$f" .
+  done
+  for f in AGENTS.md CLAUDE.md; do
+    grep -q 'vl:ruteo' "$f" 2> /dev/null && continue
+    { printf '%s\n\n' "$ROUTING"; cat "$f" 2> /dev/null; } > "$f.vl" && mv "$f.vl" "$f"
+  done
+  if [[ -n "$manual" ]]; then
+    pdftotext -layout "$manual" manual.txt && echo "✓ manual → manual.txt ($(wc -l < manual.txt) líneas)"
+  fi
+  echo "✅ proyecto listo en $PWD"
+  echo "SIGUIENTE: cd $PWD; explora la app (./vl explorar), completa BRIEF.md y capture.json"
+  echo "  (references/captura.md). 🛑 Pregunta al usuario si los datos de la app son de prueba."
+}
+
+cmd_prep() {
+  [[ -f STORYBOARD.md ]] || die "falta STORYBOARD.md (plantilla: $SKILL/assets/templates/STORYBOARD.md)"
+  node "$PLV/scripts/audio.mjs" sync-durations --audio-meta ./audio_meta.json \
+    --storyboard ./STORYBOARD.md || die "sync-durations falló"
+  local total # duración del frontmatter = suma de las voces
+  total="$("$PY" -c 'import json; print(round(sum(v["duration_s"] for v in json.load(open("audio_meta.json"))["voices"])))')"
+  # ponytail: Python en vez de `sed -i "0,/…/"` (solo GNU sed; macOS trae BSD sed)
+  "$PY" -c 'import re,sys;p="STORYBOARD.md";s=open(p).read()
+open(p,"w").write(re.sub(r"^duration: .*$","duration: "+sys.argv[1]+"s",s,count=1,flags=re.M))' "$total"
+  node "$PLV/scripts/stage-assets.mjs" --storyboard ./STORYBOARD.md --hyperframes . ||
+    die "stage-assets falló"
+  node "$PLV/scripts/frame-packets.mjs" --project . || die "frame-packets falló"
+  chk storyboard
+}
+
+cmd_ensamblar() {
+  mkdir -p .vl
+  node "$PLV/scripts/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes . ||
+    die "assemble-index falló"
+  # inject reescribe todas las escenas aunque no cambien: guarda copias para devolver la fecha
+  # original a las idénticas (así se ve qué escena se tocó de verdad)
+  rm -rf .vl/frames-antes && mkdir -p .vl/frames-antes &&
+    cp -p compositions/frames/*.html .vl/frames-antes/ 2> /dev/null
+  node "$PLV/scripts/transitions.mjs" inject --storyboard ./STORYBOARD.md --hyperframes . ||
+    die "transitions inject falló"
+  for f in .vl/frames-antes/*.html; do
+    [[ -f "$f" ]] && cmp -s "$f" "compositions/frames/${f##*/}" &&
+      touch -r "$f" "compositions/frames/${f##*/}"
+  done
+  node "$PLV/scripts/transitions.mjs" verify --storyboard ./STORYBOARD.md --index ./index.html ||
+    die "transitions verify falló"
+  hf lint > .vl/lint.txt 2>&1
+  grep -E "error\(s\)" .vl/lint.txt | tail -1
+  hf check > .vl/check.txt 2>&1
+  tail -n 5 .vl/check.txt
+  chk escenas
+}
+
+cmd="${1:-estado}"
+shift || true
+case "$cmd" in
+  doctor) cmd_doctor ;;
+  setup-tts) cmd_setup_tts ;;
+  init) cmd_init "$@" ;;
+  estado) chk estado ;;
+  check) chk "${1:-todo}" ;;
+  explorar) "$PY" "$S/capture.py" explorar --route "${1:?uso: ./vl explorar /ruta [--auth]}" "${@:2}" ;;
+  captura) "$PY" "$S/capture.py" run "$@" ;;
+  crop) "$PY" "$S/capture.py" crop "$@" ;;
+  marca)
+    if [[ "${1:-}" == sugerir ]]; then "$PY" "$S/brand.py" sugerir; else "$PY" "$S/brand.py" aplicar "$@"; fi ;;
+  voz)
+    [[ "${1:-}" =~ ^(design|lines|finalize)$ ]] || die "uso: ./vl voz design|lines [--frames 3,7]|finalize"
+    bg voz "$QWEN/bin/python" "$S/voice.py" "$@" ;;
+  musica)
+    if [[ "${1:-}" == mezclar ]]; then "$PY" "$S/bgm.py" mezclar; else bg musica "$PY" "$S/bgm.py" generar; fi ;;
+  prep) cmd_prep ;;
+  ensamblar) cmd_ensamblar ;;
+  snap) "$PY" "$S/qa.py" snap "$@" ;;
+  render)
+    bg render npx --yes "$(pin)" render --skill=product-launch-video --quality high \
+      --output renders/video.mp4 ;;
+  final) "$PY" "$S/qa.py" final && chk entrega ;;
+  esperar) cmd_esperar "$@" ;;
+  *) die "comando desconocido '$cmd'. Comandos: doctor setup-tts init estado check explorar
+  captura crop marca voz musica prep ensamblar snap render final esperar" ;;
+esac

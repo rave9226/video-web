@@ -1,0 +1,262 @@
+<template>
+<!--
+PATRÓN logo-lockup-close · ejemplo real: escena 14 del video de referencia (f14-cierre).
+CUÁNDO: Cierre: logo, lema y mascota (si existe) sobre fondo oscuro con una retención larga.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f14-cierre → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="8.06" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/brand-logo-blanco.png, assets/brand-mascota.webp → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 14 — Todo el ciclo, en un solo lugar
+
+- scene: Logo en blanco sobre navy, lema y la mascota; cierre sostenido
+- voiceover: "Plataforma de Afiliaciones Acme Salud. Todo el ciclo de la afiliación, en un solo lugar."
+- duration: 8.06s
+- transition_in: blur-crossfade
+- status: animated
+- src: compositions/frames/f14-cierre.html
+- pattern: logo-lockup-close
+- type: branding
+- persuasion: Brand recall
+- beat: triumph + trust
+- blueprint: logo-assemble-lockup (Reproduce)
+- focal: assets/brand-logo-blanco.png
+- roles: brand-logo-blanco = cutout · brand-mascota = supporting
+- asset_candidates: assets/brand-logo-blanco.png — logo Acme Salud en blanco; assets/brand-mascota.webp — mascota de la marca
+- sfx: none
+
+narrativeRole: cierre de marca: la promesa como lema.
+keyMessage: Acme Salud — todo el ciclo de la afiliación, en un solo lugar.
+
+Scene 1 (0.0–2.6s): full-bleed `brand-navy`; the white lockup draws on centered-left: isotipo at 0.0–0.6, wordmark mask-wipe 0.7–1.9 in sync with "Acme Salud"; eyebrow "Plataforma de Afiliaciones" (white, 70% opacity) under it at 0.7.
+Scene 2 (2.6–5.7s): tagline per-word, h2 white: "Todo el ciclo de la afiliación, en un solo lugar." 2.7–5.3, with "en un solo lugar" in turquoise.
+Scene 3 (3.5–8.06s): the mascot `brand-mascota.webp` rises from the bottom-right edge at 3.5 (≈40% frame height, fully inside the frame) and settles; hold still; final 0.8s fade to navy (the video's only exit).
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #ffffff;
+    }
+
+    /* brand-navy full-bleed ground: the closing frame's only ground (clip layer, not #root). */
+    [id="f14-cierre-bg"] { position: absolute; inset: 0; background: #1c2044; }
+
+    /* Everything above the ground. Fades out in the final 0.8s, leaving the navy. */
+    [id="f14-cierre-stage"] { position: absolute; inset: 0; }
+
+    /* Left column: lockup + eyebrow + tagline, centred in the top 900px (keep-out below). */
+    [id="f14-cierre-copy"] {
+      position: absolute;
+      left: 220px;
+      top: 0;
+      height: 900px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* Lockup: brand-logo-blanco.png (2434x965) shown at 782x310 through three windows cut in
+       the PNG's transparent gaps (isotipo x<254 · "Acme" top row · "Visions" bottom row),
+       so each part reveals on its own cue. --p drives each window's soft mask wipe (1 = shown). */
+    [id="f14-cierre-logo"] { position: relative; flex: none; width: 782px; height: 310px; }
+    [class~="f14-cierre-part"] { --p: 1; position: absolute; overflow: hidden; }
+    [class~="f14-cierre-part"] img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 782px;
+      height: 310px;
+      max-width: none;
+    }
+    [id="f14-cierre-iso"] {
+      left: 0;
+      top: 0;
+      width: 254px;
+      height: 310px;
+      /* diagonal wipe along the isotipo's own stroke angle, so the mark reads as drawn on */
+      -webkit-mask-image: linear-gradient(33deg, #000 calc(var(--p) * 140% - 40%), transparent calc(var(--p) * 140%));
+      mask-image: linear-gradient(33deg, #000 calc(var(--p) * 140% - 40%), transparent calc(var(--p) * 140%));
+    }
+    [id="f14-cierre-w1"],
+    [id="f14-cierre-w2"] {
+      left: 254px;
+      width: 528px;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--p) * 125% - 25%), transparent calc(var(--p) * 125%));
+      mask-image: linear-gradient(90deg, #000 calc(var(--p) * 125% - 25%), transparent calc(var(--p) * 125%));
+    }
+    [id="f14-cierre-w1"] { top: 0; height: 158px; }
+    [id="f14-cierre-w2"] { top: 158px; height: 152px; }
+    [id="f14-cierre-w1"] img { left: -254px; }
+    [id="f14-cierre-w2"] img { left: -254px; top: -158px; }
+
+    [id="f14-cierre-eyebrow"] {
+      margin-top: 30px;
+      font-size: 1.4cqw;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Tagline, h2 ramp; the promise ("en un solo lugar") carries the frame's one turquoise spark. */
+    [id="f14-cierre-tagline"] {
+      margin-top: 64px;
+      font-size: 2.6cqw;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+    [class~="f14-cierre-line"] { white-space: nowrap; }
+    [class~="f14-cierre-accent"] { color: #4bc1ed; }
+    [class~="f14-cierre-word"] { display: inline-block; }
+
+    /* Mascot stage, bottom-right. Its bottom edge IS the 900px keep-out line: a soft horizon
+       mask dissolves the PNG's cropped coat (and the rise) into the navy instead of a hard cut. */
+    [id="f14-cierre-hero"] {
+      position: absolute;
+      left: 1000px;
+      top: 0;
+      width: 920px;
+      height: 900px;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 90px), rgba(0, 0, 0, 0.8) calc(100% - 45px), transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 calc(100% - 90px), rgba(0, 0, 0, 0.8) calc(100% - 45px), transparent 100%);
+    }
+    /* Cobalt glow + concentric closing rings centred on the mascot's face (533, 608):
+       lifts the black fur off the navy. */
+    [id="f14-cierre-glow"] {
+      position: absolute;
+      left: 241px;
+      top: 316px;
+      width: 584px;
+      height: 584px;
+      background: radial-gradient(closest-side, rgba(47, 78, 156, 0.5), rgba(47, 78, 156, 0.18) 60%, rgba(47, 78, 156, 0));
+    }
+    [class~="f14-cierre-ring"] {
+      position: absolute;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+    }
+    [id="f14-cierre-ring1"] { left: 337px; top: 412px; width: 392px; height: 392px; }
+    [id="f14-cierre-ring2"] { left: 289px; top: 364px; width: 488px; height: 488px; border-color: rgba(255, 255, 255, 0.09); }
+    [id="f14-cierre-ring3"] { left: 241px; top: 316px; width: 584px; height: 584px; border-color: rgba(255, 255, 255, 0.06); }
+    /* brand-mascota.webp (1378x1462) at 415x440 (~40% frame height), resting on the horizon. */
+    [id="f14-cierre-mascot"] {
+      position: absolute;
+      left: 335px;
+      top: 460px;
+      width: 415px;
+      height: 440px;
+      max-width: none;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f14-cierre" data-width="1920" data-height="1080" data-duration="8.06">
+    <div id="f14-cierre-bg" class="clip" data-start="0" data-duration="8.06" data-track-index="0"></div>
+
+    <div id="f14-cierre-stage">
+      <div id="f14-cierre-copy">
+        <div id="f14-cierre-logo">
+          <div id="f14-cierre-iso" class="f14-cierre-part"><img src="assets/brand-logo-blanco.png" alt="Acme Salud" /></div>
+          <div id="f14-cierre-w1" class="f14-cierre-part"><img src="assets/brand-logo-blanco.png" alt="" /></div>
+          <div id="f14-cierre-w2" class="f14-cierre-part"><img src="assets/brand-logo-blanco.png" alt="" /></div>
+        </div>
+        <div id="f14-cierre-eyebrow">Plataforma de Afiliaciones</div>
+        <div id="f14-cierre-tagline">
+          <div class="f14-cierre-line">
+            <span class="f14-cierre-word" data-at="2.70">Todo</span>
+            <span class="f14-cierre-word" data-at="2.95">el</span>
+            <span class="f14-cierre-word" data-at="3.08">ciclo</span>
+            <span class="f14-cierre-word" data-at="3.33">de</span>
+            <span class="f14-cierre-word" data-at="3.46">la</span>
+            <span class="f14-cierre-word" data-at="3.59">afiliación,</span>
+          </div>
+          <div class="f14-cierre-line f14-cierre-accent">
+            <span class="f14-cierre-word" data-at="4.33">en</span>
+            <span class="f14-cierre-word" data-at="4.46">un</span>
+            <span class="f14-cierre-word" data-at="4.59">solo</span>
+            <span class="f14-cierre-word" data-at="4.85">lugar.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- data-layout-allow-overflow: the mascot intentionally starts 150px below this clipped stage and rises into it. -->
+      <div id="f14-cierre-hero" data-layout-allow-overflow>
+        <div id="f14-cierre-glow"></div>
+        <div id="f14-cierre-ring1" class="f14-cierre-ring"></div>
+        <div id="f14-cierre-ring2" class="f14-cierre-ring"></div>
+        <div id="f14-cierre-ring3" class="f14-cierre-ring"></div>
+        <img id="f14-cierre-mascot" src="assets/brand-mascota.webp" alt="Mascota de Acme Salud" />
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var byId = function (id) { return document.getElementById("f14-cierre-" + id); };
+      var stage = byId("stage");
+      var all = function (cls) {
+        return Array.prototype.slice.call(stage.querySelectorAll('[class~="f14-cierre-' + cls + '"]'));
+      };
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0.0–2.6) — the white lockup draws on: isotipo 0.0–0.6, then the wordmark
+      // wipes left→right on "Acme" (0.7) / "Visions" (1.28 → lands 1.9); eyebrow at 0.7.
+      tl.fromTo(byId("iso"), { "--p": 0, y: 10 }, { "--p": 1, y: 0, duration: 0.6, ease: "power2.inOut" }, 0);
+      tl.fromTo(byId("w1"), { "--p": 0, x: -16 }, { "--p": 1, x: 0, duration: 0.62, ease: "power2.out" }, 0.7);
+      tl.fromTo(byId("w2"), { "--p": 0, x: -16 }, { "--p": 1, x: 0, duration: 0.62, ease: "power2.out" }, 1.28);
+      tl.fromTo(byId("eyebrow"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.7);
+
+      // Scene 2 (2.6–5.7) — tagline per word, 2.7 → 5.3.
+      // ponytail: the packet gives the 2.7–5.3 window, not per-word stamps; each word's data-at
+      // spreads the ten words across it by syllable count (+ the comma pause). Retime from
+      // real word timestamps if the voice drifts.
+      all("word").forEach(function (word) {
+        tl.fromTo(word, { opacity: 0, y: 26, filter: "blur(6px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out" },
+          parseFloat(word.getAttribute("data-at")));
+      });
+
+      // Scene 3 (3.5–8.06) — the mascot rises from the bottom-right edge and settles
+      // (long-tail power3, no overshoot), glow + closing rings open behind it, then hold still.
+      tl.fromTo(byId("glow"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, 3.5);
+      tl.fromTo(all("ring"), { opacity: 0, scale: 0.88 },
+        { opacity: 1, scale: 1, duration: 1.1, ease: "power3.out", stagger: 0.12 }, 3.6);
+      tl.fromTo(byId("mascot"), { opacity: 0, y: 150 }, { opacity: 1, y: 0, duration: 1.2, ease: "power3.out" }, 3.5);
+
+      // Final 0.8s: fade to navy — the video's only exit (resolves at 8.02, before the 8.06 cut).
+      tl.fromTo(stage, { opacity: 1 }, { opacity: 0, duration: 0.8, ease: "power2.inOut" }, 7.22);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f14-cierre"] = tl;
+    })();
+  </script>
+</template>

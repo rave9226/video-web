@@ -1,0 +1,205 @@
+<template>
+<!--
+PATRÓN split-comparison · ejemplo real: escena 5 del video de referencia (f05-directorio).
+CUÁNDO: Dos cosas lado a lado (B2C vs B2B, antes vs después, dos listados) con un respiro visual.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f05-directorio → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="8.45" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-contactos-expandido.png, assets/app-empresas.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: TILT, TILT_OVERSHOOT, SLIDE, ENTRY, GLOW, GLOW_LIFT → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 5 — Un solo directorio
+
+- scene: Contactos y Empresas lado a lado, abiertos como un libro
+- voiceover: "Contactos y empresas forman un solo directorio: cada titular con su historial, y cada convenio corporativo con sus datos."
+- duration: 7.95s
+- transition_in: push-slide LEFT
+- status: animated
+- src: compositions/frames/f05-directorio.html
+- pattern: split-comparison
+- type: feature_showcase
+- persuasion: Simplification
+- beat: clarity
+- blueprint: comparison-split (Reproduce)
+- focal: assets/app-contactos-expandido.png
+- roles: app-contactos-expandido = cutout (left card) · app-empresas = cutout (right card)
+- asset_candidates: assets/app-contactos-expandido.png — contacto expandido con suscripción e historial; assets/app-empresas.png — empresas con convenio B2B
+- sfx: none
+
+narrativeRole: breather: personas y empresas conviven en un directorio.
+keyMessage: titulares con historial, convenios con sus datos.
+
+Scene 1 (0.0–2.4s): centered h2 slides down into place: "Contactos y empresas, un solo directorio" (words 0.0–2.0).
+Scene 2 (0.6–2.6s): split-tilt entry (`split-tilt-cards`): left card `app-contactos-expandido.png` from the left wing, right card `app-empresas.png` from the right wing 0.2s later, mirrored book-open tilt, scale 0.85→1, outward shadows.
+Scene 3 (2.8–7.95s): inner-edge badges: left "Titular + historial" at 3.3, right "Convenio B2B" at 5.3 (the frame's one allowed overshoot is replaced by a smooth settle). Hold still.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids/clases con el prefijo de la escena; los selectores [id=…]/[class~=…] equivalen a #id/.clase.
+       Type sizes are frame.md cqw tokens against the root container (1cqw = 19.2px). */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    [id="f05-directorio-bg"] { position: absolute; inset: 0; background: #F1F1F1; }
+
+    /* Dual side glows (ambient-glow-bloom): one per card, at 30% / 70% of the width.
+       Single-accent system, so both are primary; centered by margins (GSAP owns transform). */
+    [class~="f05-directorio-glow"] {
+      position: absolute; top: 505px; width: 1200px; height: 800px; margin: -400px 0 0 -600px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(47, 78, 156, 0.35), rgba(47, 78, 156, 0.12) 55%, rgba(47, 78, 156, 0));
+    }
+    [id="f05-directorio-glow-left"] { left: 576px; }
+    [id="f05-directorio-glow-right"] { left: 1344px; }
+
+    /* Shared perspective parent. The cards are its direct children, so the stage stays flat
+       (no preserve-3d): that keeps the badges painting above the tilted cards by DOM order. */
+    [id="f05-directorio-stage"] {
+      position: absolute; inset: 0;
+      perspective: 1800px; perspective-origin: 960px 505px;
+    }
+
+    /* h2 (frame.md): Poppins 600 · 2.6cqw · −0.02em · near-black; underline = the turquoise spark */
+    [id="f05-directorio-title"] {
+      position: absolute; top: 96px; left: 0; right: 0; margin: 0;
+      text-align: center; white-space: nowrap;
+      font-size: 2.6cqw; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: #22254F;
+    }
+    [id="f05-directorio-key"] { position: relative; display: inline-block; }
+    [id="f05-directorio-underline"] {
+      position: absolute; left: 0; right: 0; bottom: -0.12em; height: 4px;
+      border-radius: 2px; background: #4BC1ED;
+    }
+
+    /* Product screens: white window, 14px radius, soft navy shadow (frame.md), shadows fall
+       outward from the book-open tilt. 780px wide = 1440×900 CSS capture at 0.54. */
+    [class~="f05-directorio-card"] {
+      position: absolute; top: 246px; width: 780px;
+      border-radius: 14px; overflow: hidden; background: #FFFFFF;
+      will-change: transform;
+    }
+    [id="f05-directorio-card-left"] { left: 130px; box-shadow: -26px 30px 80px rgba(28, 32, 68, 0.18); }
+    [id="f05-directorio-card-right"] { left: 1010px; box-shadow: 26px 30px 80px rgba(28, 32, 68, 0.18); }
+    [class~="f05-directorio-bar"] {
+      height: 30px; box-sizing: border-box; padding-left: 14px;
+      display: flex; align-items: center; gap: 7px;
+      border-bottom: 1px solid rgba(28, 32, 68, 0.06);
+    }
+    [class~="f05-directorio-dot"] {
+      display: block; width: 10px; height: 10px; border-radius: 50%; background: rgba(28, 32, 68, 0.14);
+    }
+    [class~="f05-directorio-shot"] { display: block; width: 780px; height: 487.5px; max-width: none; }
+
+    /* Inner-edge badges: straddle each card's bottom edge at its inner (spine-side) corner,
+       ~15% on the card, inner end 16px past the projected edge (901.5 / 1018.5px at TILT 14°). */
+    [class~="f05-directorio-badge"] {
+      position: absolute; top: 740px;
+      padding: 0.75cqw 1.6cqw; border-radius: 100px;
+      background: #2F4E9C; color: #FFFFFF;
+      font-size: 1.4cqw; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    [id="f05-directorio-badge-left"] { right: 1002px; }
+    [id="f05-directorio-badge-right"] { left: 1002px; }
+  </style>
+
+  <div id="root" data-composition-id="f05-directorio" data-width="1920" data-height="1080" data-duration="8.45">
+    <div id="f05-directorio-bg" class="clip" data-start="0" data-duration="8.45" data-track-index="0">
+      <div id="f05-directorio-glow-left" class="f05-directorio-glow" data-layout-ignore></div>
+      <div id="f05-directorio-glow-right" class="f05-directorio-glow" data-layout-ignore></div>
+    </div>
+
+    <div id="f05-directorio-stage" class="clip" data-start="0" data-duration="8.45" data-track-index="1">
+      <h2 id="f05-directorio-title">Contactos y empresas, <span id="f05-directorio-key">un solo directorio<span id="f05-directorio-underline"></span></span></h2>
+
+      <div id="f05-directorio-card-left" class="f05-directorio-card" data-layout-allow-overflow>
+        <div class="f05-directorio-bar">
+          <span class="f05-directorio-dot"></span><span class="f05-directorio-dot"></span><span class="f05-directorio-dot"></span>
+        </div>
+        <img class="f05-directorio-shot" src="assets/app-contactos-expandido.png" alt="Contactos: contacto expandido con suscripción e historial" />
+      </div>
+
+      <div id="f05-directorio-card-right" class="f05-directorio-card" data-layout-allow-overflow>
+        <div class="f05-directorio-bar">
+          <span class="f05-directorio-dot"></span><span class="f05-directorio-dot"></span><span class="f05-directorio-dot"></span>
+        </div>
+        <img class="f05-directorio-shot" src="assets/app-empresas.png" alt="Empresas con convenio corporativo B2B" />
+      </div>
+
+      <div id="f05-directorio-badge-left" class="f05-directorio-badge">Titular + historial</div>
+      <div id="f05-directorio-badge-right" class="f05-directorio-badge">Convenio B2B</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var el = function (key) { return document.getElementById("f05-directorio-" + key); };
+
+      // split-tilt-cards tokens
+      var TILT = 14; // book-open: left +TILT, right −TILT (inner edges recede)
+      var TILT_OVERSHOOT = 8; // entry starts further open, pivots into place
+      var SLIDE = 380; // ENTRY_SLIDE_DIST ≈ 0.5 × card width
+      var ENTRY = 1.2;
+      var GLOW = 0.3; // ambient-glow-bloom peak (≤ 0.45 ceiling incl. the lift below)
+      var GLOW_LIFT = 0.42;
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0.0–2.4s) — h2 slides DOWN into place (T-shape against the side entries)
+      tl.fromTo(el("title"), { y: -36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, 0);
+
+      // Scene 2 — split-tilt entry: opposite wings, mirrored tilt, scale 0.85→1, right 0.2s behind.
+      // Starts as the 0.5s push-slide lands (packet mark 0.6s, −0.1s).
+      tl.fromTo(el("card-left"),
+        { x: -SLIDE, rotationY: TILT + TILT_OVERSHOOT, scale: 0.85, opacity: 0 },
+        { x: 0, rotationY: TILT, scale: 1, opacity: 1, duration: ENTRY, ease: "power3.out" }, 0.5);
+      tl.fromTo(el("card-right"),
+        { x: SLIDE, rotationY: -TILT - TILT_OVERSHOOT, scale: 0.85, opacity: 0 },
+        { x: 0, rotationY: -TILT, scale: 1, opacity: 1, duration: ENTRY, ease: "power3.out" }, 0.7);
+      // each side glow blooms with its card and lands on the card's settle (one beat)
+      tl.fromTo(el("glow-left"), { opacity: 0, scale: 0.85 },
+        { opacity: GLOW, scale: 1, duration: ENTRY, ease: "power2.out" }, 0.5);
+      tl.fromTo(el("glow-right"), { opacity: 0, scale: 0.85 },
+        { opacity: GLOW, scale: 1, duration: ENTRY, ease: "power2.out" }, 0.7);
+
+      // accent keyword: underline draws under "un solo directorio" as it is spoken (VO 1.6–2.76s)
+      tl.fromTo(el("underline"), { scaleX: 0, transformOrigin: "0% 50%" },
+        { scaleX: 1, duration: 0.7, ease: "power2.out" }, 1.7);
+
+      // Scene 3 (2.8–7.95s) — inner-edge badges on "titular" (3.26s) and "convenio" (5.32s):
+      // grow out of the spine-side end, smooth settle (no overshoot); that side's glow lifts
+      // with its badge, then the spread holds still.
+      tl.fromTo(el("badge-left"), { scale: 0, opacity: 0, transformOrigin: "100% 50%" },
+        { scale: 1, opacity: 1, duration: 0.7, ease: "power3.out" }, 3.3);
+      tl.to(el("glow-left"), { opacity: GLOW_LIFT, duration: 0.8, ease: "sine.inOut" }, 3.3);
+      tl.fromTo(el("badge-right"), { scale: 0, opacity: 0, transformOrigin: "0% 50%" },
+        { scale: 1, opacity: 1, duration: 0.7, ease: "power3.out" }, 5.3);
+      tl.to(el("glow-left"), { opacity: GLOW, duration: 0.8, ease: "sine.inOut" }, 5.3);
+      tl.to(el("glow-right"), { opacity: GLOW_LIFT, duration: 0.8, ease: "sine.inOut" }, 5.3);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f05-directorio"] = tl;
+    })();
+  </script>
+</template>

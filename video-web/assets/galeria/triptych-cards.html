@@ -1,0 +1,343 @@
+<template>
+<!--
+PATRÓN triptych-cards · ejemplo real: escena 9 del video de referencia (f09-trazabilidad).
+CUÁNDO: Tres ideas cortas (qué, quién, cuándo) en tres tarjetas simultáneas; escena de respiro.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f09-trazabilidad → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="11.45" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-sec-beneficiarios.png, assets/app-sec-recordatorios.png, assets/app-sec-trazabilidad-renovacion.png, assets/app-sec-trazabilidad-terminos.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: DURATION → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 9 — Beneficiarios, recordatorios y trazabilidad
+
+- scene: Tres tarjetas reales se ensamblan: beneficiarios del convenio, recordatorios automáticos y la línea de trazabilidad
+- voiceover: "En los convenios, los beneficiarios se gestionan según el cupo del plan. Los recordatorios se programan solos. Y cada paso queda en la trazabilidad: quién hizo qué, y cuándo."
+- duration: 10.95s
+- transition_in: push-slide LEFT
+- status: animated
+- src: compositions/frames/f09-trazabilidad.html
+- pattern: triptych-cards
+- type: benefit_highlight
+- persuasion: Rule of three
+- beat: peace of mind
+- blueprint: grid-card-assemble (Adapt)
+- focal: assets/app-sec-trazabilidad-terminos.png
+- roles: app-sec-beneficiarios = cutout (card 1) · app-sec-recordatorios = cutout (card 2) · app-sec-trazabilidad-terminos = cutout (card 3, top) · app-sec-trazabilidad-renovacion = cutout (card 3, bottom)
+- asset_candidates: assets/app-sec-beneficiarios.png — cuatro beneficiarios activos de un convenio; assets/app-sec-recordatorios.png — recordatorios de pago y términos días 15, 7 y 3; assets/app-sec-trazabilidad-terminos.png — trazabilidad Términos aceptados; assets/app-sec-trazabilidad-renovacion.png — trazabilidad Renovación confirmada
+- sfx: none
+
+narrativeRole: la tranquilidad: nada se pierde, todo tiene dueño y fecha.
+keyMessage: beneficiarios con cupo, recordatorios solos y trazabilidad total.
+
+Adapt: triptych of three real section cards assembling one per spoken idea (signature: staggered assemble, then hold).
+Scene 1 (0.0–3.9s): left third: eyebrow chip "Convenios B2B" at 0.3; card `app-sec-beneficiarios.png` rises at 1.1 (≈560px wide); tag "Cupo según el plan" pinned to its top edge at 3.0.
+Scene 2 (3.9–6.2s): middle third: card `app-sec-recordatorios.png` rises at 4.3; three day chips "Día 15 · 7 · 3" pop left→right at 5.2–5.7.
+Scene 3 (6.2–10.95s): right third: `app-sec-trazabilidad-terminos.png` rises at 7.6 with `app-sec-trazabilidad-renovacion.png` stacked below it (7.9); above the card three large tags pop on their words: "¿Quién?" 8.4 · "¿Qué?" 8.8 · "¿Cuándo?" 9.8. Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Clases con el prefijo de la escena (f09-): el CSS de las escenas comparte página. */
+    #root {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Poppins", sans-serif;
+      color: #22254f;
+    }
+    /* Own the box model: the host page's reset is not guaranteed. */
+    .f09-cam,
+    .f09-cam * {
+      box-sizing: border-box;
+    }
+    .f09-bg {
+      position: absolute;
+      inset: 0;
+      background: #f1f1f1;
+    }
+    .f09-cam {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    /* Triptych grid: pad-x 96, three 560px columns, 24px gutters. Labels sit on one line
+       (bottom 256), cards share a top line (300). Everything stays above y = 900. */
+    .f09-card {
+      position: absolute;
+      top: 300px;
+      width: 560px;
+      padding: 10px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+      will-change: transform, opacity;
+    }
+    .f09-card img {
+      display: block;
+      width: 540px;
+      height: auto;
+    }
+    .f09-c1 { left: 96px; }
+    .f09-c2 { left: 680px; }
+    .f09-c3a { left: 1264px; }
+    .f09-c3b { left: 1264px; top: 441px; }
+
+    .f09-eyebrow {
+      position: absolute;
+      left: 96px;
+      top: 210px;
+      height: 46px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08);
+      color: #2f4e9c;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Straddles card 1's top edge (half above, half on the card). */
+    .f09-pin {
+      position: absolute;
+      right: 16px;
+      top: -25px;
+      height: 50px;
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      border-radius: 100px;
+      background: #eef1f7;
+      border: 1.5px solid rgba(47, 78, 156, 0.2);
+      color: #2f4e9c;
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .f09-days {
+      position: absolute;
+      left: 680px;
+      top: 200px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+    }
+    .f09-day-label {
+      margin-right: 14px;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #22254f;
+    }
+    .f09-day {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2f4e9c;
+      color: #f1f1f1;
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .f09-sep {
+      margin: 0 12px;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1;
+      color: #9a9a9a;
+    }
+
+    .f09-qs {
+      position: absolute;
+      left: 1264px;
+      top: 194px;
+      width: 560px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .f09-q {
+      height: 62px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08);
+      color: #2f4e9c;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    /* Answer marks on the "Términos aceptados" entry, measured on the 2x crop and
+       scaled by 540/1244 (+10px frame padding): who = user line, what = event, when = stamp. */
+    .f09-hl {
+      position: absolute;
+      border-radius: 4px;
+      background: rgba(47, 78, 156, 0.15);
+      transform-origin: 0 50%;
+    }
+    .f09-hl-who { left: 46px; top: 80px; width: 123px; height: 14px; }
+    .f09-hl-what { left: 46px; top: 59px; width: 124px; height: 19px; }
+    .f09-hl-when { left: 396px; top: 60px; width: 134px; height: 17px; }
+  </style>
+
+  <div id="root" data-composition-id="f09-trazabilidad" data-width="1920" data-height="1080" data-duration="11.45">
+    <div
+      id="f09-trazabilidad-bg"
+      class="clip f09-bg"
+      data-start="0"
+      data-duration="11.45"
+      data-track-index="0"
+    ></div>
+
+    <div class="f09-cam">
+      <!-- Scene 1 — left third: beneficiarios del convenio -->
+      <div class="f09-eyebrow">Convenios B2B</div>
+      <div class="f09-card f09-c1">
+        <img src="assets/app-sec-beneficiarios.png" width="1244" height="1026" alt="" />
+        <div class="f09-pin">Cupo según el plan</div>
+      </div>
+
+      <!-- Scene 2 — middle third: recordatorios automáticos -->
+      <div class="f09-days">
+        <span class="f09-day-label">Día</span>
+        <span class="f09-day">15</span>
+        <span class="f09-sep">·</span>
+        <span class="f09-day">7</span>
+        <span class="f09-sep">·</span>
+        <span class="f09-day">3</span>
+      </div>
+      <div class="f09-card f09-c2">
+        <img src="assets/app-sec-recordatorios.png" width="1244" height="750" alt="" />
+      </div>
+
+      <!-- Scene 3 — right third: trazabilidad (focal) -->
+      <div class="f09-qs">
+        <div class="f09-q">¿Quién?</div>
+        <div class="f09-q">¿Qué?</div>
+        <div class="f09-q">¿Cuándo?</div>
+      </div>
+      <div class="f09-card f09-c3a">
+        <img src="assets/app-sec-trazabilidad-terminos.png" width="1244" height="246" alt="" />
+        <div class="f09-hl f09-hl-who"></div>
+        <div class="f09-hl f09-hl-what"></div>
+        <div class="f09-hl f09-hl-when"></div>
+      </div>
+      <div class="f09-card f09-c3b">
+        <img src="assets/app-sec-trazabilidad-renovacion.png" width="1244" height="282" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var DURATION = 10.95;
+      var root = document.querySelector('[data-composition-id="f09-trazabilidad"]');
+      var one = function (sel) { return root.querySelector(sel); };
+      var all = function (sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); };
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Card assemble: short rise directly into its slot, smooth settle (no overshoot).
+      function rise(el, at) {
+        tl.fromTo(
+          el,
+          { opacity: 0, y: 48, scale: 0.97 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" },
+          at
+        );
+      }
+      // spring-pop-entrance: scale 0 -> 1, power3.out settle.
+      function pop(el, at, toOpacity, yRise) {
+        tl.fromTo(
+          el,
+          { opacity: 0, scale: 0, y: yRise || 0 },
+          { opacity: toOpacity, scale: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          at
+        );
+      }
+      // Answer mark wipes in left -> right.
+      function mark(el, at) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power2.out" }, at);
+      }
+
+      // Camera: steady slow push under the whole shot (neutral -> slight push).
+      tl.fromTo(one(".f09-cam"), { scale: 1 }, { scale: 1.025, duration: DURATION, ease: "none" }, 0);
+
+      // Scene 1 (0.0–3.9): "convenios" 0.34 · "beneficiarios" 1.12 · "cupo" 3.02
+      tl.fromTo(
+        one(".f09-eyebrow"),
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+        0.3
+      );
+      rise(one(".f09-c1"), 1.1);
+      pop(one(".f09-pin"), 3.0, 1, 0);
+
+      // Scene 2 (3.9–6.2): "recordatorios" 4.34 · "programan" 5.20 -> "solos" 5.70
+      rise(one(".f09-c2"), 4.3);
+      tl.fromTo(
+        one(".f09-day-label"),
+        { opacity: 0, x: -12 },
+        { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" },
+        5.2
+      );
+      var days = all(".f09-day");
+      var seps = all(".f09-sep");
+      var dayAt = [5.2, 5.45, 5.7];
+      var stepOpacity = [1, 0.85, 0.7]; // frame.md step-circle ladder
+      days.forEach(function (el, i) {
+        pop(el, dayAt[i], stepOpacity[i], 0);
+        if (i > 0) {
+          tl.fromTo(seps[i - 1], { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, dayAt[i]);
+        }
+      });
+
+      // Scene 3 (6.2–10.95): "trazabilidad" 7.60 · "quién" 8.38 · "hizo qué" 8.82/9.12 · "cuándo" 9.76
+      rise(one(".f09-c3a"), 7.6);
+      rise(one(".f09-c3b"), 7.9);
+      var qs = all(".f09-q");
+      var qAt = [8.4, 8.9, 9.8];
+      var marks = [one(".f09-hl-who"), one(".f09-hl-what"), one(".f09-hl-when")];
+      qs.forEach(function (el, i) {
+        pop(el, qAt[i], 1, 16);
+        mark(marks[i], qAt[i] + 0.1);
+      });
+      // Hold: nothing else enters; the camera push carries the rest of the shot.
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f09-trazabilidad"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,14 @@
+{
+  "hyperframes": "0.8.80",
+  "dependencias": {
+    "product-launch-video/scripts/build-frame.mjs": "95f9c57da33b",
+    "product-launch-video/scripts/stage-assets.mjs": "46eb2415c3c9",
+    "product-launch-video/scripts/audio.mjs": "65b100eebff8",
+    "product-launch-video/scripts/assemble-index.mjs": "02bb4ada3978",
+    "product-launch-video/scripts/transitions.mjs": "b444da858e80",
+    "product-launch-video/scripts/frame-packets.mjs": "92b2adca4113",
+    "media-use/audio/scripts/audio.mjs": "b8c8403ee3a4",
+    "media-use/audio/scripts/wait-bgm.mjs": "4daa8faa6f99",
+    "hyperframes/references/frame-worker-core.md": "f03b211c80f0"
+  }
+}

@@ -1,0 +1,447 @@
+<template>
+<!--
+PATRÓN section-cards-flow · ejemplo real: escena 8 del video de referencia (f08-documentos).
+CUÁNDO: Recorrer varias secciones de un detalle largo como tarjetas recortadas que entran en secuencia.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f08-documentos → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="10.81" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-detalle-S02967-vista.png, assets/app-sec-documentos.png, assets/app-sec-pago.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 8 — Pago, documentos y revisión técnica
+
+- scene: Del pago a la revisión: orden de pago, documentos con visor y la decisión del Área Técnica
+- voiceover: "Genera la orden de pago o registra el comprobante, y carga los documentos para revisarlos ahí mismo. El Área Técnica los aprueba, o los devuelve con un comentario."
+- duration: 10.31s
+- transition_in: crossfade
+- status: animated
+- src: compositions/frames/f08-documentos.html
+- pattern: section-cards-flow
+- type: feature_showcase
+- persuasion: Show-don't-tell proof
+- beat: control
+- blueprint: device-surface-showcase (Adapt)
+- focal: assets/app-sec-documentos.png
+- roles: app-sec-pago = cutout (first card) · app-sec-documentos = cutout (hero card) · app-detalle-S02967-vista = background (dim ~35%, blurred context)
+- asset_candidates: assets/app-sec-pago.png — sección Pago con Generar orden de pago; assets/app-sec-documentos.png — documentos cargados con Aprobar y Rechazar; assets/app-detalle-S02967-vista.png — detalle de suscripción en contexto
+- sfx: none
+
+narrativeRole: el corazón operativo: pago, soporte documental y control de calidad.
+keyMessage: todo se revisa en el mismo detalle, con aprobación del Área Técnica.
+
+Adapt: floating-window push-scroll — the detail's sections advance inside one floating surface and a punch-in lands on the decision buttons (signature: surface held, content advances, focal push).
+Scene 1 (0.0–2.6s): background `app-detalle-S02967-vista.png` dimmed and blurred behind; left eyebrow "PAGO Y DOCUMENTOS", h2 "Todo en el detalle" (0.0–0.8). Right: floating card `app-sec-pago.png`; "Generar orden de pago" gets a press at 0.6 (button rect ≈[30,146,360,80] of the 1244×366 crop); chips "Orden de pago · Wompi" at 0.9 and "Comprobante de transferencia" at 2.0.
+Scene 2 (2.6–5.6s): the pago card slides up and out; `app-sec-documentos.png` rises into the same slot (2.9); its four document rows light in sequence at 3.6 (short stagger; rows span rect [34,90,1176,368] of the 1244×1042 crop, 4 equal rows); chip "Visor integrado" at 4.3.
+Scene 3 (5.6–10.31s): eyebrow swaps to "ÁREA TÉCNICA (WFE)" at 6.1; punch-in onto the two buttons (Aprobar rect [34,918,360,88], Rechazar rect [410,918,196,88] of the 1244×1042 crop); "aprueba" 7.1 — "Aprobar documentos" presses and a `positive` chip "Aprobado ✓" pops beside it; "devuelve con un comentario" 8.3–9.0 — "Rechazar" gets a thin `negative` outline and a speech-bubble chip "Devuelto con comentario". Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* Ids/classes start with the frame id (a digit), so selectors use attribute form. */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    #root img { display: block; max-width: none; max-height: none; }
+
+    /* ── ground: canvas + blurred, dimmed detail capture as context ── */
+    [id="f08-documentos-bg"] { position: absolute; inset: 0; overflow: hidden; background: #F1F1F1; }
+    [id="f08-documentos-bgimg"] {
+      position: absolute;
+      left: 0;
+      top: -60px;
+      width: 1920px;
+      height: 1200px;
+      opacity: 0.38;
+      filter: blur(12px);
+      transform-origin: 70% 50%;
+    }
+    /* canvas wash keeps the text column on a clean ground; context shows behind the window */
+    [id="f08-documentos-wash"] {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(241, 241, 241, 0.96) 0%, rgba(241, 241, 241, 0.9) 36%, rgba(241, 241, 241, 0.4) 50%, rgba(241, 241, 241, 0) 64%);
+    }
+    [id="f08-documentos-stage"] { position: absolute; inset: 0; }
+
+    /* ── left column: slide header + feature chips ── */
+    [id="f08-documentos-col"] {
+      position: absolute;
+      left: 96px;
+      top: 202px;
+      width: 720px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    [id="f08-documentos-rule"] { width: 60px; height: 4px; border-radius: 2px; background: #2F4E9C; margin-bottom: 22px; transform-origin: 0% 50%; }
+    [id="f08-documentos-eyebrow"] {
+      position: relative;
+      margin-bottom: 14px;
+      font-size: 0.8cqw;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.4;
+      text-transform: uppercase;
+      color: #2F4E9C;
+      white-space: nowrap;
+    }
+    [id="f08-documentos-eb1"] { display: block; }
+    [id="f08-documentos-eb2"] { position: absolute; left: 0; top: 0; display: block; }
+    [id="f08-documentos-title"] {
+      margin: 0 0 44px;
+      font-size: 2.6cqw;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #22254F;
+      white-space: nowrap;
+    }
+    [class~="f08-documentos-word"] { display: inline-block; }
+    [id="f08-documentos-chips"] { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+    [class~="f08-documentos-chip"] {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 24px 13px 18px;
+      border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08);
+      color: #2F4E9C;
+      font-size: 1.4cqw;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+      transform-origin: 0% 50%;
+    }
+    [class~="f08-documentos-chip"] svg { flex-shrink: 0; }
+
+    /* ── floating surface: white window (frame.md screen treatment) is the camera frame ── */
+    [id="f08-documentos-win"] {
+      position: absolute;
+      left: 941px;
+      top: 87px;
+      width: 883px;
+      height: 750px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #FFFFFF;
+      box-shadow: 0 30px 80px rgba(28, 32, 68, 0.18);
+    }
+    /* world is authored in crop pixels (1 unit = 1 px of the 2x crops); GSAP scales/pans it */
+    [id="f08-documentos-world"] { position: absolute; left: 0; top: 0; width: 1244px; height: 1456px; transform-origin: 0 0; }
+    [id="f08-documentos-pago"] { position: absolute; left: 0; top: 0; width: 1244px; height: 366px; }
+    [id="f08-documentos-docs"] { position: absolute; left: 0; top: 414px; width: 1244px; height: 1042px; }
+    [id="f08-documentos-pago"] > img, [id="f08-documentos-docs"] > img { position: absolute; left: 0; top: 0; }
+
+    /* press rig: plate hides the captured button, a clipped copy of the same pixels dips */
+    [class~="f08-documentos-plate"] { position: absolute; border-radius: 16px; background: #F5F5F5; }
+    [class~="f08-documentos-burst"] {
+      position: absolute;
+      border-radius: 24px;
+      background: radial-gradient(closest-side, rgba(27, 47, 143, 0.9), rgba(27, 47, 143, 0));
+      filter: blur(8px);
+    }
+    [class~="f08-documentos-btn"] { position: absolute; border-radius: 14px; overflow: hidden; }
+    [class~="f08-documentos-btn"] img { position: absolute; }
+
+    /* split-highlight treatment (accent-light fill + primary left rule) */
+    [id="f08-documentos-foot"] {
+      position: absolute;
+      left: 20px;
+      top: 258px;
+      width: 1204px;
+      height: 84px;
+      box-sizing: border-box;
+      border-radius: 12px;
+      border-left: 6px solid #2F4E9C;
+      background: rgba(47, 78, 156, 0.08);
+    }
+    [class~="f08-documentos-row"] {
+      position: absolute;
+      left: 34px;
+      width: 1176px;
+      height: 80px;
+      box-sizing: border-box;
+      border-radius: 14px;
+      border-left: 6px solid #2F4E9C;
+      background: rgba(47, 78, 156, 0.15);
+    }
+    /* the frame's one turquoise spark: focus ring on the in-app viewer link */
+    [id="f08-documentos-ver"] {
+      position: absolute;
+      left: 876px;
+      top: 540px;
+      width: 283px;
+      height: 52px;
+      box-sizing: border-box;
+      border-radius: 100px;
+      border: 4px solid #4BC1ED;
+      outline: 8px solid rgba(75, 193, 237, 0.18);
+      background: rgba(75, 193, 237, 0.08);
+    }
+    [id="f08-documentos-veil"] { position: absolute; left: -100px; top: -100px; overflow: visible; }
+    [id="f08-documentos-rech"] {
+      position: absolute;
+      left: 403px;
+      top: 911px;
+      width: 210px;
+      height: 102px;
+      box-sizing: border-box;
+      border-radius: 20px;
+      border: 3px solid #D5484C;
+    }
+    /* outcome chips: positive / negative as text + tinted border only, white ground */
+    [id="f08-documentos-ok"], [id="f08-documentos-bubble"] {
+      position: absolute;
+      top: 1032px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 60px;
+      box-sizing: border-box;
+      background: #FFFFFF;
+      font-size: 27px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    [id="f08-documentos-ok"] {
+      left: 34px;
+      padding: 0 20px 0 24px;
+      border-radius: 100px;
+      border: 2px solid #A1D3BE;
+      color: #2F9E6E;
+      font-weight: 600;
+      transform-origin: 50% 0%;
+    }
+    [id="f08-documentos-okcheck"] { stroke-dasharray: 1 1.1; }
+    [id="f08-documentos-bubble"] {
+      left: 330px;
+      padding: 0 26px 0 20px;
+      border-radius: 16px;
+      border: 2px solid #ECADAE;
+      color: #D5484C;
+      font-weight: 500;
+      transform-origin: 178px -12px;
+    }
+    /* speech tail: rotated square straddling the top border, tip under Rechazar's centre */
+    [id="f08-documentos-tail"] {
+      position: absolute;
+      left: 167px;
+      top: -10px;
+      width: 18px;
+      height: 18px;
+      box-sizing: border-box;
+      background: #FFFFFF;
+      border-top: 2px solid #ECADAE;
+      border-left: 2px solid #ECADAE;
+      transform: rotate(45deg);
+    }
+    [id="f08-documentos-ok"] svg, [id="f08-documentos-bubble"] svg { flex-shrink: 0; }
+  </style>
+
+  <div id="root" data-composition-id="f08-documentos" data-width="1920" data-height="1080" data-duration="10.81">
+    <div id="f08-documentos-bg" class="clip" data-start="0" data-duration="10.81" data-track-index="0">
+      <img id="f08-documentos-bgimg" src="assets/app-detalle-S02967-vista.png" alt="" width="2880" height="1800" data-layout-allow-overflow>
+      <div id="f08-documentos-wash"></div>
+    </div>
+
+    <div id="f08-documentos-stage" class="clip" data-start="0" data-duration="10.81" data-track-index="1">
+      <div id="f08-documentos-col">
+        <div id="f08-documentos-rule"></div>
+        <div id="f08-documentos-eyebrow">
+          <span id="f08-documentos-eb1">PAGO Y DOCUMENTOS</span>
+          <span id="f08-documentos-eb2">ÁREA TÉCNICA (WFE)</span>
+        </div>
+        <h2 id="f08-documentos-title"><span class="f08-documentos-word">Todo</span> <span class="f08-documentos-word">en</span> <span class="f08-documentos-word">el</span> <span class="f08-documentos-word">detalle</span></h2>
+        <div id="f08-documentos-chips">
+          <div id="f08-documentos-chip1" class="f08-documentos-chip">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <path d="M2 10h20"/>
+              <path d="M6 15h4"/>
+            </svg>
+            Orden de pago · Wompi
+          </div>
+          <div id="f08-documentos-chip2" class="f08-documentos-chip">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+              <path d="M12 17.5v-11"/>
+            </svg>
+            Comprobante de transferencia
+          </div>
+          <div id="f08-documentos-chip3" class="f08-documentos-chip">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Visor integrado
+          </div>
+        </div>
+      </div>
+
+      <div id="f08-documentos-win">
+        <!-- Pans / zooms past the window edge on purpose; the window clips it. -->
+        <div id="f08-documentos-world" data-layout-allow-overflow>
+          <!-- Section 1: Pago (1244×366 crop) -->
+          <div id="f08-documentos-pago">
+            <img src="assets/app-sec-pago.png" alt="" width="1244" height="366">
+            <!-- over the transfer footnote, bbox [35,272,1167,55] -->
+            <div id="f08-documentos-foot"></div>
+            <!-- press rig over "Generar orden de pago", measured rect [34,154,384,88] -->
+            <div class="f08-documentos-plate" style="left:30px;top:150px;width:392px;height:96px"></div>
+            <div id="f08-documentos-pagoburst" class="f08-documentos-burst" style="left:34px;top:154px;width:384px;height:88px"></div>
+            <div id="f08-documentos-pagobtn" class="f08-documentos-btn" style="left:34px;top:154px;width:384px;height:88px">
+              <img src="assets/app-sec-pago.png" alt="" width="1244" height="366" style="left:-34px;top:-154px">
+            </div>
+          </div>
+
+          <!-- Section 2: Documentos (1244×1042 crop), 48 px below Pago as in the modal -->
+          <div id="f08-documentos-docs">
+            <img src="assets/app-sec-documentos.png" alt="" width="1244" height="1042">
+            <!-- four document rows, rect [34,90,1176,368]: 80 px rows on a 96 px pitch -->
+            <div class="f08-documentos-row" style="top:90px"></div>
+            <div class="f08-documentos-row" style="top:186px"></div>
+            <div class="f08-documentos-row" style="top:282px"></div>
+            <div class="f08-documentos-row" style="top:378px"></div>
+            <!-- "Ver documento" link, bbox [892,554,251,24] -->
+            <div id="f08-documentos-ver"></div>
+            <!-- spotlight veil: white 62% everywhere except a rounded hole over both buttons -->
+            <svg id="f08-documentos-veil" width="1444" height="1400" viewBox="-100 -100 1444 1400" aria-hidden="true">
+              <path fill="#FFFFFF" fill-opacity="0.62" fill-rule="evenodd" d="M-100 -100H1344V1300H-100Z M42 902H598A24 24 0 0 1 622 926V998A24 24 0 0 1 598 1022H42A24 24 0 0 1 18 998V926A24 24 0 0 1 42 902Z"/>
+            </svg>
+            <!-- press rig over "Aprobar documentos", rect [34,918,360,88] -->
+            <div class="f08-documentos-plate" style="left:30px;top:914px;width:368px;height:96px"></div>
+            <div id="f08-documentos-aprburst" class="f08-documentos-burst" style="left:34px;top:918px;width:360px;height:88px"></div>
+            <div id="f08-documentos-aprbtn" class="f08-documentos-btn" style="left:34px;top:918px;width:360px;height:88px">
+              <img src="assets/app-sec-documentos.png" alt="" width="1244" height="1042" style="left:-34px;top:-918px">
+            </div>
+            <!-- thin negative outline around "Rechazar", rect [410,918,196,88] + 7 px -->
+            <div id="f08-documentos-rech"></div>
+            <div id="f08-documentos-ok">
+              Aprobado
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline id="f08-documentos-okcheck" points="4.5,12.5 9.5,17.5 19.5,7" pathLength="1"/>
+              </svg>
+            </div>
+            <div id="f08-documentos-bubble">
+              <span id="f08-documentos-tail"></span>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M8 9h8"/>
+                <path d="M8 13h5"/>
+              </svg>
+              Devuelto con comentario
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+  <script>
+    (() => {
+      const $ = (name) => document.getElementById("f08-documentos-" + name);
+      const tl = gsap.timeline({ paused: true });
+
+      // Camera = the window. World units are crop pixels; S0 is the sections' display scale and
+      // the punch-in lands at scale 1 (native 2x pixels, never upscaled).
+      const S0 = 0.66;
+      const PAD = 31; // window padding around the sections, px
+      const DOCS_Y = 414; // Documentos top inside the world (Pago 366 + 48 gap)
+      const W1 = { x: PAD, y: PAD, scale: S0 }; // Pago in the slot
+      const W2 = { x: PAD, y: PAD - DOCS_Y * S0, scale: S0 }; // Documentos in the slot
+      // Focal region = veil hole + outcome chips: world x 18..760, y 1316..1506 → centre
+      // (389, 1411) lands at window (441.5, 535). Single-wrapper form: T = target − centre × S.
+      const W3 = { x: 441.5 - 389, y: 535 - 1411, scale: 1 };
+
+      const world = $("world");
+      gsap.set(world, { ...W1, transformOrigin: "0 0" });
+      // press sprites only get `to` tweens: pin their transform at build so forward and
+      // backward seeks rasterize through the same path (identity matrix, never "none")
+      gsap.set([$("pagobtn"), $("aprbtn")], { scale: 1 });
+
+      // press-release-spring: linear dip, back.out release, burst behind the button
+      const press = (btn, burst, at) => {
+        tl.to(btn, { scale: 0.92, duration: 0.12, ease: "power1.in" }, at);
+        tl.to(btn, { scale: 1, duration: 0.5, ease: "back.out(1.6)" }, at + 0.12);
+        tl.fromTo(burst, { opacity: 0, scaleX: 1, scaleY: 1 }, { opacity: 0.5, scaleX: 1.12, scaleY: 1.9, duration: 0.3, ease: "power2.out" }, at + 0.12);
+        tl.to(burst, { opacity: 0, duration: 0.4, ease: "power2.in" }, at + 0.42);
+      };
+      // spring-pop-entrance: smooth power3 settle, no overshoot
+      const pop = (el, at, rise) => {
+        tl.fromTo(el, { scale: 0, opacity: 0, y: rise }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+      };
+      const chips = [$("chip1"), $("chip2"), $("chip3")];
+
+      // ambient: slow push on the blurred context; one slow float breath on the surface
+      tl.fromTo($("bgimg"), { scale: 1.05 }, { scale: 1.1, duration: 10.25, ease: "none" }, 0);
+
+      // Scene 1 (0.0–2.6): header, surface establishes on Pago, order button press, pay chips
+      tl.fromTo($("win"), { y: 60, scale: 0.96, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.55, ease: "power3.out" }, 0);
+      tl.to($("win"), { y: -8, duration: 9.6, ease: "sine.inOut" }, 0.62);
+      tl.fromTo($("rule"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo($("eb1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05);
+      Array.from($("title").getElementsByClassName("f08-documentos-word")).forEach((word, i) => {
+        tl.fromTo(word, { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.12 + i * 0.08);
+      });
+      press($("pagobtn"), $("pagoburst"), 0.52);
+      pop(chips[0], 0.9, 12);
+      tl.fromTo($("foot"), { opacity: 0, clipPath: "inset(0% 100% 0% 0%)" }, { opacity: 1, clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power3.out" }, 1.98);
+      pop(chips[1], 2.0, 12);
+
+      // Scene 2 (2.6–5.6): push-scroll inside the held surface — Pago leaves up, Documentos rises
+      tl.fromTo(world, { y: W1.y }, { y: W2.y, duration: 0.45, ease: "power3.inOut", immediateRender: false }, 2.55);
+      tl.to($("pago"), { opacity: 0, duration: 0.3, ease: "none" }, 2.55);
+      tl.fromTo($("docs"), { opacity: 0.35 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 2.6);
+      Array.from(document.getElementsByClassName("f08-documentos-row")).forEach((row, i) => {
+        tl.fromTo(row, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 3.6 + i * 0.1);
+      });
+      pop(chips[2], 4.3, 12);
+      tl.fromTo($("ver"), { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 4.3);
+
+      // Scene 3 (5.6–10.31): eyebrow cut-the-curve swap at 6.10, punch-in on the decision buttons
+      tl.to($("eb1"), { y: -12, duration: 0.22, ease: "power4.in" }, 5.88);
+      tl.to($("eb1"), { opacity: 0, duration: 0.18, ease: "none" }, 5.92);
+      tl.fromTo($("eb2"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power4.out" }, 6.1);
+      tl.to($("rule"), { scaleX: 0, duration: 0.2, ease: "power4.in" }, 5.9);
+      tl.to($("rule"), { scaleX: 1, duration: 0.45, ease: "power3.out" }, 6.1);
+      tl.to(chips, { opacity: 0.45, duration: 0.5, ease: "power2.out" }, 6.1);
+      tl.fromTo(world, { ...W2 }, { ...W3, duration: 1.0, ease: "power3.inOut", immediateRender: false }, 6.0);
+      tl.fromTo($("veil"), { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power2.inOut" }, 6.3);
+
+      // "aprueba" 7.1 — press + positive chip, its check draws on
+      press($("aprbtn"), $("aprburst"), 7.0);
+      pop($("ok"), 7.12, 0);
+      tl.fromTo($("okcheck"), { strokeDashoffset: 1.02 }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 7.35);
+
+      // "devuelve con un comentario" 8.3–9.0 — negative outline, then the comment bubble; hold
+      tl.fromTo($("rech"), { opacity: 0, scale: 1.1 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 8.3);
+      pop($("bubble"), 8.55, 0);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f08-documentos"] = tl;
+    })();
+  </script>
+</template>

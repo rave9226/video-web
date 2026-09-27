@@ -1,0 +1,378 @@
+<template>
+<!--
+PATRÓN portal-type-submit · ejemplo real: escena 13 del video de referencia (f13-portal).
+CUÁNDO: Formulario simple del cliente: se escribe un dato, se envía y aparece el resultado.
+
+ADAPTA todo lo específico del video de referencia (y borra esta cabecera en tu escena):
+  - Prefijo f13-portal → el id de tu escena (su src en STORYBOARD.md, p. ej. f06-planes): ids,
+    clases, data-composition-id y la clave de window.__timelines.
+  - data-duration="8.19" (root y clips) → la duración de tu frame en STORYBOARD.md.
+  - @font-face y colores → los de TU frame.md (secciones "Font loading" y "Extensiones de
+    marca"); la ventana, el eyebrow y el anillo usan el CSS canónico de frame.md.
+  - Imágenes: assets/app-verificar-activa-card.png, assets/app-verificar-card.png → tus capturas
+    (capture/extracted/capture-index.json); si cambia el tamaño, ajusta IMG_W/IMG_H o equivalentes.
+  - Constantes: ninguna → rects [x,y,w,h] de
+    ui-regions.json de TU captura y tiempos (s) de cues.md de TU frame.
+  - Todo texto visible → el de tu storyboard; nunca frases copiadas de la narración.
+CONSERVA: estructura de capas, curvas (power3.out), ritmo de revelado, guard y registro.
+
+STORYBOARD que produjo esta escena:
+
+## Frame 13 — Portal del afiliado
+
+- scene: El afiliado escribe su cédula y ve en segundos que su afiliación está activa
+- voiceover: "Y el afiliado consulta en segundos si su afiliación está activa, solo con su cédula y sin exponer datos personales."
+- duration: 7.59s
+- transition_in: crossfade
+- status: animated
+- src: compositions/frames/f13-portal.html
+- pattern: portal-type-submit
+- type: feature_showcase
+- persuasion: Customer empathy (trust)
+- beat: ease + peace of mind
+- blueprint: prompt-type-submit-generate (Adapt)
+- focal: assets/app-verificar-activa-card.png
+- roles: app-verificar-card = cutout (input state) · app-verificar-activa-card = cutout (result)
+- asset_candidates: assets/app-verificar-card.png — consulta pública con campo de cédula; assets/app-verificar-activa-card.png — resultado Afiliación activa
+- sfx: none
+
+narrativeRole: el cierre del ciclo mira al cliente final.
+keyMessage: consulta instantánea, sin datos personales.
+
+Adapt: the "prompt" is the cédula typed into the real public input; submit → instant result card (signature: type → submit → answer).
+Scene 1 (0.0–2.9s): left eyebrow "PORTAL DEL AFILIADO", h2 "¿Mi afiliación está activa?" (0.3–1.4); `app-verificar-card.png` rises center-right at 0.3 (≈620px tall).
+Scene 2 (2.9–4.9s): "solo con su cédula" 3.4 — digits "8645479" (the same number shown in the result card) type into the input field (overlay aligned to the input rect [114,578,860,92] of the 1087×1023 crop; the "Consultar estado" button is rect [114,710,860,96]) 3.4–4.2; "Consultar estado" press at 4.4.
+Scene 3 (4.9–7.59s): card swaps to `app-verificar-activa-card.png` at 4.9 (green "Afiliación activa"); chip with shield icon "Sin exponer datos personales" at 5.6. Hold.
+-->
+  <style>
+    @font-face{font-family:"Poppins";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Regular.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Medium.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-SemiBold.woff2") format("woff2");}
+    @font-face{font-family:"Poppins";font-weight:700;font-style:normal;font-display:block;src:url("assets/fonts/Poppins-Bold.woff2") format("woff2");}
+
+    /* ids/classes start with the frame id (a digit), so selectors use attribute form */
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Poppins", sans-serif;
+      color: #22254F;
+    }
+    [id="f13-portal-bg"] { width: 100%; height: 100%; background: #F1F1F1; }
+    [id="f13-portal-stage"] { width: 100%; height: 100%; }
+    #root img { display: block; max-width: none; max-height: none; }
+
+    /* ── left column: slide header + privacy chip ── */
+    [id="f13-portal-left"] {
+      position: absolute;
+      left: 96px;
+      top: 180px;
+      width: 800px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    [id="f13-portal-rule"] { width: 60px; height: 4px; border-radius: 2px; background: #2F4E9C; margin-bottom: 22px; }
+    [id="f13-portal-eyebrow"] {
+      font-size: 0.8cqw;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.4;
+      text-transform: uppercase;
+      color: #2F4E9C;
+      margin-bottom: 14px;
+    }
+    [id="f13-portal-title"] {
+      margin: 0 0 44px;
+      font-size: 2.6cqw;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #22254F;
+      white-space: nowrap;
+    }
+    [class~="f13-portal-word"] { display: inline-block; }
+    [id="f13-portal-chip"] {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 24px 13px 18px;
+      border-radius: 100px;
+      background: rgba(47, 78, 156, 0.08);
+      color: #2F4E9C;
+      font-size: 1.4cqw;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    [id="f13-portal-chip"] svg { flex-shrink: 0; }
+
+    /* ── card: 2x captures shown at 0.6, cropped to the white card (source x/y 34 →).
+         head = rows 34–854 of the query card; sheet = result rows 854–1266 (the inserted
+         answer block); below = footer rows 851–990, byte-identical in both captures. ── */
+    [id="f13-portal-cam"] {
+      position: absolute;
+      left: 1064px;
+      top: 153.2px;
+      width: 612px;
+      height: 820.8px;
+      transform-origin: 0 0;
+    }
+    [id="f13-portal-card"] {
+      position: absolute;
+      inset: 0;
+      filter: drop-shadow(0 30px 80px rgba(28, 32, 68, 0.18));
+    }
+    [id="f13-portal-card"] img { position: absolute; }
+    [id="f13-portal-head"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 612px;
+      height: 492px;
+      overflow: hidden;
+      border-radius: 18px 18px 0 0;
+      background: #FFFFFF;
+      z-index: 3;
+    }
+    /* starts 2px under the head (white rows in both captures) so the seam never shows a hairline */
+    [id="f13-portal-mask"] {
+      position: absolute;
+      left: 0;
+      top: 490px;
+      width: 612px;
+      height: 249.2px;
+      overflow: hidden;
+      z-index: 1;
+    }
+    [id="f13-portal-sheet"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+    [id="f13-portal-below"] {
+      position: absolute;
+      left: 0;
+      top: 737.4px;
+      width: 612px;
+      height: 83.4px;
+      overflow: hidden;
+      border-radius: 0 0 18px 18px;
+      background: #FFFFFF;
+      z-index: 2;
+    }
+
+    /* input overlay over rect [114,578,860,92] (+1px so the native border never peeks) */
+    [id="f13-portal-field"] { position: absolute; left: 47px; top: 325.4px; width: 518px; height: 57.2px; }
+    [id="f13-portal-rest"],
+    [id="f13-portal-focus"] { position: absolute; inset: 0; box-sizing: border-box; border-radius: 15.4px; }
+    [id="f13-portal-rest"] { background: #F5F5F5; border: 1.2px solid #D6D6D6; }
+    [id="f13-portal-focus"] {
+      background: #FFFFFF;
+      border: 1.5px solid #4BC1ED;
+      box-shadow: 0 0 0 4px rgba(75, 193, 237, 0.22);
+    }
+    [id="f13-portal-entry"] {
+      position: absolute;
+      left: 22px;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    [id="f13-portal-digits"] {
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1;
+      color: #333333;
+      white-space: pre;
+    }
+    [id="f13-portal-caret"] {
+      display: block;
+      width: 2px;
+      height: 21px;
+      margin-left: 2px;
+      border-radius: 1px;
+      background: #2F4E9C;
+      opacity: 0;
+    }
+
+    /* press rig: an opaque copy of button + shadow (rows 690–852, x 80–1008) dips over the original */
+    [id="f13-portal-btn"] {
+      position: absolute;
+      left: 27.6px;
+      top: 393.6px;
+      width: 556.8px;
+      height: 97.2px;
+      overflow: hidden;
+      transform-origin: 278.4px 40.8px;
+    }
+    [id="f13-portal-face"] {
+      position: absolute;
+      left: 20.4px;
+      top: 12px;
+      width: 516px;
+      height: 57.6px;
+      border-radius: 14.4px;
+      overflow: hidden;
+    }
+    [id="f13-portal-tint"] { position: absolute; inset: 0; background: rgba(28, 32, 68, 0.28); opacity: 0; }
+    [id="f13-portal-ripple"] {
+      position: absolute;
+      left: -22px;
+      top: -251.2px;
+      width: 560px;
+      height: 560px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="f13-portal" data-width="1920" data-height="1080" data-duration="8.19">
+    <div id="f13-portal-bg" class="clip" data-start="0" data-duration="8.19" data-track-index="0"></div>
+
+    <div id="f13-portal-stage" class="clip" data-start="0" data-duration="8.19" data-track-index="1">
+      <div id="f13-portal-left">
+        <div id="f13-portal-rule"></div>
+        <div id="f13-portal-eyebrow">PORTAL DEL AFILIADO</div>
+        <h2 id="f13-portal-title"><span class="f13-portal-word">¿Mi</span> <span class="f13-portal-word">afiliación</span> <span class="f13-portal-word">está</span> <span class="f13-portal-word">activa?</span></h2>
+        <div id="f13-portal-chip">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          Sin exponer datos personales
+        </div>
+      </div>
+
+      <!-- cam = push-in / pull-back; card = entrance rise + the one soft navy shadow (follows the growing shape) -->
+      <div id="f13-portal-cam">
+        <div id="f13-portal-card">
+          <div id="f13-portal-head" data-layout-allow-overflow>
+            <img src="assets/app-verificar-card.png" alt="" width="1087" height="1023" style="left:-20.4px;top:-20.4px;width:652.2px;height:613.8px">
+            <div id="f13-portal-field">
+              <div id="f13-portal-rest"></div>
+              <div id="f13-portal-focus"></div>
+              <div id="f13-portal-entry"><span id="f13-portal-digits"></span><span id="f13-portal-caret"></span></div>
+            </div>
+            <div id="f13-portal-btn" data-layout-allow-overflow>
+              <img src="assets/app-verificar-card.png" alt="" width="1087" height="1023" style="left:-48px;top:-414px;width:652.2px;height:613.8px">
+              <div id="f13-portal-face" data-layout-allow-overflow>
+                <div id="f13-portal-tint"></div>
+                <div id="f13-portal-ripple"></div>
+              </div>
+            </div>
+          </div>
+          <!-- anchored-layout-expand: the answer block reveals top-first while the footer rides the same edge -->
+          <div id="f13-portal-mask" data-layout-allow-overflow>
+            <div id="f13-portal-sheet" data-layout-allow-overflow>
+              <img src="assets/app-verificar-activa-card.png" alt="" width="1087" height="1435" style="left:-20.4px;top:-510.4px;width:652.2px;height:861px">
+            </div>
+          </div>
+          <div id="f13-portal-below" data-layout-allow-overflow>
+            <img src="assets/app-verificar-card.png" alt="" width="1087" height="1023" style="left:-20.4px;top:-510.6px;width:652.2px;height:613.8px">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const $ = (name) => document.getElementById("f13-portal-" + name);
+      const tl = gsap.timeline({ paused: true });
+      const DUR = 7.59;
+
+      // Card geometry (px inside #f13-portal-cam, capture shown at 0.6)
+      const FX = 306; // input centre x
+      const FY = 354; // input centre y
+      const Z = 1.3; // push-in onto the input (0.78 of the 2x capture, never upscaled)
+      const GROW = 247.2; // answer block height (412 capture rows)
+      const KF = 0.95; // settled scale once the answer is in, keeps the card inside y 50–830
+      const REST_TOP = 153.2; // cam top; card centre 440 at rest
+      const CENTER_Y = 440;
+      const EXPANDED_H = 820.8;
+
+      // Scene 1 (0.0–2.9): slide header, query card rises centre-right
+      tl.fromTo($("rule"), { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0.3);
+      tl.fromTo($("eyebrow"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.3);
+      Array.from($("title").getElementsByClassName("f13-portal-word")).forEach((word, i) => {
+        tl.fromTo(word, { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.42 + i * 0.16);
+      });
+      tl.fromTo($("card"), { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, 0.3);
+
+      // Scene 2 (2.9–4.9): coordinate-target push-in (input centre stays put), focus, typing, press
+      tl.fromTo(
+        $("cam"),
+        { x: 0, y: 0, scale: 1 },
+        { x: -(Z - 1) * FX, y: -(Z - 1) * FY, scale: Z, duration: 0.5, ease: "power3.inOut" },
+        2.9,
+      );
+      // white focus fill covers the placeholder before the first keystroke
+      tl.fromTo($("field"), { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power1.out" }, 3.0);
+
+      // discrete-text-sequence (plain keystrokes) + caret, as pure functions of timeline time
+      const DIGITS = "8645479";
+      const KEYS = [3.4, 3.51, 3.63, 3.74, 3.87, 3.99, 4.12];
+      const CARET_ON = 3.15;
+      const CARET_OFF = 4.4;
+      const digitsEl = $("digits");
+      const caretEl = $("caret");
+      const driver = { t: 0 };
+      const paint = () => {
+        const t = driver.t;
+        let n = 0;
+        while (n < KEYS.length && t >= KEYS[n]) n++;
+        digitsEl.textContent = DIGITS.slice(0, n);
+        // solid for 0.4 s after focus / each keystroke, then a 0.7 s square-wave blink
+        const since = t - Math.max(CARET_ON, n > 0 ? KEYS[n - 1] : CARET_ON);
+        const on = t >= CARET_ON && t < CARET_OFF && since % 0.7 < 0.4;
+        caretEl.style.opacity = on ? "1" : "0";
+      };
+      tl.to(driver, { t: DUR, duration: DUR, ease: "none", onUpdate: paint }, 0);
+      paint();
+
+      // press-release-spring (subtle): linear dip, soft release, ink ripple clipped to the button
+      tl.fromTo($("btn"), { scale: 1 }, { scale: 0.96, duration: 0.1, ease: "power1.in" }, 4.4);
+      tl.to($("btn"), { scale: 1, duration: 0.45, ease: "back.out(1.4)" }, 4.5);
+      tl.fromTo($("tint"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power1.in" }, 4.4);
+      tl.to($("tint"), { opacity: 0, duration: 0.4, ease: "power2.out" }, 4.5);
+      tl.fromTo($("ripple"), { scale: 0.08 }, { scale: 1, duration: 0.6, ease: "power2.out" }, 4.42);
+      tl.fromTo($("ripple"), { opacity: 0 }, { opacity: 0.35, duration: 0.08, ease: "none" }, 4.42);
+      tl.to($("ripple"), { opacity: 0, duration: 0.5, ease: "power2.in" }, 4.5);
+      // focus leaves the input on submit: the field settles back to its resting fill, digits stay
+      tl.to($("focus"), { opacity: 0, duration: 0.3, ease: "power2.out" }, 4.45);
+
+      // Scene 3 (4.9–7.59): the answer arrives in place. One proxy drives both sides of the
+      // seam (answer block clip + footer push) so they never separate; the camera pulls back
+      // on the same curve and re-centres the grown card.
+      const sheetEl = $("sheet");
+      const belowEl = $("below");
+      const grow = { p: 0 };
+      const layout = () => {
+        const hidden = GROW * (1 - grow.p);
+        sheetEl.style.clipPath = "inset(0px 0px " + hidden + "px 0px)";
+        gsap.set(belowEl, { y: -hidden });
+      };
+      tl.fromTo(grow, { p: 0 }, { p: 1, duration: 0.8, ease: "power3.inOut", onUpdate: layout }, 4.9);
+      layout();
+      tl.to(
+        $("cam"),
+        { x: (1 - KF) * FX, y: CENTER_Y - REST_TOP - (KF * EXPANDED_H) / 2, scale: KF, duration: 0.8, ease: "power3.inOut" },
+        4.9,
+      );
+
+      tl.fromTo($("chip"), { scale: 0, opacity: 0, y: 16 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.6);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["f13-portal"] = tl;
+    })();
+  </script>
+</template>
