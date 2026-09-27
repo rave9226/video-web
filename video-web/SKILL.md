@@ -3,13 +3,14 @@ name: video-web
 description: >
   Úsala en vez de product-launch-video, hyperframes, general-video o faceless-explainer para
   cualquier video de una app, portal o sitio web con URL (demo, tutorial, lanzamiento, tour, video
-  explicativo), sobre todo con voz en español. Captura la app real en solo lectura (con o sin
-  login) y arma voz local en español latino (Qwen3-TTS), música, colores de marca y escenas
+  explicativo), con voz en español, inglés, portugués, francés, alemán, italiano, ruso, chino,
+  japonés o coreano. Captura la app real en solo lectura (con o sin login) y arma voz local
+  nativa (Qwen3-TTS; por defecto español latino), música, colores de marca y escenas
   HyperFrames con herramientas sueltas que el modelo combina según el video. Aplica aunque pidan
   explicar, enseñar o mostrar cómo funciona una pantalla, un portal o una plataforma. Use instead
   of product-launch-video for any launch, demo, tutorial or explainer video of a web app, site or
   portal given by URL. También sirve para videos explicativos sin app (un tema, artículo, notas o
-  un concepto) con voz en español: mismas voz, música, marca y controles, con escenas de
+  un concepto): mismas voz, música, marca y controles, con escenas de
   tipografía, diagramas y datos en vez de capturas.
 compatibility: Linux, macOS o Windows con WSL2; GPU NVIDIA opcional (sin ella la voz corre en CPU, más lenta), Node 18+, ffmpeg, venvs de Python descritos en ./vl doctor. Pensada para Claude Code (Sonnet) y OpenCode (DeepSeek V4.1 Flash).
 ---
@@ -53,7 +54,7 @@ Corre `./vl` desde la carpeta del proyecto (solo `doctor` e `init` van con la ru
 | capturar la app | `./vl captura [--only a,b]` según `capture.json` → `references/captura.md` |
 | recortar imágenes existentes | `./vl crop --src img.png --name x --desc "…" [--card \| --box x,y,w,h]` |
 | colores y fuentes | `./vl marca sugerir`, luego `./vl marca` (arma `frame.md`) |
-| voz en español | `./vl voz design` → 🛑 el usuario elige → `./vl voz lines [--frames N]` |
+| voz (10 idiomas) | `./vl voz design` → 🛑 el usuario elige → `./vl voz lines [--frames N]` |
 | música | `./vl musica` → 🛑 el usuario aprueba; `./vl musica mezclar` para el volumen. ⚠ MusicGen es CC-BY-NC: solo videos internos; para uso comercial, pista propia con licencia en `assets/bgm/track.wav` + `./vl musica mezclar` |
 | preparar escenas | `./vl prep`: duraciones, assets y paquetes por escena |
 | ensamblar | `./vl ensamblar`: `index.html`, transiciones, lint y check |
@@ -115,7 +116,8 @@ movimiento y blueprints: `/hyperframes-animation`.
   de lectura. `./vl check` atrapa errores objetivos; tus ojos, todo lo demás.
 - **Al retomar,** corre `./vl estado` y lee los archivos del proyecto antes de preguntar.
 - **No edites `index.html` a mano:** `./vl ensamblar` lo regenera.
-- **Responde en español.**
+- **Responde en el idioma del usuario.** El idioma del video lo fija `audio.json`
+  (§ Otros idiomas en `references/oficio.md`), no el de la conversación.
 
 ## Si algo falla
 

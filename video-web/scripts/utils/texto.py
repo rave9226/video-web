@@ -29,11 +29,22 @@ def parse_script(md: str) -> dict[int, str]:
     return {frame: text for frame, text in lines.items() if text}
 
 
+CJK = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]")
+
+
 def normalize(text: str) -> list[str]:
-    """Minúsculas, sin tildes ni puntuación: lista de palabras comparables."""
+    """Minúsculas, sin tildes ni puntuación: lista de unidades comparables.
+
+    Sirve para cualquier alfabeto; en chino y japonés (sin espacios) cada carácter cuenta como
+    una unidad, así que el "WER" es en realidad CER.
+    """
     plain = unicodedata.normalize("NFKD", text.lower())
-    plain = "".join(c for c in plain if not unicodedata.combining(c))
-    return re.findall(r"[a-z0-9ñ]+", plain)
+    plain = unicodedata.normalize("NFC", "".join(c for c in plain
+                                                 if not unicodedata.combining(c)))
+    units = []
+    for word in re.findall(r"[^\W_]+", plain):
+        units += list(word) if CJK.search(word) else [word]
+    return units
 
 
 def wer(expected: str, heard: str) -> float:

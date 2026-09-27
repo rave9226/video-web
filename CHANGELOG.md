@@ -8,6 +8,9 @@ Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 Primera versión para el equipo, probada con hyperframes@0.8.80 (ver `video-web/compat.json`).
 
 ### Agregado
+- Voz en 10 idiomas (los de Qwen3-TTS); WER por carácter en chino y japonés, y cualquier
+  alfabeto en la validación (antes el cirílico daba WER 0 siempre).
+- Licencia Apache-2.0.
 - Modo explicativo (`tipo: explicativo` en BRIEF.md): videos sin app, con voz, música y marca.
 - Voz sin GPU: CPU o MPS automáticos (`VL_DEVICE` para forzar).
 - Captura: bloqueo de GET de acción (`deny_get`) y WebSockets (`websocket: true` para permitir).

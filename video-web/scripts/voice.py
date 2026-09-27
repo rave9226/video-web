@@ -124,11 +124,12 @@ def design_candidates(voice: dict, count: int) -> list[Path]:
 def cmd_design(cfg: dict, count: int) -> int:
     """Candidatas de voz por instruct y ranking objetivo."""
     voice = cfg["voice"]
+    # un instruct en inglés da acento inglés: escríbelo en el idioma del video
     english = [k for k, v in voice["instructs"].items() if texto.english_ratio(v) > 0.12]
-    if english:
-        sys.exit(f"✗ instructs en inglés: {', '.join(english)}. Escríbelos en español y "
-                 "describe a una hablante NATIVA de una ciudad concreta (si no, suena a acento "
-                 "extranjero).")
+    if english and voice.get("whisper_lang", "es") != "en":
+        sys.exit(f"✗ instructs en inglés: {', '.join(english)}. Escríbelos en el idioma del "
+                 "video y describe a una hablante NATIVA de una ciudad concreta (si no, suena a "
+                 "acento extranjero).")
     report = rank(cfg, design_candidates(voice, count))
     for row in report:
         print(f"{'✓' if row['ok'] else '✗'} {row['file']}  P={row['p_lang']:.4f}  "

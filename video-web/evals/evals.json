@@ -57,6 +57,20 @@
       "prompt": "agrega subtítulos a este video de una entrevista que grabé",
       "expected_output": "La skill NO se activa (corresponde a embedded-captions).",
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "ingles-sin-musica",
+      "prompt": "Make a 20-second video with an English voice-over (no music) showing how to browse the demo bookstore https://books.toscrape.com (test data, no login). Project in ~/videos/.vl-evals/e6-english.",
+      "expected_output": "MP4 de ~20 s con voz en inglés nativo, sin música.",
+      "files": [],
+      "assertions": [
+        "renders/video.mp4 existe y dura entre 15 y 25 s",
+        "audio.json tiene voice.whisper_lang = en y voice.language = English",
+        "todas las voces de audio_meta.json tienen WER ≤ 0.08 y p_lang ≥ 0.97",
+        "audio_meta.json tiene bgm null",
+        "`./vl check todo` termina sin avisos"
+      ]
     }
   ]
 }

@@ -23,12 +23,12 @@ escena, numeradas de 1 a N, con el texto hablado indentado con 4 espacios. Plant
 
 ## Voz (Qwen3-TTS local)
 
-1. En `audio.json`, escribe `voice.ref_text`: 20–30 palabras en español sobre el producto.
-   Si su nombre es extranjero
-   ("Books to Scrape"), déjalo fuera de `ref_text`: baja P(español) y ninguna candidata pasa;
-   en las líneas del guion usa `respell`. Los
-   `instructs` van en español y describen a una hablante **nativa** de una ciudad concreta; un
-   instruct en inglés da acento extranjero (`voice.py` lo rechaza).
+1. En `audio.json`, escribe `voice.ref_text`: 20–30 palabras en el idioma del video sobre el
+   producto. Si su nombre es de otro idioma ("Books to Scrape" en un video en español), déjalo
+   fuera de `ref_text`: baja P(idioma) y ninguna candidata pasa; en las líneas del guion usa
+   `respell`. Los `instructs` van en el idioma del video y describen a una hablante **nativa**
+   de una ciudad concreta; un instruct en inglés para otro idioma da acento extranjero
+   (`voice.py` lo rechaza).
 2. `./vl voz design` y `./vl esperar voz`: 3 candidatas por instruct, ordenadas por P(español)
    y WER.
 3. 🛑 Envía al usuario las rutas de las mejores (✓) y deja que elija de oído. Pon su elección en
@@ -40,6 +40,18 @@ escena, numeradas de 1 a N, con el texto hablado indentado con 4 espacios. Plant
 Si una línea no pasa: mira qué oyó Whisper. Si pronuncia mal una marca o sigla, agrégala a
 `respell` (p. ej. `{"Wompi": "Uómpi", "CRM": "ce erre eme"}`; solo cambia lo que oye el TTS) y
 repite `./vl voz lines --frames N`. Si cambias una línea del guion, repite solo esa.
+
+### Otros idiomas
+
+Qwen3-TTS habla 10 idiomas: español, inglés, portugués, francés, alemán, italiano, ruso,
+chino, japonés y coreano. Para otro que no sea español, en `audio.json` cambia
+`voice.language` (nombre en inglés: `"English"`, `"Portuguese"`, `"French"`, `"German"`,
+`"Italian"`, `"Russian"`, `"Chinese"`, `"Japanese"`, `"Korean"`), `voice.whisper_lang`
+(código ISO: `en`, `pt`, `fr`, `de`, `it`, `ru`, `zh`, `ja`, `ko`), `ref_text` e
+`instructs` en ese idioma, y escribe `SCRIPT.md` en él. En `BRIEF.md`, `language`. El ritmo de
+≈ 2.4 palabras por segundo es del español; en chino y japonés el WER se mide por carácter.
+Probado: inglés y portugués de Brasil (WER 0, P(idioma) > 0.98). Fuera de esos 10 idiomas,
+la voz local no sirve.
 
 ## Música (opcional)
 

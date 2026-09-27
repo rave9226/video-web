@@ -1,20 +1,101 @@
-# video-web
+# 🎬 video-web
 
-Skill para agentes de código (Claude Code, OpenCode) que convierte una app, portal o sitio
-web con URL en un video de producto (demo, tutorial, lanzamiento o explicativo) con voz en
-español latino.
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+![Voz: 10 idiomas](https://img.shields.io/badge/voz-10_idiomas-green)
+![Local](https://img.shields.io/badge/TTS-100%25_local-orange)
+![Claude Code](https://img.shields.io/badge/Claude_Code-skill-black)
 
-- Captura la app real en **solo lectura**, con o sin login. Bloquea en la red cualquier
-  escritura que no sea el login.
-- Genera la voz en local con Qwen3-TTS y la valida con Whisper (WER e idioma).
-- Genera música de fondo en local con MusicGen y la mezcla por debajo de la voz.
-  **MusicGen es CC-BY-NC (no comercial):** en videos comerciales usa una pista propia con
-  licencia (`assets/bgm/track.wav` + `vl musica mezclar`) o ninguna.
-- Toma los colores y las fuentes de la marca y arma las escenas con
-  HyperFrames.
+### De una URL a un video de producto con voz nativa. En minutos, en tu máquina.
 
-Todo corre con un solo comando, `vl`. El agente decide qué mostrar y en qué orden. Las
-instrucciones para el agente están en [`video-web/SKILL.md`](video-web/SKILL.md).
+> **English:** an agent skill (Claude Code, OpenCode) that turns any web app URL into a
+> 1920×1080 product video: real read-only screenshots, a script, native local voice-over in
+> 10 languages (Qwen3-TTS, verified with Whisper), brand colors and HyperFrames animations
+> synced to every spoken word. Docs are in Spanish; the videos can be in any of the 10
+> languages below.
+
+Le pasas a tu agente de código (Claude Code, OpenCode) la URL de tu app y le pides un video.
+Él recorre la app, toma capturas reales, escribe el guion, narra con voz nativa en tu idioma,
+pone los colores de tu marca, anima cada escena al ritmo de la voz y te entrega un
+MP4 1920×1080 listo para publicar.
+
+```text
+"Haz un video demo de 45 segundos de https://mi-app.com, voz en español latino"
+```
+
+**Sin editor de video. Sin locutor. Sin suscripción de TTS. Sin tocar tus datos.**
+
+---
+
+## ¿Por qué no pedirle a un agente que "haga un video" y ya?
+
+Porque lo que sale suele ser una interfaz dibujada a mano, cifras inventadas, una voz con
+acento extranjero y animaciones que no coinciden con lo que se dice. video-web resuelve
+justo eso:
+
+| Problema típico | Lo que hace video-web |
+|---|---|
+| El agente redibuja tu app en HTML | **Capturas reales** a 2x de tu app, con la posición de cada botón medida al píxel |
+| Navegar tu app con un agente es riesgoso | **Solo lectura garantizada en red**: bloquea escrituras, GET de acción y WebSockets; solo pasa el login |
+| Voz robótica o con acento extranjero | **Voz nativa en 10 idiomas**, local con Qwen3-TTS, y cada línea verificada con Whisper (se regenera sola si falla) |
+| Animaciones desfasadas de la voz | Cada elemento aparece **en el segundo exacto** en que la voz lo nombra |
+| Cada escena con un estilo distinto | **Colores y fuentes de tu marca** fijados para todo el video |
+| Errores que aparecen tras 20 min de render | **`vl check`** detecta antes del render lo que rompe el video |
+
+## Idiomas
+
+🇪🇸 Español (por defecto, latino) · 🇺🇸 Inglés · 🇧🇷 Portugués · 🇫🇷 Francés · 🇩🇪 Alemán ·
+🇮🇹 Italiano · 🇷🇺 Ruso · 🇨🇳 Chino · 🇯🇵 Japonés · 🇰🇷 Coreano
+
+Son los 10 idiomas de Qwen3-TTS. Probados: español (videos completos), inglés y portugués de
+Brasil (voz: diseño, clonación y validación). Cómo cambiar el idioma: `video-web/references/oficio.md` § Otros idiomas.
+
+## Qué puedes hacer
+
+- 🚀 **Lanzamientos** de producto o de una función nueva.
+- 🧭 **Demos y tours** de tu SaaS, portal o panel de administración (con o sin login).
+- 🎓 **Tutoriales** de "cómo hacer X" en tu plataforma.
+- 💡 **Explicativos sin app**: un tema, un artículo o tus notas convertidos en video con
+  tipografía y diagramas animados.
+
+## Probado de verdad
+
+- 3 videos completos generados de punta a punta contra apps públicas (OrangeHRM y
+  books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, todo el pipeline incluido.
+- Voz validada con Whisper: **WER 0** en las líneas medidas y P(idioma) > 0,98 en español,
+  inglés y portugués.
+- Audio nivelado para plataformas (≈ −16 LUFS).
+- **Sin GPU también funciona**: la voz corre en CPU (≈ 10× la duración del audio con 16
+  núcleos). Probado en Linux; macOS y Windows con WSL2 están soportados pero aún sin
+  probar en equipos reales: si lo pruebas, cuéntanos.
+
+## Cómo funciona
+
+Un solo comando, `vl`, hace lo mecánico. Tu agente decide el video.
+
+```text
+explorar → capturar → marca → guion → voz → música → escenas → revisar → render
+```
+
+1. `vl explorar` y `vl captura`: recorre la app en solo lectura y mide cada elemento.
+2. `vl marca`: saca colores y fuentes de tu app.
+3. `vl voz`: diseña 3 voces, tú eliges de oído y clona esa voz en cada línea.
+4. `vl musica` (opcional): música de fondo mezclada bajo la voz.
+5. Escenas HyperFrames escritas en paralelo por varios agentes, una por archivo.
+6. `vl snap`: hojas de revisión con inicio, medio y final de cada escena.
+7. `vl render`: MP4 final, versión 720p y grilla de revisión.
+
+Tú apruebas en los puntos que importan: qué datos se muestran, qué voz, qué música y el
+video antes del render.
+
+**100 % local**: tus capturas, tu guion y tu voz no pasan por ningún servicio de TTS o
+video en la nube (el único modelo externo es el de tu agente).
+
+> ⚠️ **Música:** MusicGen es CC-BY-NC (no comercial). Para videos comerciales usa una pista
+> propia con licencia (`assets/bgm/track.wav` + `vl musica mezclar`) o ninguna.
+
+Las instrucciones completas para el agente están en [`video-web/SKILL.md`](video-web/SKILL.md).
+
+---
 
 ## Requisitos
 
@@ -106,7 +187,7 @@ Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
    ```
    Cada línea con ✗ dice qué falta. Repite hasta que no quede ninguna.
 4. En tu agente, pide el video (por ejemplo, "haz un video demo de 60 s de https://mi-app.com
-   con voz en español") o usa `/video-web` en Claude Code.
+   con voz en español", o "... with an English voice-over") o usa `/video-web` en Claude Code.
 
 ## Tiempos sin GPU
 
@@ -148,3 +229,15 @@ La versión está en `video-web/VERSION` y los cambios en [`CHANGELOG.md`](CHANG
 ```bash
 cd ~/.agents/skills/video-web/scripts && python3 -m pytest tests -q
 ```
+
+## Contribuir
+
+Issues y pull requests bienvenidos. Antes de un PR: `python3 -m pytest tests -q` en
+`video-web/scripts` y, si tocas el pipeline, las evals de `video-web/evals/` (ver
+[`MANTENER.md`](MANTENER.md)). Especialmente útil: probar en macOS, WSL2 y en idiomas aún no
+verificados.
+
+## Licencia
+
+[Apache-2.0](LICENSE). Los modelos que descarga la skill tienen sus propias licencias (ver
+§ Licencias de los modelos); MusicGen no permite uso comercial.

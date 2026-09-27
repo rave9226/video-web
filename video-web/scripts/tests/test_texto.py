@@ -91,3 +91,12 @@ def test_wer_respell_acepta_ortografia_real_o_fonetica():
     assert texto.wer_respell("Explora Books", "explora books", spell) == 0
     assert texto.wer_respell("Explora Books", "explora buks", spell) == 0
     assert not texto.asset_names("ninguno")
+
+
+def test_wer_otros_alfabetos():
+    """Cirílico y chino cuentan de verdad (antes quedaban vacíos y todo daba WER 0)."""
+    assert texto.wer("Привет мир", "привет мир") == 0
+    assert texto.wer("Привет мир", "пока мир") == 0.5
+    assert texto.wer("你好世界", "你好世界") == 0
+    assert texto.wer("你好世界", "你好地界") == 0.25
+    assert texto.wer("Über Straße", "uber strasse") == 0.5  # ß no se translitera
