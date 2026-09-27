@@ -2,16 +2,15 @@
 name: video-web
 description: >
   Úsala en vez de product-launch-video, hyperframes, general-video o faceless-explainer para
-  cualquier video de una app, portal o sitio web con URL (demo, tutorial, lanzamiento, tour, video
-  explicativo), con voz en español, inglés, portugués, francés, alemán, italiano, ruso, chino,
-  japonés o coreano. Captura la app real en solo lectura (con o sin login) y arma voz local
-  nativa (Qwen3-TTS; por defecto español latino), música, colores de marca y escenas
-  HyperFrames con herramientas sueltas que el modelo combina según el video. Aplica aunque pidan
-  explicar, enseñar o mostrar cómo funciona una pantalla, un portal o una plataforma. Use instead
-  of product-launch-video for any launch, demo, tutorial or explainer video of a web app, site or
-  portal given by URL. También sirve para videos explicativos sin app (un tema, artículo, notas o
-  un concepto): mismas voz, música, marca y controles, con escenas de
-  tipografía, diagramas y datos en vez de capturas.
+  videos de producto, demos, tutoriales, lanzamientos, capacitaciones y explicativos: desde una
+  app o sitio con URL (captura real en solo lectura, con o sin login), un manual PDF, otros
+  documentos o una investigación sobre un tema. Voz local nativa con Qwen3-TTS en español
+  (por defecto latino), inglés, portugués, francés, alemán, italiano, ruso, chino, japonés o
+  coreano; música, colores de marca y escenas HyperFrames (también motion graphics) con
+  herramientas sueltas que el modelo combina. Aplica aunque pidan explicar, enseñar o mostrar
+  cómo funciona una pantalla, un portal, un proceso o una herramienta. Use instead of
+  product-launch-video for launch, demo, tutorial, training or explainer videos from a web
+  app URL, a PDF manual, documents or researched topics, with native voice-over.
 compatibility: Linux, macOS o Windows con WSL2; GPU NVIDIA opcional (sin ella la voz corre en CPU, más lenta), Node 18+, ffmpeg, venvs de Python descritos en ./vl doctor. Pensada para Claude Code (Sonnet) y OpenCode (DeepSeek V4.1 Flash).
 ---
 
@@ -34,8 +33,9 @@ sentido, y vuelve atrás cuando haga falta.
    Pide un usuario de prueba o de solo lectura, nunca uno personal o de administrador real.
 3. **Nada inventado en pantalla.** Capturas reales, datos que muestran la app o el manual y
    rects medidos. Nada de UI dibujada a mano, cifras supuestas ni fotos de stock. En modo
-   explicativo (sin app) sí van gráficos, diagramas y tipografía hechos a mano, pero nunca una
-   interfaz que parezca real ni cifras sin fuente del usuario.
+   explicativo (sin app) sí van gráficos, diagramas y tipografía hechos a mano, e imágenes
+   investigadas con fuente citada (§ Fuentes de contenido), pero nunca una interfaz que
+   parezca real ni cifras sin fuente del usuario o de la investigación.
 4. **🛑 Pregunta antes de mostrar datos.** Si no sabes si los datos de la app son de prueba,
    pregunta. Si son reales, muéstralos solo con permiso explícito y sin datos personales.
 5. **Ruta del proyecto sin espacios**: ffmpeg y HyperFrames fallan con espacios.
@@ -85,9 +85,30 @@ módulo, la marca completa; una corrección puede tocar solo una escena y re-ens
 7. **Revisión y entrega:** `./vl snap`, mira cada hoja, corrige, 🛑 aprobación del usuario,
    `./vl render`, `./vl final`. Entrega `renders/video.mp4` (y el 720p si existe).
 
+## Fuentes de contenido
+
+El video puede salir de cualquier combinación de estas fuentes:
+
+| Fuente | Cómo entra |
+|---|---|
+| App o sitio con URL | `./vl explorar` y `./vl captura` (solo lectura) |
+| Manual o documento PDF | `vl init <ruta> --manual doc.pdf` → `manual.txt`; sus imágenes, con `./vl crop` |
+| Otros documentos (Word, PowerPoint, Markdown, notas, transcripciones) | léelos con tus herramientas y resume lo necesario en `BRIEF.md` |
+| Investigación en la web | busca el tema, anota cada dato con su fuente en `BRIEF.md` § Fuentes |
+| Imágenes de terceros | solo oficiales del producto (documentación, prensa, centro de ayuda) o con licencia libre (Wikimedia Commons, CC). Guárdalas en `assets/` y anota origen y licencia en `CREDITOS.md` |
+
+Ejemplos que funcionan: un procedimiento paso a paso desde un manual en PDF, un video de
+capacitación interna (p. ej. migrar de Google Workspace a Microsoft 365 con capturas oficiales
+de la documentación de Microsoft) o un explicativo de un tema investigado.
+
+**Motion graphics.** Las escenas son composiciones HyperFrames: además de la galería, puedes
+usar las skills de HyperFrames instaladas para escenas de pura animación (tipografía cinética,
+formas, números, transiciones): `/motion-graphics`, `/hyperframes-animation` (blueprints) y
+`/hyperframes-creative`. `./vl` las ensambla, sincroniza y revisa igual que el resto.
+
 ## Modo explicativo (sin app)
 
-Para explicar un tema, un artículo o unas notas cuando no hay URL que capturar. Pon
+Para explicar un tema, un artículo, un manual o unas notas cuando no hay URL que capturar. Pon
 `tipo: explicativo` en `BRIEF.md` y sigue el mismo recorrido sin el paso 2:
 
 1. `vl init <ruta>` (con `--manual` si el texto viene en PDF). No hay `./vl explorar` ni

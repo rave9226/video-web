@@ -3,6 +3,15 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 [SemVer](https://semver.org/lang/es/). La versión vigente está en `video-web/VERSION`.
 
+## [1.1.0] — 2026-09-27
+
+### Agregado
+- Fuentes de contenido documentadas: app con URL, manual PDF, otros documentos, investigación
+  web e imágenes de terceros (solo oficiales o con licencia libre, con `CREDITOS.md`).
+- Uso de las skills de HyperFrames para motion graphics (`/motion-graphics`,
+  `/hyperframes-animation`, `/hyperframes-creative`).
+- README con GIF de demostración y casos de uso ampliados.
+
 ## [1.0.0] — 2026-09-27
 
 Primera versión para el equipo, probada con hyperframes@0.8.80 (ver `video-web/compat.json`).

@@ -25,6 +25,9 @@ voice: qwen3-tts-12hz-1.7b
   APP_USER y APP_PASS al correr `./vl captura`; nunca en archivos.
 - Manual: manual.txt (si `./vl init` recibió `--manual`).
 - Capturas previas: <CARPETA O NINGUNA>. Se recortan con `./vl crop`.
+- Otros documentos: <WORD, PPT, NOTAS… O NINGUNO>.
+- Investigación: <TEMA Y FUENTES CONSULTADAS, CADA DATO CON SU URL, O NINGUNA>.
+- Imágenes de terceros: <SOLO OFICIALES O CON LICENCIA LIBRE; ORIGEN EN CREDITOS.md, O NINGUNA>.
 
 ## Restricciones
 

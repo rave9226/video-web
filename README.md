@@ -5,24 +5,59 @@
 ![Local](https://img.shields.io/badge/TTS-100%25_local-orange)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-skill-black)
 
-### De una URL a un video de producto con voz nativa. En minutos, en tu máquina.
+### Tu app, tu manual, tus documentos o cualquier tema → un video narrado con voz nativa. En tu máquina.
 
-> **English:** an agent skill (Claude Code, OpenCode) that turns any web app URL into a
-> 1920×1080 product video: real read-only screenshots, a script, native local voice-over in
-> 10 languages (Qwen3-TTS, verified with Whisper), brand colors and HyperFrames animations
-> synced to every spoken word. Docs are in Spanish; the videos can be in any of the 10
-> languages below.
+<p align="center">
+  <img src="docs/demo.gif" alt="Video generado por video-web a partir de la demo pública de OrangeHRM" width="800">
+  <br>
+  <sub>Fragmento de un video de 30 s generado de punta a punta por la skill contra la demo
+  pública de OrangeHRM (sin afiliación). <a href="https://github.com/rave9226/video-web/releases/latest">Video completo con audio en la release</a>.</sub>
+</p>
 
-Le pasas a tu agente de código (Claude Code, OpenCode) la URL de tu app y le pides un video.
-Él recorre la app, toma capturas reales, escribe el guion, narra con voz nativa en tu idioma,
-pone los colores de tu marca, anima cada escena al ritmo de la voz y te entrega un
-MP4 1920×1080 listo para publicar.
+> **English:** an agent skill (Claude Code, OpenCode) that turns a web app URL, a PDF manual,
+> any document or a researched topic into a 1920×1080 narrated video: real read-only
+> screenshots, a script, native local voice-over in 10 languages (Qwen3-TTS, verified with
+> Whisper), brand colors and HyperFrames animations (motion graphics included) synced to every
+> spoken word. Docs are in Spanish; videos can be in any of the 10 languages below.
+
+Le pides un video a tu agente de código (Claude Code, OpenCode) y le das lo que tengas: la URL
+de tu app, un manual en PDF, una presentación, unas notas o solo un tema para investigar. Él
+reúne el material, escribe el guion, narra con voz nativa en tu idioma, pone los colores de tu
+marca, anima cada escena al ritmo de la voz y te entrega un MP4 1920×1080 listo para publicar.
 
 ```text
 "Haz un video demo de 45 segundos de https://mi-app.com, voz en español latino"
+"Convierte este manual.pdf en un video tutorial paso a paso de 2 minutos"
+"Investiga cómo migrar de Google Workspace a Microsoft 365 y haz un video de capacitación"
+"Make a 30-second motion graphics explainer about our new pricing, English voice-over"
 ```
 
 **Sin editor de video. Sin locutor. Sin suscripción de TTS. Sin tocar tus datos.**
+
+## Mucho más que grabar una app
+
+| Le das… | Obtienes… |
+|---|---|
+| 🌐 **La URL de tu app** (con o sin login) | Demo, tour o lanzamiento con capturas reales, zoom y anillos sobre lo que la voz nombra |
+| 📄 **Un manual en PDF** | Tutoriales y procedimientos paso a paso; sus imágenes se recortan y se animan |
+| 🗂️ **Cualquier documento** (Word, PowerPoint, notas, transcripciones) | Capacitaciones, onboarding y comunicados internos narrados |
+| 🔎 **Solo un tema** | El agente investiga, cita sus fuentes, busca imágenes oficiales o con licencia libre y arma un explicativo |
+| ✨ **Una idea o un mensaje** | Motion graphics: tipografía cinética, diagramas, números y formas animadas, sin una sola captura |
+
+Y se combinan: la URL de tu app más su manual, o una investigación más las capturas oficiales
+de la documentación del proveedor. Un caso real: un video interno de 3 minutos para una
+**migración de Google Workspace a Microsoft 365**, con el mapa de equivalencias entre
+herramientas y un recorrido por Teams, SharePoint, Planner y Power Automate usando capturas
+oficiales de la documentación de Microsoft. Sin app que capturar, solo investigación.
+
+## Hecho sobre HyperFrames
+
+Cada escena es una composición [HyperFrames](https://github.com/heygen-com/hyperframes): HTML +
+GSAP renderizado cuadro a cuadro, determinista. video-web funciona **junto con las skills de
+HyperFrames** que instalas con `npx hyperframes skills update`, así que tu agente también puede
+usar `/motion-graphics`, `/hyperframes-animation` (blueprints de escenas) o
+`/hyperframes-creative` dentro del mismo video. `vl` pone lo que HyperFrames no trae: captura
+segura, voz nativa verificada, sincronía con cada palabra, marca y revisión antes del render.
 
 ---
 
@@ -53,9 +88,11 @@ Brasil (voz: diseño, clonación y validación). Cómo cambiar el idioma: `video
 
 - 🚀 **Lanzamientos** de producto o de una función nueva.
 - 🧭 **Demos y tours** de tu SaaS, portal o panel de administración (con o sin login).
-- 🎓 **Tutoriales** de "cómo hacer X" en tu plataforma.
-- 💡 **Explicativos sin app**: un tema, un artículo o tus notas convertidos en video con
-  tipografía y diagramas animados.
+- 🎓 **Tutoriales y procedimientos** desde tu app o tu manual en PDF.
+- 🏢 **Capacitación interna**: migraciones de herramientas, onboarding, políticas y procesos.
+- 🔎 **Explicativos investigados** sobre cualquier tema, con fuentes citadas.
+- ✨ **Motion graphics** de moda: tipografía cinética, diagramas y datos animados.
+- 🌎 **El mismo video en otro idioma**: cambia voz, guion y textos; reusa capturas y estructura.
 
 ## Probado de verdad
 
@@ -76,7 +113,9 @@ Un solo comando, `vl`, hace lo mecánico. Tu agente decide el video.
 explorar → capturar → marca → guion → voz → música → escenas → revisar → render
 ```
 
-1. `vl explorar` y `vl captura`: recorre la app en solo lectura y mide cada elemento.
+1. Reúne el material: `vl explorar` y `vl captura` recorren tu app en solo lectura y miden
+   cada elemento; `vl init --manual` lee tu PDF y `vl crop` recorta sus imágenes; el agente lee
+   tus documentos o investiga el tema.
 2. `vl marca`: saca colores y fuentes de tu app.
 3. `vl voz`: diseña 3 voces, tú eliges de oído y clona esa voz en cada línea.
 4. `vl musica` (opcional): música de fondo mezclada bajo la voz.
