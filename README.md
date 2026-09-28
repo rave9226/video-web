@@ -80,7 +80,6 @@ Son los 10 idiomas de Qwen3-TTS. **Probados:** español en videos completos; ing
 
 ## Números de videos reales
 
-- **Video de producto de 2:40:** documentado en la skill; el flujo también sirve para presentaciones de varios minutos, no solo clips breves.
 - **3 videos completos** de punta a punta con apps públicas (OrangeHRM y books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, incluido todo el pipeline.
 - **Voz comprobada con Whisper:** WER 0 en las líneas medidas y P(idioma) > 0,98 en español, inglés y portugués.
 - **Audio nivelado** a ≈ −16 LUFS.
