@@ -5,9 +5,11 @@
 ![Local](https://img.shields.io/badge/TTS-100%25_local-orange)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-skill-black)
 
-### Tu agente convierte materiales e ideas en videos.
+### Convierte el material que ya tienes en un video narrado.
 
-Combina apps, PDF, documentos o investigación para crear demos, tutoriales, capacitaciones y explicativos narrados.
+video-web es una skill de código abierto (Apache-2.0), sin costo de licencia ni experiencia previa en edición. Tu agente puede partir de una app, su código si tiene acceso, un PDF, otros documentos, una investigación o una idea para crear demos, tutoriales, capacitaciones y explicativos. También permite videos de varios minutos: la skill documenta una producción real de 2:40.
+
+Úsala con un agente que pueda leer y ejecutar skills. Está documentada para Claude Code y OpenCode, incluido OpenCode con DeepSeek V4.1 Flash; otros harnesses requieren adaptar la instalación y comprobar sus herramientas.
 
 <p align="center">
   <img src="docs/demo.gif" alt="Video generado por video-web a partir de la demo pública de OrangeHRM" width="800">
@@ -26,7 +28,7 @@ Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo
 "Make a 30-second motion graphics explainer about our new pricing, English voice-over"
 ```
 
-**Sin editor de video, locutor ni suscripción de TTS.** La captura de la app opera en solo lectura; la voz se genera localmente.
+**Sin editor de video, locutor ni suscripción de TTS.** Dale acceso autorizado a una app y el agente puede explorarla mediante la captura en solo lectura, preparar el guion, usar sus colores y fuentes, generar la voz, construir las escenas y renderizar el MP4. Si le das solo un tema, puede investigarlo y crear un explicativo sin app que capturar. La voz y el render se ejecutan localmente; el modelo del agente puede ser externo y tener un costo de uso. La música generada con MusicGen no tiene licencia comercial: para publicar comercialmente, usa música propia con licencia o ninguna.
 
 ## Dale lo que tienes. Publica lo que necesitas.
 
@@ -78,6 +80,7 @@ Son los 10 idiomas de Qwen3-TTS. **Probados:** español en videos completos; ing
 
 ## Números de videos reales
 
+- **Video de producto de 2:40:** documentado en la skill; el flujo también sirve para presentaciones de varios minutos, no solo clips breves.
 - **3 videos completos** de punta a punta con apps públicas (OrangeHRM y books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, incluido todo el pipeline.
 - **Voz comprobada con Whisper:** WER 0 en las líneas medidas y P(idioma) > 0,98 en español, inglés y portugués.
 - **Audio nivelado** a ≈ −16 LUFS.
