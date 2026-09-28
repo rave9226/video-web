@@ -7,7 +7,7 @@
 
 ### Convierte el material que ya tienes en un video narrado.
 
-video-web es una skill de código abierto (Apache-2.0), sin costo de licencia ni experiencia previa en edición. Tu agente puede partir de una app, su código si tiene acceso, un PDF, otros documentos, una investigación o una idea para crear demos, tutoriales, capacitaciones y explicativos. También permite videos de varios minutos: la skill documenta una producción real de 2:40.
+video-web es una skill de código abierto (Apache-2.0), sin costo de licencia ni experiencia previa en edición. Tu agente puede partir de una app, su código si tiene acceso, un PDF, otros documentos, una investigación o una idea para crear demos, tutoriales, capacitaciones y explicativos. También permite videos de varios minutos.
 
 Úsala con un agente que pueda leer y ejecutar skills. Está documentada para Claude Code y OpenCode, incluido OpenCode con DeepSeek V4.1 Flash; otros harnesses requieren adaptar la instalación y comprobar sus herramientas.
 
