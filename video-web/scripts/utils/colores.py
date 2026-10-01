@@ -5,6 +5,11 @@ def _rgb(hexcol: str) -> list[int]:
     return [int(hexcol.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
 
 
+def rgb(hexcol: str) -> list[int]:
+    """Componentes 0-255 de un #RRGGBB."""
+    return _rgb(hexcol)
+
+
 def contrast(fg: str, bg: str) -> float:
     """Razón de contraste WCAG 2.x entre dos colores #RRGGBB (1–21)."""
     def lum(hexcol: str) -> float:

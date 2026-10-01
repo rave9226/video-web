@@ -18,6 +18,18 @@ def gray_std(path: Path) -> float:
         return max(float(np.asarray(band, dtype=np.float32).std()) for band in bands)
 
 
+def dimensiones(path: Path) -> tuple[int, int]:
+    """Ancho y alto nativos del archivo."""
+    with Image.open(path) as img:
+        return img.width, img.height
+
+
+def aspect(path: Path) -> float:
+    """Relación ancho/alto nativa del archivo (para detectar imágenes estiradas)."""
+    width, height = dimensiones(path)
+    return width / height
+
+
 def mean_abs_diff(path_a: Path, path_b: Path) -> float:
     """Diferencia media absoluta (0–1) entre dos imágenes del mismo tamaño."""
     with Image.open(path_a) as img_a, Image.open(path_b) as img_b:

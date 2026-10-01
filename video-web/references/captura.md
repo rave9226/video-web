@@ -30,9 +30,9 @@ para saber qué pantallas importan.
 | Campo | Qué es |
 |---|---|
 | `base_url` | URL sin barra final |
-| `brand` | se llena después de capturar (`./vl marca sugerir`); deja `null` hasta entonces |
+| `brand` | solo `primary` (acento), `ink` (texto) y `canvas` (fondo), sacados de la app con `./vl marca sugerir`. `dark` y `spark` se **derivan**: no los escribas ni los copies de un ejemplo (references/marca.md) |
 | `fonts` | familia de la app en Google Fonts, p. ej. `[{"family": "Poppins", "weights": [400,500,600,700]}]` |
-| `login` | ruta, etiquetas de los campos, texto del botón y `wait_url`. Bórralo si la app no tiene login |
+| `login` | ruta, etiquetas de los campos, texto del botón y `wait_url`. Bórralo si la app no tiene login. Con SSO externo, ver § Login SSO |
 | `allow_mutations` | solo la ruta **exacta** de la API de login (p. ej. `/api/auth/login`). Un `*` final la vuelve prefijo (`/api/auth/*`), pero entonces también permite `/api/auth/cambiar-clave`: evítalo |
 | `deny_get` | regex de rutas GET a bloquear (por defecto verbos de acción y cierre de sesión); `""` lo desactiva |
 | `websocket` | `true` si la app necesita WebSockets para mostrar datos (bloqueados por defecto: pueden enviar comandos) |
@@ -72,6 +72,45 @@ el tamaño mínimo en px CSS del contenedor que quieres medir: el script sube de
 hasta el primer ancestro de ese tamaño. Usa `min: [30, 20]` para una pestaña, `[200, 30]` para
 un campo y `[1000, 60]` para una fila completa. Las claves van en `snake_case` corto. Los rects
 salen en píxeles de la imagen (2x) y los ves en `capture/extracted/regions.md`.
+
+## Login SSO o sesión ya abierta
+
+Si la app entra por un proveedor externo (Google, Microsoft, un portal corporativo), no hay
+formulario que llenar: `login.fields` no sirve. Se usa un **perfil de Chrome que ya tiene la
+sesión abierta**, y la captura sigue siendo de solo lectura (el `Guard` bloquea escrituras igual).
+
+```bash
+# 1. Abre ese perfil a mano una vez e inicia sesión en la app:
+chromium --user-data-dir=/ruta/perfil-captura
+# 2. Captura con él (la ruta del perfil no se guarda en capture.json):
+./vl explorar /facturas --auth --profile /ruta/perfil-captura
+./vl captura --profile /ruta/perfil-captura
+```
+
+También sirve `BROWSER_PROFILE=/ruta/perfil ./vl captura`. En `capture.json`, para que la captura
+verifique que la sesión sigue viva:
+
+```json
+"login": {"sso": true, "wait_route": "/inicio", "ready": "text=Cerrar sesión"}
+```
+
+`ready` es un selector que **solo existe estando dentro**. Si no aparece, la captura se detiene y
+pide reabrir la sesión en ese perfil, en vez de capturar la pantalla de login.
+
+**Último recurso: capturar con el navegador del agente (MCP).** Solo si lo anterior no funciona y
+el usuario lo autoriza. Tiene tres costos que hay que asumir por escrito:
+
+- Las capturas salen a 1x, no a 2x: el texto de la app se ve más pequeño al escalar a 1080p.
+- No hay `regions.md`, así que **los rects se miden con `./vl medir`**, nunca a ojo.
+- No hay `css-vars.json`: los colores se derivan con `./vl marca sugerir --primary "#RRGGBB"`.
+
+### Cuando el navegador del agente falla
+
+| Síntoma | Qué hacer |
+|---|---|
+| `Cannot take screenshot with 0 width` | la ventana está minimizada o en otro escritorio: pídele al usuario que la traiga al frente |
+| el id de pestaña ya no vale | vuelve a pedir el contexto de pestañas; los ids no sobreviven entre turnos |
+| la captura se bloquea después de un clic | el clasificador de permisos la frenó: pídele al usuario la regla de permiso de la herramienta de navegador |
 
 ## 3. Correr y revisar
 

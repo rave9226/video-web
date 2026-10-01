@@ -1,6 +1,13 @@
-# Mantener video-web
+# Mantener este repo
 
-## Publicar una versión
+Trae dos skills independientes: `video-web/` (video) y `manual-app/` (manual escrito).
+`manual-app` no tiene dependencias de la otra: solo Python con `markdown` y `playwright`.
+Los pasos de abajo son de `video-web`; para `manual-app` basta
+`cd manual-app && python3 -m pylint scripts/manual.py` y una prueba de punta a punta
+(`scripts/ml init <tmp> --titulo X`, `./ml check`, `./ml pdf`).
+
+## Publicar una versión de video-web
+
 
 1. Corre los tests: `cd video-web/scripts && python3 -m pytest tests -q`.
 2. Corre las evals de `video-web/evals/evals.json` con un agente (una a la vez; comparten GPU).

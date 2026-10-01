@@ -32,7 +32,8 @@ sentido, y vuelve atrás cuando haga falta.
    `.gitignore`). Nunca en capture.json, notas ni resúmenes; no leas ni muestres el `.env`.
    Pide un usuario de prueba o de solo lectura, nunca uno personal o de administrador real.
 3. **Nada inventado en pantalla.** Capturas reales, datos que muestran la app o el manual y
-   rects medidos. Nada de UI dibujada a mano, cifras supuestas ni fotos de stock. En modo
+   rects medidos: salen de `capture/extracted/regions.md`, o de `./vl medir` si la captura vino
+   de otra fuente. **Nunca a ojo.** Nada de UI dibujada a mano, cifras supuestas ni fotos de stock. En modo
    explicativo (sin app) sí van gráficos, diagramas y tipografía hechos a mano, e imágenes
    investigadas con fuente citada (§ Fuentes de contenido), pero nunca una interfaz que
    parezca real ni cifras sin fuente del usuario o de la investigación.
@@ -53,10 +54,12 @@ Corre `./vl` desde la carpeta del proyecto (solo `doctor` e `init` van con la ru
 | mirar una pantalla | `./vl explorar <url o /ruta> [--auth] [--steps '[…]']`: textos, controles y captura |
 | capturar la app | `./vl captura [--only a,b]` según `capture.json` → `references/captura.md` |
 | recortar imágenes existentes | `./vl crop --src img.png --name x --desc "…" [--card \| --box x,y,w,h]` |
-| colores y fuentes | `./vl marca sugerir`, luego `./vl marca` (arma `frame.md`) |
+| medir un rect | `./vl medir /ruta --texto "Nombre" [--ancho 1240]`: el rect del DOM, ya escalado |
+| colores y fuentes | `./vl marca sugerir [--primary "#RRGGBB"]`, luego `./vl marca` → `references/marca.md` |
 | voz (10 idiomas) | `./vl voz design` → 🛑 el usuario elige → `./vl voz lines [--frames N]` |
 | música | `./vl musica` → 🛑 el usuario aprueba; `./vl musica mezclar` para el volumen. ⚠ MusicGen es CC-BY-NC: solo videos internos; para uso comercial, pista propia con licencia en `assets/bgm/track.wav` + `./vl musica mezclar` |
 | preparar escenas | `./vl prep`: duraciones, assets y paquetes por escena |
+| generar escenas | `./vl escenas [--solo f03-x]`: todas las de ventana desde `scenes.json` |
 | ensamblar | `./vl ensamblar`: `index.html`, transiciones, lint y check |
 | revisar | `./vl snap [--frames N]`: hojas de contacto de las escenas |
 | render | `./vl render` y `./vl final` (métricas, grilla y 720p) |
@@ -67,6 +70,21 @@ Corre `./vl` desde la carpeta del proyecto (solo `doctor` e `init` van con la ru
 entrega (ids, determinismo, duraciones, WER, LUFS, escrituras bloqueadas), así que arréglalo
 antes de entregar.
 
+## 🛑 Antes del guion: para qué es el video
+
+`BRIEF.md → formato` decide el arco, la duración y qué dice cada línea. **Si el usuario no lo
+dijo, pregúntaselo**: rehacerlo después cuesta el guion, la voz, la música y todas las escenas.
+
+| | `lanzamiento` | `capacitacion` |
+|---|---|---|
+| Para qué | que quieran el producto | que sepan usarlo |
+| Duración | 30–120 s | 3–10 min |
+| Cada línea | nombra lo que se verá | dice **para qué sirve**, no solo qué es |
+| Lleva | gancho y cierre de marca | el modelo primero, el vocabulario del negocio y el orden de trabajo |
+
+Detalle de los dos arcos: `references/oficio.md` § Guion. ¿Solo quieren el manual escrito y no un
+video? Esa es otra skill: `manual-app`.
+
 ## Recorrido habitual
 
 Punto de partida, no receta. Un tutorial corto puede saltarse la música; un video de un solo
@@ -76,13 +94,19 @@ módulo, la marca completa; una corrección puede tocar solo una escena y re-ens
    clave (mira las imágenes que genera). Completa `BRIEF.md` y `capture.json`.
 2. **Capturar:** `./vl captura`. **Abre cada hoja `capture/review/capturas-N.jpg` y mírala**:
    errores, tablas vacías, spinners, modales que no abrieron. Repite con `--only`.
-3. **Marca:** `./vl marca sugerir`, llena `brand` en capture.json (`primary`, `ink`, `canvas`,
-   `dark`, `spark`, opcional `muted`) y `./vl marca`.
-4. **Guion y voz:** `SCRIPT.md`, `./vl voz design`, 🛑 elección de voz, `./vl voz lines`.
+3. **Marca:** `./vl marca sugerir` y pon en capture.json solo `primary`, `ink` y `canvas`; el
+   resto se deriva. **No inventes ni copies colores** (`references/marca.md`). Luego `./vl marca`.
+4. **Guion y voz:** `SCRIPT.md` según el `formato`, `./vl voz design`, 🛑 elección de voz,
+   `./vl voz lines`. Si cambias `SCRIPT.md`, repite `./vl voz lines` **y** `./vl musica` (la cama
+   está mezclada para la duración anterior).
 5. **Música** (opcional): `./vl musica`, 🛑 aprobar `renders/preview-audio.mp3`.
-6. **Storyboard y escenas:** `STORYBOARD.md`, `./vl prep`, una escena por archivo en
-   `compositions/frames/` (tú o workers en paralelo), `./vl ensamblar`.
-7. **Revisión y entrega:** `./vl snap`, mira cada hoja, corrige, 🛑 aprobación del usuario,
+6. **Storyboard y escenas:** `STORYBOARD.md`, `./vl prep`, `scenes.json` y **`./vl escenas`**:
+   un solo generador para todas las escenas con ventana, con la misma geometría, los colores de
+   `frame.md` y los anillos alineados. Los workers quedan para escenas de concepto que no entren
+   en los cuatro tipos. Luego `./vl ensamblar`.
+7. **Revisión y entrega:** `./vl snap`, mira cada hoja y, **en las escenas con anillos, abre
+   `renders/review/snaps/<id>-{a,m,z}.png` a tamaño completo** (en la hoja de 12 no se ve un
+   anillo corrido). Corrige, 🛑 aprobación del usuario,
    `./vl render`, `./vl final`. Entrega `renders/video.mp4` (y el 720p si existe).
 
 ## Fuentes de contenido
@@ -123,10 +147,17 @@ Para explicar un tema, un artículo, un manual o unas notas cuando no hay URL qu
    `triptych-cards` y `logo-lockup-close`. Ver `references/oficio.md` § Escenas sin capturas.
 5. **Revisión y entrega:** igual.
 
-Cómo escribir guion, storyboard y escenas que se vean bien, cómo despachar workers y cómo
-arreglar hallazgos de lint: `references/oficio.md`. Ideas de escenas probadas:
-`assets/galeria/INDICE.md`. Contrato de composición HyperFrames: `/hyperframes-core`;
-movimiento y blueprints: `/hyperframes-animation`.
+### Referencias
+
+| Archivo | Para qué |
+|---|---|
+| `references/captura.md` | `capture.json`, login (incluido SSO), medir rects, fallos del navegador |
+| `references/marca.md` | de dónde salen los colores y por qué nunca se copian de un ejemplo |
+| `references/oficio.md` | guion por formato, voz, música, storyboard, escenas, ensamblado y revisión |
+| `assets/galeria/INDICE.md` | ideas de escenas ya probadas |
+
+Contrato de composición HyperFrames: `/hyperframes-core`; movimiento y blueprints:
+`/hyperframes-animation`.
 
 ## Cómo trabajar
 

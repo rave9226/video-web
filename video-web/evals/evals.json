@@ -71,6 +71,58 @@
         "audio_meta.json tiene bgm null",
         "`./vl check todo` termina sin avisos"
       ]
+    },
+    {
+      "id": 7,
+      "name": "formato-preguntado",
+      "prompt": "Hazme un video de esta app: https://opensource-demo.orangehrmlive.com (demo pública, credenciales en APP_USER y APP_PASS: Admin / admin123). Los datos son de prueba.",
+      "expected_output": "Antes de escribir el guion, pregunta si el video es de capacitación o de lanzamiento, porque el usuario no lo dijo.",
+      "files": [],
+      "assertions": [
+        "pregunta explícitamente para qué es el video (capacitación o lanzamiento) antes de escribir SCRIPT.md",
+        "no escribe SCRIPT.md antes de tener esa respuesta",
+        "BRIEF.md queda con el campo `formato` lleno con lo que respondió el usuario"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "capacitacion-explica-para-que-sirve",
+      "prompt": "Necesito un video de CAPACITACIÓN de 4 minutos de OrangeHRM (https://opensource-demo.orangehrmlive.com, APP_USER y APP_PASS: Admin / admin123, datos de prueba) para enseñarle a usarlo a gente nueva. Crea el proyecto en ~/videos/.vl-evals/e8-capacitacion.",
+      "expected_output": "Video de 3 a 6 minutos cuyo guion explica el modelo del sistema, para qué sirve cada pantalla y el orden de trabajo.",
+      "files": [],
+      "assertions": [
+        "BRIEF.md tiene `formato: capacitacion`",
+        "SCRIPT.md tiene al menos 10 líneas y la narración dura más de 150 s",
+        "una de las primeras líneas explica cómo está organizado el sistema, antes de la primera pantalla",
+        "las líneas de cada pantalla dicen para qué sirve, no solo qué campos tiene",
+        "la última línea recuerda el orden en que se usan las pantallas",
+        "`./vl check guion` no deja avisos"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "marca-sin-colores-inventados",
+      "prompt": "Haz un video de lanzamiento de 40 segundos de https://opensource-demo.orangehrmlive.com (APP_USER y APP_PASS: Admin / admin123, datos de prueba) con los colores de la marca. Crea el proyecto en ~/videos/.vl-evals/e9-marca.",
+      "expected_output": "frame.md con los colores derivados del primario de la app; ningún color copiado de un ejemplo.",
+      "files": [],
+      "assertions": [
+        "capture.json → brand trae solo primary, ink y canvas (no un `dark` ni un `spark` escritos a mano)",
+        "frame.md → brand-dark comparte el tono del primario de la app",
+        "`./vl check marca` no deja avisos",
+        "la portada y el cierre usan el mismo tratamiento de color, los dos con texto legible"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "hallazgos-del-navegador-no-se-ignoran",
+      "prompt": "Termina el video del proyecto y entrégamelo solo si pasa las revisiones.",
+      "expected_output": "Si `hf check` reporta contraste bajo o desbordes, los corrige antes de entregar, aunque el check diga «Check passed».",
+      "files": [],
+      "assertions": [
+        "corre `./vl check escenas` (o `todo`) y reporta los hallazgos de contraste y layout si hay",
+        "no entrega el MP4 mientras queden avisos de contraste AA sin explicar",
+        "si decide entregar con avisos, se lo dice al usuario de forma explícita"
+      ]
     }
   ]
 }

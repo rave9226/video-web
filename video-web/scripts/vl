@@ -164,6 +164,20 @@ open(p,"w").write(re.sub(r"^duration: .*$","duration: "+sys.argv[1]+"s",s,count=
   node "$PLV/scripts/stage-assets.mjs" --storyboard ./STORYBOARD.md --hyperframes . ||
     die "stage-assets falló"
   node "$PLV/scripts/frame-packets.mjs" --project . || die "frame-packets falló"
+  # stage-assets solo copia los `asset_candidates` del storyboard: una captura agregada a
+  # mitad del proyecto quedaba referenciada pero sin publicar, y el lint fallaba.
+  "$PY" -c 'import pathlib,re,shutil
+dst=pathlib.Path("assets"); dst.mkdir(exist_ok=True)
+refs={r for f in pathlib.Path("compositions/frames").glob("*.html")
+      for r in re.findall(r"(assets/[\w./-]+\.(?:png|jpe?g|webp|svg))", f.read_text())}
+for rel in sorted(refs):
+    if pathlib.Path(rel).exists(): continue
+    src=pathlib.Path("capture")/pathlib.Path(rel).relative_to("assets")
+    if src.exists():
+        shutil.copy2(src, rel); print(f"  + {rel} (desde {src})")
+    else:
+        src=pathlib.Path("capture/assets")/pathlib.Path(rel).name
+        if src.exists(): shutil.copy2(src, rel); print(f"  + {rel} (desde {src})")'
   chk storyboard
 }
 
@@ -183,9 +197,14 @@ cmd_ensamblar() {
   done
   node "$PLV/scripts/transitions.mjs" verify --storyboard ./STORYBOARD.md --index ./index.html ||
     die "transitions verify falló"
+  # El texto es para leerlo; el JSON lo revisa `chk escenas`. `hf check` imprime
+  # "Check passed" con warnings dentro (su ok solo mira errores), así que grepear el
+  # texto dejaba pasar fallos de contraste AA y desbordes reales.
   hf lint > .vl/lint.txt 2>&1
+  hf lint --json > .vl/lint.json 2>/dev/null
   grep -E "error\(s\)" .vl/lint.txt | tail -1
   hf check > .vl/check.txt 2>&1
+  hf check --json > .vl/check.json 2>/dev/null
   tail -n 5 .vl/check.txt
   chk escenas
 }
@@ -201,14 +220,17 @@ case "$cmd" in
   explorar) "$PY" "$S/capture.py" explorar --route "${1:?uso: ./vl explorar /ruta [--auth]}" "${@:2}" ;;
   captura) "$PY" "$S/capture.py" run "$@" ;;
   crop) "$PY" "$S/capture.py" crop "$@" ;;
+  medir) "$PY" "$S/capture.py" medir --route "${1:?uso: ./vl medir /ruta --texto \"Nombre\" [--ancho 1240]}" "${@:2}" ;;
   marca)
-    if [[ "${1:-}" == sugerir ]]; then "$PY" "$S/brand.py" sugerir; else "$PY" "$S/brand.py" aplicar "$@"; fi ;;
+    if [[ "${1:-}" == sugerir ]]; then "$PY" "$S/brand.py" sugerir "${@:2}"
+    else "$PY" "$S/brand.py" aplicar "$@"; fi ;;
   voz)
     [[ "${1:-}" =~ ^(design|lines|finalize)$ ]] || die "uso: ./vl voz design|lines [--frames 3,7]|finalize"
     bg voz "$QWEN/bin/python" "$S/voice.py" "$@" ;;
   musica)
     if [[ "${1:-}" == mezclar ]]; then "$PY" "$S/bgm.py" mezclar; else bg musica "$PY" "$S/bgm.py" generar; fi ;;
   prep) cmd_prep ;;
+  escenas) "$PY" "$S/scenes.py" "$@" ;;
   ensamblar) cmd_ensamblar ;;
   snap) "$PY" "$S/qa.py" snap "$@" ;;
   render)
@@ -217,5 +239,5 @@ case "$cmd" in
   final) "$PY" "$S/qa.py" final && chk entrega ;;
   esperar) cmd_esperar "$@" ;;
   *) die "comando desconocido '$cmd'. Comandos: doctor setup-tts init estado check explorar
-  captura crop marca voz musica prep ensamblar snap render final esperar" ;;
+  captura crop medir marca voz musica prep escenas ensamblar snap render final esperar" ;;
 esac

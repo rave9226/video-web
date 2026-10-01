@@ -63,7 +63,19 @@ class Capturer:
 
     def __init__(self, cfg: dict, playwright):
         self.cfg = cfg
-        self.browser = playwright.chromium.launch()
+        # Con un perfil de Chrome ya autenticado no hace falta formulario de login: así se
+        # capturan apps con SSO externo, que `login.fields` no puede resolver.
+        self.perfil = cfg.get("profile") or os.environ.get("BROWSER_PROFILE", "")
+        if self.perfil:
+            width, height = cfg["viewport"]
+            self.contexto = playwright.chromium.launch_persistent_context(
+                self.perfil, viewport={"width": width, "height": height},
+                device_scale_factor=cfg["scale"], locale=cfg["locale"],
+                timezone_id=cfg["timezone"])
+            self.browser = None
+        else:
+            self.contexto = None
+            self.browser = playwright.chromium.launch()
         self.guard = nav.Guard(cfg["allow_mutations"], EXTRACTED / "requests.log",
                                cfg.get("deny_get", nav.GET_DENY))
         self.pages: dict[bool, object] = {}
@@ -73,10 +85,13 @@ class Capturer:
         """Página de la sesión pedida (se crea y, si hace falta, inicia sesión)."""
         if auth not in self.pages:
             width, height = self.cfg["viewport"]
-            ctx = self.browser.new_context(
-                viewport={"width": width, "height": height},
-                device_scale_factor=self.cfg["scale"], locale=self.cfg["locale"],
-                timezone_id=self.cfg["timezone"])
+            if self.contexto is not None:
+                ctx = self.contexto  # un solo contexto: la sesión vive en el perfil
+            else:
+                ctx = self.browser.new_context(
+                    viewport={"width": width, "height": height},
+                    device_scale_factor=self.cfg["scale"], locale=self.cfg["locale"],
+                    timezone_id=self.cfg["timezone"])
             ctx.route("**/*", self.guard.handle)
             if not self.cfg.get("websocket"):
                 ctx.route_web_socket("**/*", self.guard.handle_ws)
@@ -88,9 +103,21 @@ class Capturer:
         return self.pages[auth]
 
     def _login(self, page) -> None:
-        login = self.cfg.get("login")
+        login = self.cfg.get("login") or {}
+        if self.perfil or login.get("sso"):
+            # La sesión ya viene en el perfil: solo se comprueba que siga abierta.
+            page.goto(self.cfg["base_url"] + (login.get("wait_route") or "/"))
+            self.settle(page, 2)
+            listo = login.get("ready")
+            if listo and not page.locator(listo).count():
+                sys.exit(f"✗ la sesión del perfil no está abierta (no encuentro '{listo}').\n"
+                         f"  Abre {self.cfg['base_url']} en ese perfil de Chrome, inicia sesión "
+                         "y vuelve a correr la captura.")
+            return
         if not login:
-            sys.exit("✗ una captura pide auth pero capture.json no tiene 'login'")
+            sys.exit("✗ una captura pide auth pero capture.json no tiene 'login'.\n"
+                     "  Con login SSO usa `--profile <perfil-de-chrome>` "
+                     "(references/captura.md § Login SSO).")
         env = {**nav.dotenv(Path(".env")), **os.environ}  # la variable del comando manda
         user, password = env.get(login["user_env"]), env.get(login["pass_env"])
         if not user or not password:
@@ -104,6 +131,10 @@ class Capturer:
         page.get_by_role("button", name=login["submit"]).first.click()
         page.wait_for_url(login["wait_url"], timeout=30000)
         self.settle(page)
+
+    def cerrar(self) -> None:
+        """Cierra el navegador, sea contexto persistente o lanzado."""
+        (self.contexto or self.browser).close()
 
     def settle(self, page, pause: float | None = None) -> None:
         """Red inactiva + fuentes + pausa."""
@@ -320,7 +351,7 @@ def cmd_run(only: set[str]) -> int:
                 print(f"  ✗ {exc}", flush=True)
                 failed.append(f"{shot['name']}: {exc}")
             col.save()  # índice al día aunque la corrida se interrumpa
-        cap.browser.close()
+        cap.cerrar()
     col.save()
     # Una corrida parcial (--only) conserva los fallos de las tomas que no volvió a correr.
     previous = load_json(EXTRACTED / "capture-report.json", {}).get("failed", [])
@@ -380,11 +411,11 @@ def cmd_explorar(route: str, auth: bool, steps: list[dict]) -> int:
         try:
             cap.open_state(page, {"name": slug, "route": route, "steps": steps})
         except (PlaywrightError, ValueError, RuntimeError) as exc:
-            cap.browser.close()
+            cap.cerrar()
             sys.exit(explore_error(route, str(exc).splitlines()[0], cap.guard.blocked))
         data = page.evaluate(EXPLORE_JS)
         page.screenshot(path=str(REVIEW / f"explorar-{slug}.png"))
-        cap.browser.close()
+        cap.cerrar()
     deny = re.compile(cfg["deny"], re.IGNORECASE)
     lines = [f"# Explorar {route} — {data['title']}", "", "## Títulos",
              *[f"- {h}" for h in data["headings"]], "", "## Controles (⛔ = bloqueado)"]
@@ -397,6 +428,33 @@ def cmd_explorar(route: str, auth: bool, steps: list[dict]) -> int:
     print(text)
     print(f"\nCaptura de referencia: {REVIEW / f'explorar-{slug}.png'}")
     return 0
+
+
+def cmd_medir(route: str, auth: bool, textos: list[str], ancho: int, steps: list[dict]) -> int:
+    """Mide rects de una pantalla viva, para capturas que no salieron de `./vl captura`.
+
+    `oficio.md` exige rects medidos, no estimados a ojo. Cuando la captura vino de otra
+    fuente (1x, sin regions.md) este comando los consigue del DOM igual.
+    """
+    cfg = load_cfg()
+    EXTRACTED.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as playwright:
+        cap = Capturer(cfg, playwright)
+        page = cap.page(auth)
+        try:
+            cap.open_state(page, {"name": "medir", "route": route, "steps": steps})
+            vista = page.viewport_size or {"width": cfg["viewport"][0]}
+            escala = ancho / vista["width"] if ancho else float(cfg["scale"])
+            filas = [(t, nav.rect(page, {"text": t, "min": [0, 0]}, scale=escala))
+                     for t in textos]
+        finally:
+            cap.cerrar()
+    print(f"# Rects de {route} escalados a {ancho or vista['width']} px de ancho "
+          f"(factor {escala:.4f})\n")
+    for texto_visible, caja in filas:
+        print(f'  "{texto_visible}": {caja}' if caja
+              else f'  "{texto_visible}": no lo encontré (usa el texto exacto de `./vl explorar`)')
+    return 0 if all(c for _, c in filas) else 1
 
 
 def cmd_crop(src: Path, name: str, desc: str, card: bool, box: str | None) -> int:
@@ -426,8 +484,21 @@ def main() -> int:
     exp.add_argument("--route", required=True)
     exp.add_argument("--auth", action="store_true")
     exp.add_argument("--steps", default="[]")
+    exp.add_argument("--profile", default="",
+                     help="perfil de Chrome ya autenticado (login SSO)")
     run = sub.add_parser("run")
     run.add_argument("--only", default="")
+    run.add_argument("--profile", default="",
+                     help="perfil de Chrome ya autenticado (login SSO)")
+    med = sub.add_parser("medir")
+    med.add_argument("--route", required=True)
+    med.add_argument("--texto", action="append", default=[],
+                     help="texto visible del elemento (repetible)")
+    med.add_argument("--ancho", type=int, default=0,
+                     help="ancho con que se mostrará la captura (por defecto, escala nativa)")
+    med.add_argument("--auth", action="store_true")
+    med.add_argument("--steps", default="[]")
+    med.add_argument("--profile", default="")
     crop = sub.add_parser("crop")
     crop.add_argument("--src", type=Path, required=True)
     crop.add_argument("--name", required=True)
@@ -435,10 +506,16 @@ def main() -> int:
     crop.add_argument("--card", action="store_true")
     crop.add_argument("--box", default=None)
     args = parser.parse_args()
+    # El perfil llega por bandera o por BROWSER_PROFILE; load_cfg lo lee de cfg["profile"].
+    if getattr(args, "profile", ""):
+        os.environ["BROWSER_PROFILE"] = args.profile
     if args.cmd == "explorar":
         return cmd_explorar(args.route, args.auth, json.loads(args.steps))
     if args.cmd == "run":
         return cmd_run({n for n in args.only.split(",") if n})
+    if args.cmd == "medir":
+        return cmd_medir(args.route, args.auth, args.texto, args.ancho,
+                         json.loads(args.steps))
     return cmd_crop(args.src, args.name, args.desc, args.card, args.box)
 
 

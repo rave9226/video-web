@@ -12,14 +12,42 @@ escena, numeradas de 1 a N, con el texto hablado indentado con 4 espacios. Plant
 
 - **Longitud.** ≈ 2.4 palabras por segundo más pausas: 60 s ≈ 120 palabras en 5–7 líneas.
   Líneas de más de 45 palabras suenan peor en el TTS: divídelas.
-- **Arco que funcionó:** gancho (el problema en una frase) → funciones en el orden real del
-  usuario → control y administración → lo que ve el cliente final → cierre con el nombre del
-  producto. Un tutorial o un video de un solo módulo puede tener otro arco.
 - **Estilo.** Español latino neutro, frases cortas, verbos concretos ("aprueba", "firma"). Una
   sola forma de trato (tú o usted). Cada línea nombra lo que se verá en su escena.
 - **Datos.** Solo lo que muestran la app o el manual. Nada de cifras ni clientes inventados.
 
-`./vl check guion` avisa de numeración rota y líneas largas, y estima la duración.
+### El arco depende del `formato` del BRIEF
+
+**🛑 Si el BRIEF no trae `formato`, pregúntaselo al usuario antes de escribir una línea.** Un
+video para vender y uno para enseñar no se parecen en nada, y rehacerlo cuesta el guion, la voz,
+la música y todas las escenas.
+
+| | `lanzamiento` | `capacitacion` |
+|---|---|---|
+| Para qué | que quieran el producto | que sepan usarlo |
+| Duración | 30–120 s, 5–8 líneas | 3–10 min, 12–20 líneas |
+| Arco | gancho (el problema en una frase) → funciones en el orden real del usuario → control y administración → lo que ve el cliente final → cierre con el nombre | **el modelo primero** (de qué partes consta y cómo se relacionan) → una pantalla por función, **cada una con su propósito** → el vocabulario del negocio → **el orden de trabajo** al cierre |
+| Cada línea | nombra lo que se verá | dice **para qué sirve**, no solo qué es |
+| Cierre | el nombre del producto | el orden en que se usan las pantallas |
+
+**En `capacitacion` esto no es opcional:**
+
+- **Empieza por el modelo.** Antes de la primera pantalla, una escena que explique de qué partes
+  consta el sistema y cómo dependen entre sí (p. ej. «hay tres niveles: los catálogos, que son los
+  datos base; las relaciones, que los conectan; y los movimientos de cada mes»). Sin ese marco,
+  cada pantalla se ve como un formulario suelto.
+- **Cada pantalla responde "¿para qué sirve?".** No «aquí están los proveedores, con su nombre y
+  su identificación», sino «aquí están los proveedores; la identificación es el dato con el que el
+  sistema los reconoce al cargar una factura, y si está mal, no los encuentra».
+- **Explica los verbos del negocio.** Toda app tiene palabras que solo significan algo adentro
+  (causar, conciliar, legalizar, provisionar). Si la voz las usa sin explicarlas, el video no
+  capacita. Y si dos marcas parecen lo mismo y no lo son, dilo.
+- **Advierte de los errores.** Donde la app permite equivocarse, dilo con su consecuencia: «el
+  total debe coincidir con el monto; si no, el registro llega con valores errados».
+- **Cierra con el orden de trabajo**, no con el nombre del producto.
+
+`./vl check guion` avisa de numeración rota, líneas largas, `formato` ausente y guiones demasiado
+cortos para el formato que declaran; y estima la duración.
 
 ## Voz (Qwen3-TTS local)
 

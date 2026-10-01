@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Manual de usuario de una app web. `./ml` es un symlink a este script dentro del proyecto.
+set -euo pipefail
+
+ML_SELF=$(readlink -f "${BASH_SOURCE[0]}")
+S=$(dirname "$ML_SELF")
+SKILL=$(dirname "$S")
+# El primer intérprete que tenga markdown y playwright. `ML_PY` manda si está definido.
+elegir_py() {
+  local c
+  for c in "${ML_PY:-}" "$PWD/.venv/bin/python3" "$(command -v python3)"; do
+    [[ -x "$c" ]] || continue
+    "$c" -c "import markdown, playwright" 2> /dev/null && { echo "$c"; return; }
+  done
+  echo "${ML_PY:-$(command -v python3)}"  # que falle con un mensaje claro
+}
+PY=$(elegir_py)
+
+die() { echo "✗ $*" >&2; exit 1; }
+
+cmd_init() {
+  local dir="${1:?uso: ml init <ruta> [--desde <proyecto-video>] [--titulo \"Nombre\"]}"
+  [[ "$dir" == *" "* ]] && die "la ruta no puede tener espacios"
+  mkdir -p "$dir" && cd "$dir"
+  ln -sfn "$ML_SELF" ml
+  "$PY" "$S/manual.py" init "${@:2}"
+}
+
+cmd="${1:-check}"
+shift || true
+case "$cmd" in
+  init) cmd_init "$@" ;;
+  pantalla) "$PY" "$S/manual.py" pantalla "$@" ;;
+  pdf) "$PY" "$S/manual.py" pdf "$@" ;;
+  check) "$PY" "$S/manual.py" check ;;
+  *) die "comando desconocido: $cmd
+  init pantalla pdf check" ;;
+esac

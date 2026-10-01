@@ -1,5 +1,8 @@
 ---
 tipo: app          # app (hay URL que capturar) o explicativo (tema, artículo o notas, sin app)
+formato: <FORMATO> # para qué es el video: capacitacion | lanzamiento | explicativo.
+                   # 🛑 si el usuario no lo dijo, PREGÚNTASELO antes de escribir el guion:
+                   # cambia el arco, la duración y qué dice cada línea (oficio.md § Guion).
 producto: "<NOMBRE DEL PRODUCTO>"
 url: "<URL DE LA APP O SITIO>"
 message: "<MENSAJE CENTRAL EN UNA FRASE>"
@@ -18,6 +21,9 @@ voice: qwen3-tts-12hz-1.7b
 ## Intención
 
 <QUÉ DEBE LOGRAR EL VIDEO: QUÉ FUNCIONES MOSTRAR, EN QUÉ ORDEN Y CON QUÉ TONO>
+
+<SI formato: capacitacion — QUÉ DEBE SABER HACER QUIEN LO VEA AL TERMINAR, Y EN QUÉ ORDEN
+SE USAN LAS PANTALLAS. Los verbos propios del negocio que hay que explicar: <CUÁLES>.>
 
 ## Fuentes
 

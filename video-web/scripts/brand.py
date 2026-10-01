@@ -22,7 +22,10 @@ from utils import colores, texto  # pylint: disable=import-error
 PLV = Path(os.environ.get("VL_PLV_DIR", Path.home() / ".agents/skills/product-launch-video"))
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0"
 WEIGHT_NAMES = {400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
-DEFAULTS = {"surface": "#FFFFFF", "positive": "#2F9E6E", "negative": "#D5484C"}
+# `spark` es semántico, no de marca: es el anillo de foco de .PFX-ring. Como positive y
+# negative, trae valor por omisión para no tener que inventarlo.
+DEFAULTS = {"surface": "#FFFFFF", "positive": "#2F9E6E", "negative": "#D5484C",
+            "spark": "#E0A32E"}
 EXTENSIONS = """
 ## Extensiones de marca (normativo)
 
@@ -58,7 +61,7 @@ CSS canónico (copia tal cual y reemplaza `PFX` por el id de tu escena, p. ej. `
 .PFX-h2 {{ font:{w_semi} 52px/1.1 "{font}"; letter-spacing:-.02em; color:{ink}; }}
 .PFX-chip {{ display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 22px;
   border-radius:100px; background:{primary}14; border:1.5px solid {primary}33;
-  font:{w_med} 20px/1 "{font}"; color:{primary_text}; }}
+  font:{w_med} 20px/1 "{font}"; color:{chip_text}; }}
 .PFX-ring {{ position:absolute; border:2.5px solid {spark}; border-radius:10px;
   box-shadow:0 0 0 6px {spark}33, 0 0 24px {spark}55; pointer-events:none; }}
 ```
@@ -70,10 +73,15 @@ La URL de la barra de ventana es `{url_pill}`.
 def resolve_brand(cfg: dict) -> dict:
     """Completa el bloque brand con valores por defecto y derivados."""
     brand = {**DEFAULTS, **{k: v.upper() for k, v in cfg.get("brand", {}).items() if v}}
-    missing = [k for k in ("primary", "ink", "canvas", "dark", "spark") if not brand.get(k)]
+    # Solo se piden los tres que cualquier app publica. Pedir también `dark` y `spark`
+    # llevaba a inventarlos copiándolos de un ejemplo: así un video de una app roja salió
+    # con portada azul.
+    missing = [k for k in ("primary", "ink", "canvas") if not brand.get(k)]
     if missing:
         sys.exit(f"✗ capture.json → brand: faltan {', '.join(missing)} "
                  "(usa `./vl marca sugerir` para ver los colores de la app)")
+    # `dark` es el campo de portada y cierre: el primario oscurecido, no un color ajeno.
+    brand.setdefault("dark", colores.mix(brand["primary"], "#000000", 0.72))
     brand.setdefault("muted", colores.muted_between(brand["ink"], brand["canvas"]))
     brand["url_pill"] = re.sub(r"^https?://", "", cfg.get("base_url", "")).rstrip("/")
     font = (cfg.get("fonts") or [{"family": "Poppins", "weights": [400, 500, 600, 700]}])[0]
@@ -83,6 +91,11 @@ def resolve_brand(cfg: dict) -> dict:
     brand["w_semi"] = min(font["weights"], key=lambda w: abs(w - 600))
     # primary puede no llegar a 4.5:1 como texto (naranjas, celestes): se oscurece lo justo
     brand["primary_text"] = colores.readable(brand["primary"], brand["ink"], brand["canvas"])
+    # El chip no está sobre el lienzo sino sobre su propio fondo teñido (primary al 8 %):
+    # ahí el contraste baja. Medirlo contra el lienzo daba chips que fallaban AA por poco.
+    chip_bg = colores.mix(brand["canvas"], brand["primary"], 0x14 / 255)
+    brand["chip_bg"] = chip_bg
+    brand["chip_text"] = colores.readable(brand["primary"], brand["ink"], chip_bg)
     return brand
 
 
@@ -155,11 +168,26 @@ def patch_frame(brand: dict) -> None:
     path.write_text(md.rstrip() + "\n" + EXTENSIONS.format(**brand), encoding="utf-8")
 
 
-def cmd_sugerir() -> int:
-    """Muestra variables CSS y fuentes capturadas de la app."""
+def cmd_sugerir(primary: str = "") -> int:
+    """Muestra variables CSS y fuentes capturadas de la app, o deriva de un primario dado."""
     data_path = Path("capture/extracted/css-vars.json")
     if not data_path.exists():
-        sys.exit("✗ falta capture/extracted/css-vars.json: corre `./vl captura`")
+        # Sin captura propia (login SSO, capturas de otra fuente) antes se abortaba, y los
+        # colores terminaban copiados de un ejemplo. Con --primary se derivan.
+        if not primary:
+            sys.exit("✗ falta capture/extracted/css-vars.json (lo escribe `./vl captura`).\n"
+                     "  Si no puedes capturar, saca el primario del CSS de la app o de su logo "
+                     "y corre:\n  ./vl marca sugerir --primary \"#RRGGBB\"\n"
+                     "  Nunca copies colores de otro proyecto (references/marca.md).")
+        derivado = {"primary": primary.upper(), "ink": "#0B1020", "canvas": "#F6F7F9"}
+        derivado["dark"] = colores.mix(derivado["primary"], "#000000", 0.72)
+        print("⚠ sin css-vars.json: estos colores NO se leyeron de la app.")
+        print(f"  Verifica `primary` contra un botón o el logo: {derivado['primary']}")
+        for key, value in derivado.items():
+            print(f"{key} = {value}")
+        print("\nSIGUIENTE: pon primary, ink y canvas en capture.json → brand (dark y spark se "
+              "derivan solos) y corre `./vl marca`")
+        return 0
     data = json.loads(data_path.read_text(encoding="utf-8"))
     for key, value in data.get("vars", {}).items():
         if re.search(r"#[0-9a-fA-F]{3,8}|rgb", value):
@@ -167,8 +195,8 @@ def cmd_sugerir() -> int:
     for key, value in data.get("computed", {}).items():
         print(f"{key} (calculado) = {value}")
     print(f"\nfuente cuerpo: {data.get('body_font')} · títulos: {data.get('heading_font')}")
-    print("SIGUIENTE: llena capture.json → brand (primary, ink, canvas, dark, spark) y corre "
-          "`./vl marca`")
+    print("SIGUIENTE: llena capture.json → brand con primary, ink y canvas (dark y spark se "
+          "derivan solos: no los inventes) y corre `./vl marca`")
     return 0
 
 
@@ -190,10 +218,12 @@ def main() -> int:
     """Punto de entrada."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("sugerir")
+    sug = sub.add_parser("sugerir")
+    sug.add_argument("--primary", default="",
+                     help="hex del acento de la app, si no hay css-vars.json")
     sub.add_parser("aplicar").add_argument("--preset", default="blue-professional")
     args = parser.parse_args()
-    return cmd_sugerir() if args.cmd == "sugerir" else cmd_aplicar(args.preset)
+    return cmd_sugerir(args.primary) if args.cmd == "sugerir" else cmd_aplicar(args.preset)
 
 
 if __name__ == "__main__":

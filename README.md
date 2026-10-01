@@ -77,6 +77,40 @@ Son los 10 idiomas de Qwen3-TTS. **Probados:** español en videos completos; ing
 - 🔎 **Explicativos investigados** sobre cualquier tema, con fuentes citadas.
 - ✨ **Motion graphics**: tipografía cinética, diagramas y datos animados.
 - 🌎 **El mismo video en otro idioma**: cambia voz, guion y textos; reusa capturas y estructura.
+- 📘 **El manual escrito** de la misma app, con la skill `manual-app` que viene en este repo.
+
+### Vídeo o manual: elige el formato desde el principio
+
+`BRIEF.md → formato` decide el arco, la duración y qué dice cada línea. Si no lo declaras, la
+skill lo pregunta antes de escribir el guion.
+
+| | `lanzamiento` | `capacitacion` |
+|---|---|---|
+| Para qué | que quieran el producto | que sepan usarlo |
+| Duración | 30–120 s | 3–10 min |
+| Cada línea | nombra lo que se verá | dice **para qué sirve**, no solo qué es |
+| Lleva | gancho y cierre de marca | el modelo primero, el vocabulario del negocio y el orden de trabajo |
+
+## 📘 manual-app: el manual escrito, sin hacer el video
+
+Este repo trae una segunda skill, **independiente**: `manual-app` escribe el manual de usuario de
+una app con capturas reales y lo entrega en PDF con los colores de la marca. No necesita video.
+
+```text
+"Hazme el manual de usuario de https://mi-app.com"
+"Documenta este portal para los usuarios nuevos"
+```
+
+```bash
+~/.agents/skills/manual-app/scripts/ml init ~/manuales/mi-app --titulo "Mi App"
+cd ~/manuales/mi-app
+./ml pantalla --url https://mi-app.com --ruta /facturas --nombre app-facturas
+./ml check && ./ml pdf
+```
+
+Si ya hiciste el video, `ml init --desde <proyecto-de-video>` reutiliza sus capturas y su marca.
+Lo que hace útil al manual —y lo que la plantilla obliga a llenar— es decir **para qué sirve**
+cada pantalla, explicar los verbos del negocio y dejar claro **en qué orden** se usan las cosas.
 
 ## Números de videos reales
 
@@ -115,6 +149,9 @@ Las instrucciones completas para el agente están en [`video-web/SKILL.md`](vide
 ---
 
 ## Requisitos
+
+> `manual-app` necesita mucho menos: Python con `markdown` y `playwright`, y nada más. Ni GPU, ni
+> Node, ni ffmpeg.
 
 ### Sistema
 
@@ -189,14 +226,16 @@ Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
 
 ## Instalación
 
-1. Copia la carpeta `video-web/` en `~/.agents/skills/` (o descomprime el paquete):
+1. Copia la carpeta `video-web/` en `~/.agents/skills/` (o descomprime el paquete). Si también
+   quieres el manual escrito, copia `manual-app/` al mismo lugar: son independientes.
    ```bash
    tar -xzf video-web-skill.tar.gz -C ~/.agents/skills/
    ```
-2. Enlázala en tu agente:
+2. Enlázalas en tu agente:
    ```bash
    ln -s ~/.agents/skills/video-web ~/.claude/skills/video-web              # Claude Code
    ln -s ~/.agents/skills/video-web ~/.config/opencode/skills/video-web     # OpenCode
+   ln -s ~/.agents/skills/manual-app ~/.claude/skills/manual-app            # opcional
    ```
 3. Instala los requisitos de arriba y revisa el equipo:
    ```bash

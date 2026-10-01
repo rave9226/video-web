@@ -59,8 +59,25 @@ def test_guion_only_flags_long_lines(tmp_path):
     long_line = " ".join(["palabra"] * 50)
     body = "".join(f"## Line {i} — x (Frame {i})\n\n    {long_line}\n\n" for i in (1, 2, 3))
     (tmp_path / "SCRIPT.md").write_text(body, encoding="utf-8")
+    (tmp_path / "BRIEF.md").write_text("---\nformato: lanzamiento\n---\n", encoding="utf-8")
     issues = checks.check_guion(tmp_path)
     assert len(issues) == 3 and "(> 45)" in issues[0]
+
+
+def test_guion_exige_formato(tmp_path):
+    """Sin `formato` en el BRIEF no se sabe qué arco debe tener el guion."""
+    (tmp_path / "SCRIPT.md").write_text(
+        "## Line 1 — x (Frame 1)\n\n    Hola mundo.\n", encoding="utf-8")
+    assert any("no declara `formato`" in i for i in checks.check_guion(tmp_path))
+
+
+def test_capacitacion_necesita_cuerpo(tmp_path):
+    """Un guion de 60 s no alcanza para capacitar: avisa por duración y por líneas."""
+    (tmp_path / "SCRIPT.md").write_text(
+        "## Line 1 — x (Frame 1)\n\n    " + " ".join(["palabra"] * 40) + "\n", encoding="utf-8")
+    (tmp_path / "BRIEF.md").write_text("---\nformato: capacitacion\n---\n", encoding="utf-8")
+    issues = " ".join(checks.check_guion(tmp_path))
+    assert "es poco" in issues and "líneas es poco" in issues
 
 
 def test_storyboard_needs_src_and_real_assets_only(tmp_path):
@@ -108,3 +125,94 @@ def test_compat_detecta_dependencia_cambiada(tmp_path: Path, monkeypatch):
     assert checks.compat(skills, grabar=False) == 0
     (skills / checks.DEPENDENCIAS[0]).write_text("v2", encoding="utf-8")
     assert checks.compat(skills, grabar=False) == 1
+
+
+# --- Reglas nacidas de un video entregado con defectos que los checks no vieron ---
+
+def test_raiz_renombrada_se_detecta(tmp_path):
+    """Si la raíz no se llama `root`, las reglas #root del CSS no aplican (texto negro)."""
+    bad = GOOD_FRAME.replace('id="root"', 'id="f01-hook-root-inner"').replace(
+        "<template>", "<template>\n  <style>#root { color:#fff; }</style>")
+    issues = " ".join(checks.check_frame(tmp_path, _frame(tmp_path, bad, "5.2s")))
+    assert "debe llevar id='root'" in issues
+    assert 'id="root"' in issues or "id=\"root\"" in issues  # el aviso de _frame_timing
+
+
+def test_css_sin_color_en_root(tmp_path):
+    """Una regla #root sin `color:` deja que el texto herede el negro del navegador."""
+    bad = GOOD_FRAME.replace("<template>", "<template>\n  <style>#root { inset:0; }</style>")
+    assert any("no declara `color:`" in i
+               for i in checks.check_frame(tmp_path, _frame(tmp_path, bad)))
+
+
+def test_css_estila_ids_inexistentes(tmp_path):
+    """Un selector #id sin elemento suele ser un id renombrado a medias."""
+    bad = GOOD_FRAME.replace(
+        "<template>", "<template>\n  <style>#f01-hook-viejo { color:#fff; }</style>")
+    assert any("ids que no existen" in i
+               for i in checks.check_frame(tmp_path, _frame(tmp_path, bad)))
+
+
+def test_ancho_fijo_con_nowrap(tmp_path):
+    """Una caja que no parte línea ni encoge deja el texto por fuera."""
+    bad = GOOD_FRAME.replace("<template>", "<template>\n  <style>"
+                             "#f01-hook-url { width:400px; white-space:nowrap; }</style>")
+    assert any("white-space:nowrap" in i
+               for i in checks.check_frame(tmp_path, _frame(tmp_path, bad)))
+
+
+def _png(path: Path, size: tuple[int, int]) -> None:
+    from PIL import Image  # pylint: disable=import-outside-toplevel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", size, (200, 40, 40)).save(path)
+
+
+def test_imagen_estirada(tmp_path):
+    """Una captura mostrada con otra relación de aspecto sale deformada."""
+    _png(tmp_path / "assets/app.png", (800, 450))          # nativa 1.778
+    bad = GOOD_FRAME.replace(
+        "<template>", "<template>\n  <style>#f01-hook-img { width:800px; height:500px; }</style>"
+    ).replace("<h2", '<img id="f01-hook-img" src="assets/app.png" alt=""><h2')
+    assert any("sale estirada" in i for i in checks.check_frame(tmp_path, _frame(tmp_path, bad)))
+
+
+def test_imagen_con_object_fit_no_avisa(tmp_path):
+    """`object-fit` es una decisión explícita: no se avisa."""
+    _png(tmp_path / "assets/app.png", (800, 450))
+    ok = GOOD_FRAME.replace(
+        "<template>", "<template>\n  <style>#f01-hook-img { width:800px; height:500px;"
+        " object-fit:contain; }</style>"
+    ).replace("<h2", '<img id="f01-hook-img" src="assets/app.png" alt=""><h2')
+    assert not any("estirada" in i for i in checks.check_frame(tmp_path, _frame(tmp_path, ok)))
+
+
+def test_hallazgos_warning_no_se_silencian(tmp_path):
+    """LA prueba de regresión: `hf check` da ok=true con warnings dentro y hay que verlos."""
+    (tmp_path / ".vl").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".vl/check.json").write_text(json.dumps({
+        "ok": True,
+        "contrast": {"findings": [{"code": "contrast_below_aa", "severity": "warning",
+                                   "selector": "#f01-hook-eb", "message": "4.04:1 (need 4.5:1)",
+                                   "time": 60.1, "fixHint": "Try rgb(199,68,68)",
+                                   "sourceFile": "compositions/frames/f01-hook.html"}],
+                     "errorCount": 0, "warningCount": 1},
+    }), encoding="utf-8")
+    issues = " ".join(checks.check_findings(tmp_path))
+    assert "4.04:1" in issues and "#f01-hook-eb" in issues
+
+
+def test_solape_en_transicion_no_avisa(tmp_path):
+    """Dos escenas cruzándose en un crossfade es lo esperado, no un defecto."""
+    (tmp_path / ".vl").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "STORYBOARD.md").write_text(
+        "## Frame 1 — A\n\n- src: compositions/frames/f01-a.html\n- duration: 10s\n\n"
+        "## Frame 2 — B\n\n- src: compositions/frames/f02-b.html\n- duration: 10s\n",
+        encoding="utf-8")
+    finding = {"code": "content_overlap", "severity": "info", "selector": "#f01-a-w0",
+               "message": "Two text blocks overlap", "sourceFile": "compositions/frames/f01-a.html"}
+    (tmp_path / ".vl/check.json").write_text(json.dumps({
+        "layout": {"findings": [{**finding, "time": 10.0},      # en el corte: esperado
+                                {**finding, "time": 4.0}]},     # a mitad de escena: real
+    }), encoding="utf-8")
+    issues = checks.check_findings(tmp_path)
+    assert len(issues) == 1 and "t=4.0s" in issues[0]

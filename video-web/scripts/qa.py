@@ -17,7 +17,8 @@ from utils import imagenes, medios  # pylint: disable=import-error
 REVIEW = Path("renders/review")
 SNAPS = REVIEW / "snaps"
 STATIC_DIFF = 0.004  # diferencia media < 0.4 % entre inicio, medio y final = escena quieta
-SHARE_LIMIT = 30 * 2**20
+# 25 y no 30 MB: con el límite justo, un render de 30.7 MB no se pudo enviar.
+SHARE_LIMIT = 25 * 2**20
 
 
 def hyperframes() -> str:

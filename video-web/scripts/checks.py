@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from utils import colores, medios, texto  # pylint: disable=import-error
+from utils import colores, imagenes, medios, texto  # pylint: disable=import-error
 
 MAX_WORDS_LINE = 45  # más largo degrada el TTS; mejor dividir la línea
 WORDS_PER_S = 2.4
@@ -66,13 +66,64 @@ def check_marca(proj: Path) -> list[str]:
             ratio = colores.contrast(colors[key], colors["bg"])
             if ratio < 4.5:
                 issues.append(f"contraste {key}/bg = {ratio:.2f} (< 4.5): oscurece {key}")
-    for color in re.findall(r"\.PFX-(?:eyebrow|chip) \{[^}]*?[; ]color:(#[0-9A-Fa-f]{6})", md):
-        ratio = colores.contrast(color, colors["bg"]) if colors.get("bg") else 99
+    # Cada clase se mide sobre SU fondo: el chip está sobre su propio tinte, no sobre bg,
+    # y ahí el contraste baja. Medirlo contra bg dejaba pasar chips que fallaban AA.
+    for clase in ("eyebrow", "chip"):
+        regla = re.search(rf"\.PFX-{clase} \{{([^}}]*)\}}", md)
+        if not (regla and colors.get("bg")):
+            continue
+        color = re.search(r"[; ]color:(#[0-9A-Fa-f]{6})", regla.group(1))
+        tinte = re.search(r"background:(#[0-9A-Fa-f]{6})([0-9A-Fa-f]{2})", regla.group(1))
+        if not color:
+            continue
+        fondo = (colores.mix(colors["bg"], tinte.group(1), int(tinte.group(2), 16) / 255)
+                 if tinte else colors["bg"])
+        ratio = colores.contrast(color.group(1), fondo)
         if ratio < 4.5:
-            issues.append(f"eyebrow/chip {color} sobre bg = {ratio:.2f} (< 4.5): "
+            issues.append(f"{clase} {color.group(1)} sobre {fondo} = {ratio:.2f} (< 4.5): "
                           "corre `./vl marca`")
+    issues += _tokens_fuera_de_marca(colors)
     issues += [f"fuente declarada sin archivo: {font}" for font in
                re.findall(r'src:url\("(assets/fonts/[^"]+)"\)', md) if not (proj / font).exists()]
+    return issues
+
+
+# Tokens que no comparten el tono del primario a propósito: neutros y semánticos.
+TOKENS_LIBRES = {"bg", "text", "text-muted", "text-light", "surface", "positive", "negative",
+                 "brand-spark", "border"}
+TONO_MAX = 40  # grados de diferencia en el círculo de color antes de avisar
+
+
+def _tono(hexcol: str) -> float | None:
+    """Tono en grados (0-360); None si el color es un gris (sin tono)."""
+    r, g, b = (c / 255 for c in colores.rgb(hexcol))
+    alto, bajo = max(r, g, b), min(r, g, b)
+    if alto - bajo < 0.08:
+        return None
+    if alto == r:
+        return (60 * ((g - b) / (alto - bajo)) + 360) % 360
+    if alto == g:
+        return 60 * ((b - r) / (alto - bajo)) + 120
+    return 60 * ((r - g) / (alto - bajo)) + 240
+
+
+def _tokens_fuera_de_marca(colors: dict) -> list[str]:
+    """Colores con tono ajeno al primario: casi siempre copiados de otro proyecto."""
+    base = _tono(colors["primary"]) if colors.get("primary") else None
+    if base is None:
+        return []
+    issues = []
+    for key, value in colors.items():
+        if key in TOKENS_LIBRES or key == "primary":
+            continue
+        tono = _tono(value)
+        if tono is None:
+            continue
+        dif = min(abs(tono - base), 360 - abs(tono - base))
+        if dif > TONO_MAX:
+            issues.append(f"{key} {value} tiene un tono {dif:.0f}° lejos del primario "
+                          f"{colors['primary']}: ¿es de la marca o quedó de otro proyecto? "
+                          "(references/marca.md)")
     return issues
 
 
@@ -91,8 +142,33 @@ def check_guion(proj: Path) -> list[str]:
             issues.append(f"frame {frame}: {count} palabras (> {MAX_WORDS_LINE}); el TTS "
                           "rinde peor, conviene dividirla")
     words = sum(len(texto.normalize(t)) for t in lines.values())
-    print(f"ℹ {len(lines)} líneas, {words} palabras ≈ {words / WORDS_PER_S:.0f} s de voz "
-          "(más pausas)")
+    segundos = words / WORDS_PER_S
+    print(f"ℹ {len(lines)} líneas, {words} palabras ≈ {segundos:.0f} s de voz (más pausas)")
+    return issues + _formato(proj, len(lines), segundos)
+
+
+# Cada formato tiene su arco y su duración (references/oficio.md § Guion).
+FORMATOS = {"lanzamiento": (30, 120), "capacitacion": (150, 600), "explicativo": (45, 600)}
+
+
+def _formato(proj: Path, n_lineas: int, segundos: float) -> list[str]:
+    """El guion debe corresponder al formato declarado en el BRIEF."""
+    formato = texto.parse_frontmatter(_read(proj / "BRIEF.md")).get("formato", "").strip()
+    if not formato:
+        return ["BRIEF.md no declara `formato`: capacitacion | lanzamiento | explicativo. "
+                "🛑 pregúntaselo al usuario antes de escribir el guion (SKILL.md § Formato)"]
+    if formato not in FORMATOS:
+        return [f"BRIEF.md → formato '{formato}' no es {' | '.join(FORMATOS)}"]
+    minimo, maximo = FORMATOS[formato]
+    issues = []
+    if segundos < minimo:
+        issues.append(f"formato {formato}: {segundos:.0f} s de narración es poco (mínimo "
+                      f"~{minimo} s); con menos no alcanza a explicar lo que promete el arco")
+    if segundos > maximo:
+        issues.append(f"formato {formato}: {segundos:.0f} s es mucho (máximo ~{maximo} s)")
+    if formato == "capacitacion" and n_lineas < 10:
+        issues.append(f"formato capacitacion: {n_lineas} líneas es poco (mínimo 10); una "
+                      "pantalla por función más el modelo y el orden de trabajo")
     return issues
 
 
@@ -160,10 +236,51 @@ def _frame_structure(html: str, fid: str) -> list[str]:
     if FORBIDDEN_JS.search(html):
         issues.append(f"{fid}: prohibido Math.random/Date.now/repeat:-1/yoyo (no determinista)")
     prefix = fid.split("-")[0] + "-"  # fNN-: único entre escenas, que es lo que importa
-    bad_ids = [i for i in re.findall(r'\bid="([^"]+)"', html)
-               if i != "root" and not i.startswith(prefix)]
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    bad_ids = [i for i in ids if i != "root" and not i.startswith(prefix)]
     if bad_ids:
         issues.append(f"{fid}: ids sin prefijo '{prefix}': {', '.join(sorted(set(bad_ids))[:6])}")
+    return issues + _frame_css(html, fid, set(ids))
+
+
+def _frame_css(html: str, fid: str, ids: set[str]) -> list[str]:
+    """Reglas del <style> que no corresponden al HTML: la clase de fallo más silenciosa.
+
+    Un `#root { color:#fff }` sobre un contenedor llamado de otra forma no aplica, y el
+    texto hereda el negro del navegador. Pasó en un video entregado: título negro sobre
+    fondo oscuro, con todos los checks en verde.
+    """
+    issues = []
+    estilos = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, re.S))
+    if not estilos:
+        return issues
+    # El div con data-composition-id es la raíz: el resto del contrato (data-duration,
+    # las reglas de #root) lo supone así.
+    raiz = re.search(rf'<[^>]*data-composition-id="{re.escape(fid)}"[^>]*>', html)
+    if raiz and 'id="root"' not in raiz.group(0):
+        nombre = re.search(r'id="([^"]+)"', raiz.group(0))
+        hoy = f" (hoy es id={nombre.group(1)!r})" if nombre else ""
+        issues.append(f"{fid}: el contenedor con data-composition-id debe llevar id='root'"
+                      f"{hoy}; si no, las reglas #root del CSS no aplican")
+    # Selectores #id del CSS sin elemento que los reciba (ids renombrados, typos).
+    # Los cuerpos de las reglas se quitan primero: ahí viven los colores hex (#C04346),
+    # que si no se cuelan como "ids".
+    selectores = re.sub(r"\{[^}]*\}", " ", estilos)
+    huerfanos = {i for i in re.findall(r"#([A-Za-z][\w-]*)", selectores) if i not in ids}
+    if huerfanos:
+        issues.append(f"{fid}: el CSS estila ids que no existen: "
+                      f"{', '.join('#' + i for i in sorted(huerfanos)[:6])}")
+    if re.search(r"#root\s*\{[^}]*\}", estilos) and not re.search(
+            r"#root\s*\{[^}]*[;{\s]color\s*:", estilos):
+        issues.append(f"{fid}: la regla #root no declara `color:`; el texto hereda el negro "
+                      "del navegador (usa el color de texto de frame.md)")
+    # Caja de texto que no puede partir línea ni encoger: el texto se sale al cambiar de
+    # idioma, de fuente o de contenido, aunque hoy quepa.
+    for selector, cuerpo in re.findall(r"([^{}]+)\{([^}]*)\}", estilos):
+        if (re.search(r"[;{\s]width\s*:\s*\d+px", cuerpo)
+                and re.search(r"white-space\s*:\s*nowrap", cuerpo)):
+            issues.append(f"{fid}: {selector.strip()} mezcla ancho fijo en px con "
+                          "white-space:nowrap; dimensiónalo con padding + inline-flex")
     return issues
 
 
@@ -171,7 +288,11 @@ def _frame_timing(html: str, fid: str, dur: float) -> list[str]:
     """Raíz y clips largos deben llegar al final del frame, o la transición queda en blanco."""
     issues = []
     root = re.search(r'id="root"[^>]*data-duration="([\d.]+)"', html)
-    if root and float(root.group(1)) < dur - 0.02:
+    if not root:
+        # Sin esto el check se saltaba en silencio cuando la raíz se llamaba de otra forma.
+        issues.append(f"{fid}: no encuentro id=\"root\" con data-duration; la raíz debe "
+                      f"llevar id=\"root\" y data-duration=\"{dur}\"")
+    elif float(root.group(1)) < dur - 0.02:
         issues.append(f"{fid}: root data-duration {root.group(1)} < duración del frame {dur}")
     for tag in re.findall(r"<[^>]*\bdata-start=[^>]*>", html):
         attr = dict(re.findall(r'data-([\w-]+)="([^"]*)"', tag))
@@ -182,6 +303,41 @@ def _frame_timing(html: str, fid: str, dur: float) -> list[str]:
             name = re.search(r'id="([^"]+)"', tag)
             issues.append(f"{fid}: el clip {name.group(1) if name else '?'} termina en "
                           f"{end:.2f}s pero el frame dura {dur}s: usa data-duration={dur}")
+    return issues
+
+
+ASPECT_TOL = 0.01  # 1 %: por debajo el estiramiento no se nota; por encima sí
+
+
+def _caja_css(estilos: str, ident: str) -> tuple[float, float] | None:
+    """Ancho y alto en px que el CSS le da a ese id, si fija los dos y no usa object-fit."""
+    regla = re.search(rf"#{re.escape(ident)}\s*\{{([^}}]*)\}}", estilos)
+    if not regla or re.search(r"object-fit\s*:\s*(cover|contain)", regla.group(1)):
+        return None  # recortar o encajar es una decisión explícita
+    ancho = re.search(r"[;{\s]width\s*:\s*([\d.]+)px", regla.group(1))
+    alto = re.search(r"[;{\s]height\s*:\s*([\d.]+)px", regla.group(1))
+    return (float(ancho.group(1)), float(alto.group(1))) if ancho and alto else None
+
+
+def _frame_images(proj: Path, html: str, fid: str) -> list[str]:
+    """Imágenes de assets/ mostradas con una relación de aspecto distinta a la nativa."""
+    estilos = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, re.S))
+    issues = []
+    for tag in re.findall(r"<img\b[^>]*>", html):
+        src = re.search(r'src="(assets/[^"]+)"', tag)
+        ident = re.search(r'id="([^"]+)"', tag)
+        if not (src and ident) or src.group(1).endswith(".svg"):
+            continue
+        archivo = proj / src.group(1)
+        caja = _caja_css(estilos, ident.group(1)) if archivo.exists() else None
+        if not caja:
+            continue
+        mostrada, nativa = caja[0] / caja[1], imagenes.aspect(archivo)
+        if abs(mostrada / nativa - 1) > ASPECT_TOL:
+            issues.append(f"{fid}: {src.group(1)} se muestra {caja[0]:g}x{caja[1]:g} "
+                          f"({mostrada:.3f}) pero su relación nativa es {nativa:.3f}: sale "
+                          f"estirada. Usa height:{round(caja[0] / nativa)}px o "
+                          "object-fit:contain")
     return issues
 
 
@@ -196,6 +352,7 @@ def check_frame(proj: Path, frame: dict) -> list[str]:
     issues += [f"{fid}: referencia inexistente {a}" for a in
                sorted(set(re.findall(r'(assets/[\w./-]+\.(?:png|jpe?g|webp|svg|woff2))', html)))
                if not (proj / a).exists()]
+    issues += _frame_images(proj, html, fid)
     if frame["fields"].get("duration"):
         issues += _frame_timing(html, fid, texto.seconds(frame["fields"]["duration"]))
     return issues
@@ -216,6 +373,60 @@ def lint_findings(proj: Path, stem: str) -> list[str]:
             and Path(f.get("file", "")).stem == stem]
 
 
+# Códigos de `hf check` que en un crossfade son falsos positivos: dos escenas se cruzan
+# a propósito. Solo se descartan si el instante cae dentro de una transición.
+EN_TRANSICION_OK = {"content_overlap"}
+# Margen alrededor del corte: la transición más larga de `transitions.mjs` dura 0.6 s.
+MARGEN_TRANSICION_S = 0.75
+
+
+def _cortes(proj: Path) -> list[float]:
+    """Segundo en que empieza cada frame del video ensamblado (los cortes)."""
+    cortes, t = [], 0.0
+    for frame in texto.split_frames(_read(proj / "STORYBOARD.md")):
+        dur = frame["fields"].get("duration")
+        if not dur:
+            return cortes
+        cortes.append(t)
+        t += texto.seconds(dur)
+    return cortes
+
+
+def _en_transicion(tiempo: float, cortes: list[float]) -> bool:
+    """¿Ese instante cae en un cruce entre dos escenas?"""
+    return any(abs(tiempo - c) <= MARGEN_TRANSICION_S for c in cortes)
+
+
+def check_findings(proj: Path, stem: str = "") -> list[str]:
+    """Hallazgos del navegador (`hf check --json`): contraste AA real, desbordes y solapes.
+
+    Incluye severidad `warning` e `info` a propósito: `hf check` las deja fuera de su `ok`
+    y por eso llegaron a un video entregado ocho fallos de contraste AA que sí detectó.
+    """
+    reporte = _json(proj / ".vl/check.json")
+    if not reporte:
+        return ["no hay .vl/check.json: corre `./vl ensamblar`"]
+    cortes = _cortes(proj)
+    issues = []
+    for seccion, datos in reporte.items():
+        if not isinstance(datos, dict) or not isinstance(datos.get("findings"), list):
+            continue
+        for f in datos["findings"]:
+            archivo = Path(f.get("sourceFile") or f.get("file") or "").stem
+            if stem and archivo != stem:
+                continue
+            tiempo = f.get("time")
+            if (f.get("code") in EN_TRANSICION_OK and isinstance(tiempo, (int, float))
+                    and _en_transicion(float(tiempo), cortes)):
+                continue  # dos escenas cruzándose en una transición: esperado
+            donde = f"{archivo}: " if archivo and not stem else ""
+            cuando = f" en t={tiempo:.1f}s" if isinstance(tiempo, (int, float)) else ""
+            pista = f" — {f['fixHint']}" if f.get("fixHint") else ""
+            issues.append(f"{donde}{seccion}/{f.get('code', '?')} en "
+                          f"{f.get('selector', '?')}{cuando}: {f.get('message', '')}{pista}")
+    return issues
+
+
 def check_escenas(proj: Path) -> list[str]:
     """Todas las escenas y el resultado de lint/check del ensamblado."""
     issues = []
@@ -223,9 +434,7 @@ def check_escenas(proj: Path) -> list[str]:
         issues += check_frame(proj, frame)
     if not re.search(r"\b0 errors?(?:\(s\))?\b", _read(proj / ".vl/lint.txt")):
         issues.append("lint con errores o sin correr: `./vl ensamblar` y lee .vl/lint.txt")
-    if "Check passed" not in _read(proj / ".vl/check.txt"):
-        issues.append("check no pasó: lee .vl/check.txt (arreglos en references/oficio.md)")
-    return issues
+    return issues + check_findings(proj)
 
 
 def check_entrega(proj: Path) -> list[str]:
@@ -344,7 +553,8 @@ def main() -> int:
         if what in (Path(frame["fields"].get("src", "")).stem, str(frame["number"]),
                     f"{frame['number']:02d}"):
             stem = Path(frame["fields"].get("src", "")).stem
-            return show(check_frame(proj, frame) + lint_findings(proj, stem))
+            hallazgos = check_findings(proj, stem) if (proj / ".vl/check.json").exists() else []
+            return show(check_frame(proj, frame) + lint_findings(proj, stem) + hallazgos)
     print(f"✗ '{what}' no es una revisión ({', '.join(CHECKS)}, todo) ni un frame de "
           "STORYBOARD.md")
     return 2

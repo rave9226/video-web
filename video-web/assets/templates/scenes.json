@@ -1,0 +1,30 @@
+{
+  "_comentario": "Una entrada por escena. Los segundos salen de cues.md; los rects, de capture/extracted/regions.md o de `./vl medir`. Genera con `./vl escenas`.",
+  "window": {"left": 620, "width": 1240, "bar": 34},
+  "frames": [
+    {"kind": "cover", "slug": "f01-gancho",
+     "title": "<NOMBRE DEL PRODUCTO>", "sub": "<SUBTÍTULO EN MAYÚSCULAS>",
+     "reveal": 10.4,
+     "chips": [["<SERVICIO O TEMA>", 3.7], ["<OTRO>", 4.7]],
+     "stats": [["<CIFRA REAL DE LA APP>", "<QUÉ CUENTA>", 7.8]]},
+
+    {"kind": "steps", "slug": "f02-modelo", "eyebrow": "Cómo está organizado",
+     "h2": [["Tres", 3.8], ["niveles", 4.1]],
+     "steps": [["1", "<NIVEL 1>", "<PARA QUÉ SIRVE>", 5.1],
+               ["2", "<NIVEL 2>", "<PARA QUÉ SIRVE>", 7.5],
+               ["3", "<NIVEL 3>", "<PARA QUÉ SIRVE>", 10.0]]},
+
+    {"kind": "window", "slug": "f03-<PANTALLA>", "eyebrow": "<SECCIÓN>",
+     "url": "<dominio.de.la.app>",
+     "h2": [["<PALABRA>", 0.4], ["<PALABRA>", 0.7]],
+     "imgs": [["assets/app-<pantalla>.png", 0]],
+     "rings": [[[240, 150, 309, 125], 3.9, 5.0]],
+     "chips": [["<PARA QUÉ SIRVE ESTO>", 3.9]]},
+
+    {"kind": "close", "slug": "f04-cierre",
+     "title": "<NOMBRE DEL PRODUCTO>", "sub": "<LLAMADO A LA ACCIÓN>",
+     "url": "<dominio.de.la.app>", "reveal": 10.6,
+     "steps": [["1", "<PRIMER PASO DEL ORDEN DE TRABAJO>", 1.9],
+               ["2", "<SEGUNDO>", 3.3], ["3", "<TERCERO>", 4.6]]}
+  ]
+}
