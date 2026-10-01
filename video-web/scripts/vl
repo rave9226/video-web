@@ -8,7 +8,19 @@ set -uo pipefail
 VL_SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 S="$(dirname "$VL_SELF")"
 SKILL="$(dirname "$S")"
-PY="${VL_PY:-$(command -v python3)}"
+# El primer intérprete que tenga las dependencias. `VL_PY` manda si está definido; si no,
+# se buscan los venv habituales antes del python del sistema (que casi nunca las tiene).
+elegir_py() {
+  local c
+  for c in "${VL_PY:-}" "${VIRTUAL_ENV:-}/bin/python3" "$PWD/.venv/bin/python3" \
+           "$HOME/.venv/bin/python3" "$HOME/.venvs/video-web/bin/python3" \
+           "$(command -v python3)"; do
+    [[ -x "$c" ]] || continue
+    "$c" -c "import playwright, PIL, numpy" 2> /dev/null && { echo "$c"; return; }
+  done
+  echo "${VL_PY:-$(command -v python3)}"  # que falle con el mensaje de `vl doctor`
+}
+PY="$(elegir_py)"
 QWEN="${VL_QWEN_VENV:-$HOME/.venvs/qwen-tts}"
 AGENTS="${VL_AGENTS_SKILLS:-$HOME/.agents/skills}"
 PLV="${VL_PLV_DIR:-$AGENTS/product-launch-video}"
