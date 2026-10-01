@@ -5,9 +5,11 @@
 ![Local](https://img.shields.io/badge/TTS-100%25_local-orange)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-skill-black)
 
-### Convierte el material que ya tienes en un video narrado.
+### Convierte el material que ya tienes en un video narrado, o en el manual escrito.
 
 video-web es una skill de código abierto (Apache-2.0), sin costo de licencia ni experiencia previa en edición. Tu agente puede partir de una app, su código si tiene acceso, un PDF, otros documentos, una investigación o una idea para crear demos, tutoriales, capacitaciones y explicativos. También permite videos de varios minutos.
+
+**El repo trae dos skills, una instalación:** `video-web` hace el video; **`manual-app` hace el manual de usuario en PDF** de la misma app. Ninguna depende de la otra: puedes pedir solo el manual.
 
 Úsala con un agente que pueda leer y ejecutar skills. Está documentada para Claude Code y OpenCode, incluido OpenCode con DeepSeek V4.1 Flash; otros harnesses requieren adaptar la instalación y comprobar sus herramientas.
 
@@ -26,6 +28,7 @@ Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo
 "Convierte este manual.pdf en un video tutorial paso a paso de 2 minutos"
 "Investiga cómo migrar de Google Workspace a Microsoft 365 y haz un video de capacitación"
 "Make a 30-second motion graphics explainer about our new pricing, English voice-over"
+"Hazme el manual de usuario de https://mi-app.com para la gente nueva"
 ```
 
 **Sin editor de video, locutor ni suscripción de TTS.** Dale acceso autorizado a una app y el agente puede explorarla mediante la captura en solo lectura, preparar el guion, usar sus colores y fuentes, generar la voz, construir las escenas y renderizar el MP4. Si le das solo un tema, puede investigarlo y crear un explicativo sin app que capturar. La voz y el render se ejecutan localmente; el modelo del agente puede ser externo y tener un costo de uso. La música generada con MusicGen no tiene licencia comercial: para publicar comercialmente, usa música propia con licencia o ninguna.
@@ -39,6 +42,7 @@ Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo
 | 🗂️ **Cualquier documento** (Word, PowerPoint, notas, transcripciones) | Capacitaciones, onboarding y comunicados internos narrados |
 | 🔎 **Solo un tema** | El agente investiga, cita sus fuentes, busca imágenes oficiales o con licencia libre y arma un explicativo |
 | ✨ **Una idea o un mensaje** | Motion graphics con tipografía cinética, diagramas, números y formas animadas, sin capturas |
+| 📘 **La URL de tu app, otra vez** | El **manual de usuario** en PDF: una sección por pantalla, para qué sirve cada una y en qué orden se usan |
 
 También puedes combinar fuentes: la app con su manual, o una investigación con capturas oficiales de documentación. Por ejemplo, un video interno de 3 minutos sobre una **migración de Google Workspace a Microsoft 365**: equivalencias entre herramientas y recorrido por Teams, SharePoint, Planner y Power Automate con capturas oficiales de la documentación de Microsoft. Sin app que capturar.
 
@@ -77,7 +81,7 @@ Son los 10 idiomas de Qwen3-TTS. **Probados:** español en videos completos; ing
 - 🔎 **Explicativos investigados** sobre cualquier tema, con fuentes citadas.
 - ✨ **Motion graphics**: tipografía cinética, diagramas y datos animados.
 - 🌎 **El mismo video en otro idioma**: cambia voz, guion y textos; reusa capturas y estructura.
-- 📘 **El manual escrito** de la misma app, con la skill `manual-app` que viene en este repo.
+- 📘 **Manuales de usuario** en PDF de la misma app, con `manual-app`.
 
 ### Vídeo o manual: elige el formato desde el principio
 
@@ -91,10 +95,14 @@ skill lo pregunta antes de escribir el guion.
 | Cada línea | nombra lo que se verá | dice **para qué sirve**, no solo qué es |
 | Lleva | gancho y cierre de marca | el modelo primero, el vocabulario del negocio y el orden de trabajo |
 
-## 📘 manual-app: el manual escrito, sin hacer el video
+## 📘 Manuales de usuario con `manual-app`
 
-Este repo trae una segunda skill, **independiente**: `manual-app` escribe el manual de usuario de
-una app con capturas reales y lo entrega en PDF con los colores de la marca. No necesita video.
+La otra mitad del repo. Un manual se usa distinto que un video: la gente llega buscando **una**
+cosa, con la app abierta al lado. `manual-app` escribe el manual de una app con capturas reales y
+lo entrega en PDF con los colores de la marca.
+
+**Funciona sola.** No necesita video, ni GPU, ni Node, ni ffmpeg: Python con `markdown` y
+`playwright`, y nada más.
 
 ```text
 "Hazme el manual de usuario de https://mi-app.com"
@@ -150,8 +158,8 @@ Las instrucciones completas para el agente están en [`video-web/SKILL.md`](vide
 
 ## Requisitos
 
-> `manual-app` necesita mucho menos: Python con `markdown` y `playwright`, y nada más. Ni GPU, ni
-> Node, ni ffmpeg.
+> Esto es lo que pide `video-web` para hacer **videos**. Para **manuales** con `manual-app`
+> basta Python con `markdown` y `playwright`: ni GPU, ni Node, ni ffmpeg.
 
 ### Sistema
 
@@ -226,16 +234,17 @@ Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
 
 ## Instalación
 
-1. Copia la carpeta `video-web/` en `~/.agents/skills/` (o descomprime el paquete). Si también
-   quieres el manual escrito, copia `manual-app/` al mismo lugar: son independientes.
+1. Copia las dos carpetas, `video-web/` y `manual-app/`, en `~/.agents/skills/` (o descomprime
+   el paquete). Son independientes: si solo quieres manuales, copia `manual-app/`.
    ```bash
    tar -xzf video-web-skill.tar.gz -C ~/.agents/skills/
    ```
 2. Enlázalas en tu agente:
    ```bash
-   ln -s ~/.agents/skills/video-web ~/.claude/skills/video-web              # Claude Code
-   ln -s ~/.agents/skills/video-web ~/.config/opencode/skills/video-web     # OpenCode
-   ln -s ~/.agents/skills/manual-app ~/.claude/skills/manual-app            # opcional
+   ln -s ~/.agents/skills/video-web  ~/.claude/skills/video-web             # Claude Code
+   ln -s ~/.agents/skills/manual-app ~/.claude/skills/manual-app
+   ln -s ~/.agents/skills/video-web  ~/.config/opencode/skills/video-web    # OpenCode
+   ln -s ~/.agents/skills/manual-app ~/.config/opencode/skills/manual-app
    ```
 3. Instala los requisitos de arriba y revisa el equipo:
    ```bash

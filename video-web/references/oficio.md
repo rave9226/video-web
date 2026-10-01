@@ -51,6 +51,52 @@ cortos para el formato que declaran; y estima la duración.
 
 ## Voz (Qwen3-TTS local)
 
+### La receta que funciona (voz de casa)
+
+El instruct `es` que ya viene en `audio.json` es el que produjo la voz aprobada de los videos de
+esta skill: **mujer colombiana de unos treinta años, nativa de Bogotá**, español latinoamericano
+neutro con acento colombiano natural. No la cambies sin motivo: está escrita para evitar el fallo
+más común, que es un acento extranjero.
+
+**Esto ya es el comportamiento por defecto**: los valores de abajo están en
+`assets/templates/audio.json` y `./vl voz design` mide y ordena las candidatas contra ellos.
+No hay que configurar nada; se ajustan por proyecto en `audio.json` si hace falta.
+
+| | Valor por defecto | Quién lo aplica |
+|---|---|---|
+| **P(idioma) del `ref.wav`** | **≥ 0.99** (`gates.ref_min_p_lang`) | `voz design` descarta la candidata. **Es el único que detecta el acento extranjero:** la que sonaba a inglés daba 0.90 y las buenas dan 0.998–1.0 |
+| Tono (f0 mediana) | 230–275 Hz (`voice.perfil.f0_hz`) | `voz design` lo mide por autocorrelación y marca «fuera de perfil». Es una banda de cordura, no distingue acentos |
+| Ritmo | 2.0–2.6 palabras/s (`voice.perfil.words_per_s`) | igual que el tono. La voz aprobada iba a 2.2 |
+| WER por línea | ≤ 0.08 (`gates.max_wer`) | `voz lines` reintenta con otra semilla |
+| Nivel | −18 LUFS, 44.1 kHz mono | `voz lines`, automático |
+| Música debajo de la voz | 12.5 dB (`bgm.under_voice_db`) | `./vl musica` |
+
+Las candidatas se ordenan **primero por perfil cumplido** y luego por P(idioma) y WER, así que
+la primera de la lista es la que más se parece a la que funcionó. 🛑 La elección final sigue
+siendo del usuario, de oído: el filtro es una señal, no un veredicto.
+
+**Cómo se construye:** `./vl voz design` genera la referencia con
+`Qwen3-TTS-12Hz-1.7B-VoiceDesign` a partir del instruct; `./vl voz lines` clona cada línea con
+`-Base` (temperatura 0.8, top_p 0.95, semilla `4242 + frame`), la recorta al habla y la nivela.
+
+**El guion importa tanto como la voz.** Para que suene natural y el WER quede en 0:
+
+- **Números y fechas con letras:** «dos mil veintiséis», «setenta coma cuatro por ciento», «el
+  trece de octubre». En dígitos, el TTS los lee mal o los salta.
+- **Siglas y marcas en `respell`**, solo lo que oye el TTS: `{"CRM": "ce erre eme",
+  "Wompi": "Uómpi"}`.
+- **Una sola forma de trato** en todo el guion (tú o usted), y líneas de 45 palabras máximo.
+- **El nombre del producto fuera del `ref_text`** si es de otro idioma: baja P(idioma) y ninguna
+  candidata pasa. En las líneas, va con `respell`.
+
+**Si una línea sale con acento extranjero, el problema es la referencia, no la línea.** Mira la
+P(idioma) del `ref.wav` antes de regenerar líneas una por una.
+
+> El audio de referencia no se publica con la skill: cada proyecto genera el suyo, porque el
+> `ref_text` nombra al producto de ese video. La receta de arriba reproduce una voz equivalente.
+
+### Diseñar la voz de un proyecto
+
 1. En `audio.json`, escribe `voice.ref_text`: 20–30 palabras en el idioma del video sobre el
    producto. Si su nombre es de otro idioma ("Books to Scrape" en un video en español), déjalo
    fuera de `ref_text`: baja P(idioma) y ninguna candidata pasa; en las líneas del guion usa

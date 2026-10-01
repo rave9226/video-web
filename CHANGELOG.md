@@ -9,6 +9,13 @@ Lecciones de un video de capacitación real: lo que la skill ya detectaba y no m
 colores que obligaba a inventar y las escenas que cada worker construía a su manera.
 
 ### Agregado
+- **La receta de voz es el comportamiento por defecto.** El instruct `es` de `audio.json` (mujer
+  colombiana de Bogotá, nativa) es el que produjo la voz aprobada; ahora `./vl voz design`
+  **mide tono y ritmo** de cada candidata (f0 por autocorrelación y palabras/s con Whisper) y las
+  ordena primero por perfil cumplido. `voice.perfil` trae los rangos probados (f0 230–275 Hz,
+  2.0–2.6 palabras/s) y `gates.ref_min_p_lang` sube de 0.97 a **0.99**, que es el único umbral
+  que detecta el acento extranjero: la referencia que sonaba a inglés daba 0.90 y las buenas dan
+  0.998–1.0. La elección final sigue siendo del usuario, de oído.
 - **`formato` en BRIEF.md** (`capacitacion` | `lanzamiento` | `explicativo`): decide el arco, la
   duración y qué dice cada línea. `./vl check guion` avisa si falta o si el guion es demasiado
   corto para el formato. Los dos arcos, en `references/oficio.md` § Guion.
@@ -25,8 +32,10 @@ colores que obligaba a inventar y las escenas que cada worker construía a su ma
   en vez de abortar.
 - Cuatro evals nuevos: formato preguntado, capacitación que explica para qué sirve, marca sin
   colores inventados y hallazgos del navegador que no se ignoran.
-- **Skill nueva `manual-app`** (independiente): manual de usuario en PDF con capturas reales.
-  Reutiliza un proyecto de video-web si existe (`ml init --desde`), pero no lo necesita.
+- **Skill nueva `manual-app`**, al mismo nivel que el video y no como un extra: manual de usuario
+  en PDF con capturas reales, una sección por pantalla con su propósito y el orden de trabajo.
+  Funciona sola (Python con `markdown` y `playwright`: ni GPU, ni Node, ni ffmpeg) y reutiliza un
+  proyecto de video-web si existe (`ml init --desde`).
 
 ### Corregido
 - **`./vl check escenas` leía mal el resultado de `hf check`.** Decidía con

@@ -216,3 +216,13 @@ def test_solape_en_transicion_no_avisa(tmp_path):
     }), encoding="utf-8")
     issues = checks.check_findings(tmp_path)
     assert len(issues) == 1 and "t=4.0s" in issues[0]
+
+
+def test_perfil_de_voz_en_la_plantilla():
+    """La receta de la voz es el comportamiento por defecto, no solo documentación."""
+    plantilla = json.loads((Path(checks.__file__).parents[1]
+                            / "assets/templates/audio.json").read_text(encoding="utf-8"))
+    assert plantilla["gates"]["ref_min_p_lang"] >= 0.99, "0.97 dejaba pasar acento extranjero"
+    perfil = plantilla["voice"]["perfil"]
+    assert perfil["f0_hz"][0] <= 250 <= perfil["f0_hz"][1], "la voz aprobada medía 250 Hz"
+    assert perfil["words_per_s"][0] <= 2.2 <= perfil["words_per_s"][1], "iba a 2.2 palabras/s"

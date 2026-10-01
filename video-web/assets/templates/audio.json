@@ -8,11 +8,31 @@
       "es": "Mujer colombiana de unos treinta años, hablante nativa de español, nacida y criada en Bogotá. Habla español latinoamericano neutro con acento colombiano natural, sin ningún acento extranjero: erres bien vibradas, vocales puras y abiertas, seseo. Voz cálida, segura y cercana de presentadora de televisión; ritmo medio y dicción clara.",
       "es-mx": "Locutora profesional mexicana, hablante nativa de español de la Ciudad de México, de unos treinta años. Español latinoamericano neutro de doblaje, sin acento extranjero, con entonación natural y vocales puras. Voz cálida, amable y segura; ritmo medio."
     },
+    "perfil": {
+      "f0_hz": [
+        230,
+        275
+      ],
+      "words_per_s": [
+        2.0,
+        2.6
+      ]
+    },
     "seed": 4242
   },
   "respell": {},
-  "pads": {"first_head_s": 0.6, "tail_s": 0.55, "last_tail_s": 2.2, "edge_s": 0.12},
-  "gates": {"max_wer": 0.08, "min_p_lang": 0.97, "ref_min_p_lang": 0.97, "tries": 3},
+  "pads": {
+    "first_head_s": 0.6,
+    "tail_s": 0.55,
+    "last_tail_s": 2.2,
+    "edge_s": 0.12
+  },
+  "gates": {
+    "max_wer": 0.08,
+    "min_p_lang": 0.97,
+    "ref_min_p_lang": 0.99,
+    "tries": 3
+  },
   "bgm": {
     "prompt": "uplifting corporate technology background music, warm electric piano and soft synth pads, light steady percussion, calm and confident, major key, 100 BPM, clean modern production, no vocals",
     "under_voice_db": 12.5

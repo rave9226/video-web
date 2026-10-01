@@ -23,6 +23,10 @@ DESIGN_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 BASE_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
 GEN_KWARGS = {"temperature": 0.8, "top_p": 0.95, "max_new_tokens": 2048}
 TARGET_LUFS = -18
+# Perfil de la voz que funcionó (references/oficio.md § La receta que funciona). Se usa para
+# ordenar las candidatas: una con buen P(idioma) pero tono o ritmo fuera de rango suena mal.
+# Se puede ajustar por proyecto en audio.json → voice.perfil.
+PERFIL = {"f0_hz": [230, 275], "words_per_s": [2.0, 2.6]}
 
 
 _LOADED: dict = {"name": None, "model": None}
@@ -90,17 +94,54 @@ def p_lang(whisper, path: Path, lang: str) -> float:
     return round(float(dict(info.all_language_probs or []).get(lang, 0.0)), 4)
 
 
+def f0_mediana(path: Path) -> float:
+    """Tono mediano en Hz por autocorrelación de los tramos sonoros (0 si no hay voz)."""
+    import numpy as np  # pylint: disable=import-outside-toplevel,import-error
+    import soundfile as sf  # pylint: disable=import-outside-toplevel,import-error
+    audio, rate = sf.read(str(path), dtype="float32", always_2d=True)
+    onda = audio.mean(axis=1)
+    paso, ventana = int(rate * 0.01), int(rate * 0.04)
+    lo, hi = int(rate / 400), int(rate / 70)  # 70–400 Hz: voz humana
+    tonos = []
+    for inicio in range(0, max(0, len(onda) - ventana), paso):
+        trozo = onda[inicio:inicio + ventana]
+        if float(np.sqrt(np.mean(trozo ** 2))) < 0.01:
+            continue  # silencio
+        trozo = trozo - trozo.mean()
+        corr = np.correlate(trozo, trozo, mode="full")[len(trozo) - 1:]
+        if corr[0] <= 0 or hi >= len(corr):
+            continue
+        pico = int(np.argmax(corr[lo:hi])) + lo
+        if corr[pico] / corr[0] > 0.3:  # periodicidad suficiente = sonoro
+            tonos.append(rate / pico)
+    return round(float(np.median(tonos)), 1) if tonos else 0.0
+
+
+def _fuera(valor: float, rango: list) -> bool:
+    """¿El valor cae fuera del rango del perfil? (0 = no medible, no penaliza)."""
+    return bool(valor) and not rango[0] <= valor <= rango[1]
+
+
 def rank(cfg: dict, paths: list[Path]) -> list[dict]:
     """Ordena candidatas por P(idioma) y WER contra el texto de referencia."""
     whisper, lang, report = load("whisper"), cfg["voice"]["whisper_lang"], []
+    perfil = {**PERFIL, **cfg["voice"].get("perfil", {})}
     for path in paths:
-        heard, _ = transcribe(whisper, path, lang)
+        heard, words = transcribe(whisper, path, lang)
+        habla = (words[-1]["end"] - words[0]["start"]) if words else 0.0
         report.append({"file": str(path), "p_lang": p_lang(whisper, path, lang),
                        "wer": round(texto.wer(cfg["voice"]["ref_text"], heard), 3),
+                       "f0_hz": f0_mediana(path),
+                       "words_per_s": round(len(words) / habla, 2) if habla else 0.0,
                        "heard": heard})
-    report.sort(key=lambda r: (-r["p_lang"], r["wer"]))
     for row in report:
-        row["ok"] = row["p_lang"] >= cfg["gates"]["ref_min_p_lang"] and row["wer"] <= 0.1
+        row["fuera_de_perfil"] = [
+            k for k, rango in perfil.items() if _fuera(row.get(k, 0.0), rango)]
+        # La receta pide las cuatro cosas: idioma, fidelidad, tono y ritmo.
+        row["ok"] = (row["p_lang"] >= cfg["gates"]["ref_min_p_lang"] and row["wer"] <= 0.1
+                     and not row["fuera_de_perfil"])
+    # Primero las que cumplen el perfil; dentro de cada grupo, por P(idioma) y WER.
+    report.sort(key=lambda r: (bool(r["fuera_de_perfil"]), -r["p_lang"], r["wer"]))
     (REF_DIR / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2),
                                          encoding="utf-8")
     return report
@@ -132,8 +173,11 @@ def cmd_design(cfg: dict, count: int) -> int:
                  "acento extranjero).")
     report = rank(cfg, design_candidates(voice, count))
     for row in report:
+        fuera = (" ⚠ fuera de perfil: " + ", ".join(row["fuera_de_perfil"])
+                 if row["fuera_de_perfil"] else "")
         print(f"{'✓' if row['ok'] else '✗'} {row['file']}  P={row['p_lang']:.4f}  "
-              f"WER={row['wer']:.3f}")
+              f"WER={row['wer']:.3f}  f0={row['f0_hz']:.0f}Hz  "
+              f"{row['words_per_s']:.1f} pal/s{fuera}")
     best = [r["file"] for r in report if r["ok"]][:3]
     if not best:
         print("Ninguna candidata pasa. Ajusta los instructs (más detalle de hablante nativa) "
