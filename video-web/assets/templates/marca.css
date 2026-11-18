@@ -1,0 +1,104 @@
+/* ---- Componentes del sistema visual (estilo que ganó la prueba a ciegas de 2026-11-18) ----
+   Colores y fuente solo por variable: así el mismo sistema sirve a cualquier marca.
+   Tamaños mínimos a 1080p: etiquetas 24 px, contenido 30 px, títulos 60 px. */
+
+body { background: var(--bg); color: var(--ink); font-family: var(--font); margin: 0; }
+
+/* Fondo de retícula de puntos que deriva despacio (lo mueve video.html con el progreso) */
+#dots { position: absolute; left: -64px; top: -64px; width: 2048px; height: 1208px; opacity: .6;
+  background-image: radial-gradient(circle, var(--line) 1.5px, transparent 1.6px);
+  background-size: 32px 32px; }
+/* Mundo de cámara de cada escena (el título queda fuera para que el zoom nunca lo tape) */
+.world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+/* Portada, separadores y cierre */
+.campo { position: absolute; inset: 0; background: var(--campo); color: #fff; }
+
+/* Encabezado fijo: símbolo, sección, «Paso N de M», módulo y barra de progreso */
+#hdr { position: absolute; left: 0; top: 0; width: 1920px; height: 112px; z-index: 50;
+  background: var(--bg); }
+#ptrack, #pfill { position: absolute; left: 0; top: 0; width: 1920px; height: 4px; z-index: 60;
+  background: var(--line); }
+#pfill { background: var(--accent); transform-origin: 0 50%; }
+#sym { position: absolute; left: 96px; top: 44px; width: 40px; height: 40px; }
+#eb { position: absolute; left: 156px; top: 44px; height: 40px; display: flex;
+  align-items: center; gap: 16px; font-size: 24px; font-weight: 600; letter-spacing: .12em;
+  color: var(--accent-text); white-space: nowrap; }
+.step { letter-spacing: .02em; font-weight: 600; font-size: 24px; color: var(--accent-text);
+  background: var(--accent-bg); padding: 2px 14px; border-radius: 999px; }
+#mod { position: absolute; right: 96px; top: 48px; font-size: 24px; color: var(--muted);
+  font-weight: 500; }
+
+/* Tapa: franja del fondo entre el encabezado y el contenido. Va encima del mundo de cámara
+   (z 20) y debajo del título (z 21): con el zoom, la captura pasaba por detrás del título y
+   lo dejaba sin contraste (givemotion low-contrast / text-covered). */
+.tapa { position: absolute; left: 0; top: 0; width: 1920px; height: 228px; z-index: 20;
+  background: var(--bg); }
+
+/* Título de escena: una palabra clave en acento */
+h1.tt { position: absolute; left: 96px; top: 132px; margin: 0; font-size: 60px;
+  line-height: 1.1; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; z-index: 21; }
+h1.tt .key { color: var(--accent-text); }
+
+/* Tarjetas, filas y estados */
+.card { position: absolute; box-sizing: border-box; padding: 24px 28px; background: var(--bg);
+  border: 2px solid var(--line); border-radius: 20px;
+  box-shadow: 0 18px 40px -24px rgba(17, 24, 39, .18); }
+.ch { min-height: 84px; margin-bottom: 12px; position: relative; }
+.ct { font-size: 32px; font-weight: 600; line-height: 40px; }
+.cs { font-size: 26px; color: var(--muted); line-height: 36px; margin-top: 8px; }
+.row { position: relative; min-height: 72px; box-sizing: border-box; padding: 12px 16px;
+  border-radius: 14px; display: flex; gap: 16px; align-items: flex-start; }
+.row.ok { background: var(--ok-bg); }
+.row.bad { background: var(--bad-bg); }
+.n { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid;
+  place-items: center; font-size: 24px; font-weight: 600; background: var(--surface);
+  border: 2px solid var(--line); box-sizing: border-box; color: var(--ink); }
+.tx { font-size: 30px; line-height: 36px; flex: 1; }
+.pg { flex: none; font-size: 24px; line-height: 36px; color: var(--muted); }
+
+/* Chips: una variante por intención. «fic» rotula todo ejemplo inventado. */
+.chip { display: inline-block; font-size: 24px; font-weight: 500; line-height: 32px;
+  padding: 2px 14px; border-radius: 999px; white-space: nowrap; border: 2px solid; }
+.chip.fic { position: absolute; right: 0; top: 2px; color: var(--muted);
+  background: var(--surface); border-color: var(--line); }
+.chip.acento { color: var(--accent-text); background: var(--accent-bg); border-color: var(--accent); }
+.chip.neutro { color: var(--muted); background: var(--surface); border-color: var(--line); }
+.chip.ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad); }
+.chip.solido { color: #fff; background: var(--accent); border-color: var(--accent); }
+/* «Preparado por IA»: quién hizo el contenido de la tarjeta */
+.chip.ia { margin-top: 8px; color: var(--ink); background: var(--surface); border-color: var(--ink); }
+/* Sello de estado sobre una fila («Sin respaldo», «No demuestra…») */
+.st { position: absolute; font-size: 24px; font-weight: 600; line-height: 32px; padding: 0 12px;
+  border-radius: 8px; white-space: nowrap; }
+.st.bad { color: var(--bad); background: var(--bad-bg); border: 2px solid var(--bad); }
+.st.ok { color: var(--ok); background: var(--ok-bg); border: 2px solid var(--ok); }
+
+/* Botones, persona («Tú»), etiquetas sueltas */
+.btn { position: absolute; height: 64px; box-sizing: border-box; padding: 0 32px;
+  border-radius: 14px; display: flex; align-items: center; font-size: 30px; font-weight: 600;
+  white-space: nowrap; }
+.you { position: absolute; width: 112px; height: 112px; border-radius: 50%; background: var(--ink);
+  color: #fff; display: grid; place-items: center; font-size: 40px; font-weight: 700; }
+.lbl { position: absolute; font-size: 28px; font-weight: 600; white-space: nowrap; }
+.sub { font-size: 24px; color: var(--muted); font-weight: 500; }
+
+/* Trazos SVG: conexiones y checks que se dibujan */
+svg.ov { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.ck { stroke: var(--ok); stroke-width: 5; fill: none; stroke-linecap: round;
+  stroke-linejoin: round; }
+
+/* Ventana de navegador con una captura real de la app (videos de app). La captura va a su
+   ancho mostrado; los anillos se ubican con data-rect="x,y,w,h" en píxeles de la imagen
+   (capture/extracted/regions.md) y se escalan solos (ventanas() en video.html): nunca a ojo. */
+.win { position: absolute; background: var(--bg); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 30px 80px -20px rgba(17, 24, 39, .28); border: 1px solid var(--line); }
+.win-bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  background: var(--surface); border-bottom: 1px solid var(--line); }
+.win-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.win-url { margin-left: 12px; padding: 4px 16px; border-radius: 999px; background: var(--bg);
+  font-size: 24px; line-height: 28px; color: var(--muted); }
+.win-view { position: relative; overflow: hidden; }
+.win-view img { display: block; width: 100%; height: auto; }
+.ring { position: absolute; box-sizing: border-box; border: 4px solid var(--accent);
+  border-radius: 10px; box-shadow: 0 0 0 4000px rgba(17, 24, 39, .10); pointer-events: none; }

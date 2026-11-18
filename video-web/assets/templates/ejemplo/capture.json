@@ -4,9 +4,7 @@
   "scale": 2,
   "locale": "es-CO",
   "timezone": "America/Bogota",
-  "brand": {"primary": "#2F4E9C", "ink": "#22254F", "canvas": "#F1F1F1", "dark": "#1C2044",
-            "spark": "#4BC1ED", "muted": "#5E6675", "surface": "#FFFFFF",
-            "positive": "#2F9E6E", "negative": "#D5484C"},
+  "brand": {"primary": "#2F4E9C", "ink": "#22254F", "canvas": "#F1F1F1", "campo": "#1C2044"},
   "fonts": [
     {"family": "Poppins", "weights": [400, 500, 600, 700]},
     {"family": "Roboto", "weights": [400, 500, 700]}

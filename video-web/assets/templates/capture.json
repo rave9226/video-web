@@ -1,6 +1,6 @@
 {
   "base_url": "<URL BASE SIN BARRA FINAL>",
-  "brand": {"primary": null, "ink": null, "canvas": null, "dark": null, "spark": null},
+  "brand": {"primary": null, "ink": null, "canvas": null},
   "fonts": [{"family": "<FAMILIA DE LA APP EN GOOGLE FONTS>", "weights": [400, 500, 600, 700]}],
   "login": {
     "route": "/<RUTA DEL LOGIN>",

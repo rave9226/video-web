@@ -1,0 +1,57 @@
+<!-- EJEMPLO DE ESCENA DE APP: una captura real en una ventana de navegador, con anillos sobre lo
+     que nombra la voz. Reemplaza al antiguo `./vl escenas` (kind window).
+     Copia a scenes/sNN.html y cambia: id sN y prefijos, data-duration (= voz + 0.6 s),
+     data-seccion, la voz, el título, los chips, la imagen, la URL y los anillos.
+     - La imagen sale de `./vl captura` (capture/assets/…; cópiala a assets/).
+     - Cada anillo lleva data-rect="x,y,w,h" COPIADO de capture/extracted/regions.md (píxeles
+       de la imagen, a 2x) y data-nativo el ancho de la captura (2880 a 2x); ventanas()
+       los escala antes de crear la cámara. Nunca a ojo: un anillo corrido señala
+       otra cosa. Si la captura vino de otra fuente, mide con `./vl medir`.
+     - El zoom (sceneCam) va al anillo que nombra la voz y no pasa de 1.25: la captura a 2x
+       aguanta ese acercamiento sin verse borrosa.
+     - Tiempos: cada revelado 0.04–0.08 s antes de su palabra en cues.md. -->
+<section class="scene" id="s3" data-duration="11.2" data-seccion="EL TABLERO">
+  <audio src="assets/voice/03.wav" data-start="0.4"></audio>
+  <audio src="assets/sfx/click-soft.mp3" data-start="4.1" data-volume="0.15"></audio>
+  <style>
+    #s3 .col { position: absolute; left: 96px; top: 250px; width: 470px; display: flex;
+      flex-direction: column; gap: 14px; align-items: flex-start; }
+    #s3 .col .chip { white-space: normal; font-size: 26px; line-height: 34px; }
+    #win3 { left: 620px; top: 236px; width: 1204px; }
+  </style>
+  <div class="tapa"></div>
+  <!-- el título queda quieto a propósito mientras la cámara se mueve: carry-ok -->
+  <h1 class="tt" data-check="carry-ok" id="t3" data-split="words">Todo el ciclo en <span class="key">un tablero</span></h1>
+  <div class="world" id="w3">
+    <div class="col">
+      <span class="chip acento" id="c3a">Las solicitudes del día</span>
+      <span class="chip neutro" id="c3b">Filtra por estado</span>
+    </div>
+    <div class="win" id="win3">
+      <div class="win-bar"><span class="win-dot"></span><span class="win-dot"></span>
+        <span class="win-dot"></span><span class="win-url">app.ejemplo.com/tablero</span></div>
+      <div class="win-view" data-nativo="2880">
+        <img src="assets/app-tablero.png" alt="">
+        <div class="ring" id="r3a" data-rect="240,150,309,125"></div>
+        <div class="ring" id="r3b" data-rect="1180,420,620,96"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+  gm.timeline('#s3')
+    .from('#t3 .gm-word', { y: 18, opacity: 0, duration: 0.5, ease: OUT, stagger: 0.05 }, 0.1)
+    .fromTo('#t3 .key', { color: C('ink') }, { color: C('accent-text'), duration: 0.5, ease: OUT }, 0.6)
+    .from('#win3', { x: 90, opacity: 0, duration: 0.9, ease: 'expo.out' }, 0.2)
+    // «las solicitudes»: chip y anillo en su palabra; el anillo atenúa el resto de la captura
+    .from('#c3a', { x: -20, opacity: 0, duration: 0.45, ease: OUT }, 3.9)
+    .fromTo('#r3a', { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 4.0)
+    .to('#r3a', { opacity: 0, duration: 0.3, ease: IN }, 6.6)
+    // «filtra por estado»
+    .from('#c3b', { x: -20, opacity: 0, duration: 0.45, ease: OUT }, 6.9)
+    .fromTo('#r3b', { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 7.0);
+  // anillos ubicados antes de la cámara (su encuadre se calcula al crearla)
+  ventanas('#s3');
+  // foco: la cámara se acerca al primer anillo mientras está y vuelve
+  sceneCam('#w3', 11.2, { at: 4.0, back: 6.5, fit: '#r3a', pad: 120 });
+  </script>
+</section>

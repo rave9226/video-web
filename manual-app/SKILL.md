@@ -78,8 +78,8 @@ no el que describe campos.
 
 `marca.json` con `primary`, `ink`, `canvas`, `muted` y `font`. Los colores **salen de la app**:
 del CSS, del logo, o se le preguntan al usuario. **Nunca se copian de un ejemplo ni de otro
-proyecto.** `ml init --desde <proyecto-video-web>` los toma de su `frame.md`, que ya los tiene
-calculados para cumplir contraste AA. Sin `marca.json` el PDF sale en grises neutros, que es
+proyecto.** `ml init --desde <proyecto-video-web>` los toma de su `marca.css` (o del `frame.md` de un
+proyecto 1.x), que ya los tiene calculados para cumplir contraste AA. Sin `marca.json` el PDF sale en grises neutros, que es
 mejor que una marca equivocada.
 
 ## Si algo falla
