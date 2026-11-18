@@ -1,8 +1,9 @@
-# Oficio: guion, voz, música, storyboard, escenas y revisión
+# Oficio: guion, voz, escenas, sonido, revisión y entrega
 
-Consejos sacados de un video real de producto (2:40 min, aprobado por el cliente). Son punto de partida, no
-reglas: cámbialos cuando el producto o el usuario pidan otra cosa. Lo que rompe el render lo
-avisa `./vl check`; lo demás es criterio tuyo.
+Lo aprendido en videos reales: uno de producto (2:40, aprobado por el cliente), un informe de
+junta directiva y el piloto de cápsula de curso para Hotmart (2026-11-18), donde voz, motor y
+estilo se eligieron en pruebas a ciegas. Son punto de partida, no dogma; lo que rompe la entrega
+lo avisa `./vl check`.
 
 ## Guion (SCRIPT.md)
 
@@ -49,71 +50,62 @@ la música y todas las escenas.
 `./vl check guion` avisa de numeración rota, líneas largas, `formato` ausente y guiones demasiado
 cortos para el formato que declaran; y estima la duración.
 
+### Cápsula de curso (`explicativo` para un curso de pago)
+
+Arco que funcionó en un curso de pago para directivos: portada (el título completo, que es la
+miniatura) → la situación (el problema concreto que vive el alumno) → la idea clave → una
+analogía → cómo se resuelve, en pasos numerados («Paso N de M») → la misma práctica en otra
+herramienta → qué te llevas → controles → la acción de la semana → cierre con la decisión del
+alumno y el nombre de la cápsula siguiente. 2–4 min, 12–14 líneas.
+
+- **No repitas la misma idea con otras palabras en dos líneas** («dos resúmenes coincidentes
+  pueden repetir errores» en la 9 y «dos respuestas coincidentes pueden repetir el mismo error»
+  en la 11): el alumno lo oye como una repetición.
+- **Números y fechas con letras** en el guion («setenta coma cuatro por ciento»); en pantalla,
+  en cifras.
+
 ## Voz (Qwen3-TTS local)
 
-### La receta que funciona (voz de casa)
+### La voz sale de la biblioteca
 
-El instruct `es` que ya viene en `audio.json` es el que produjo la voz aprobada de los videos de
-esta skill: **mujer colombiana de unos treinta años, nativa de Bogotá**, español latinoamericano
-neutro con acento colombiano natural. No la cambies sin motivo: está escrita para evitar el fallo
-más común, que es un acento extranjero.
+Las voces aprobadas viven fuera del repo, en `$VL_VOCES/<nombre>/` (por omisión
+`~/.config/video-web/voces/`): `ref.wav` + `voz.json` con su `ref_text` exacto y su semilla.
+`audio.json → voice.library` elige una; `vl init` pone la de `VL_VOZ` del entorno. **No
+diseñes una voz nueva por proyecto**: un curso debe sonar al mismo narrador en todas sus
+cápsulas.
 
-**Esto ya es el comportamiento por defecto**: los valores de abajo están en
-`assets/templates/audio.json` y `./vl voz design` mide y ordena las candidatas contra ellos.
-No hay que configurar nada; se ajustan por proyecto en `audio.json` si hace falta.
+**Receta que ganó a ciegas** (2026-11-18, contra la voz por línea de producción, CosyVoice3 y
+variantes): voz diseñada con `Qwen3-TTS-12Hz-1.7B-VoiceDesign` a partir de una instrucción de
+*instructora colombiana de curso*, recortada a ~10 s + 0,6 s de silencio como referencia, y
+clonada con `-Base` en **modo referencia completa** (audio + texto), una generación por línea,
+semilla fija de la voz. El modo «solo huella» (x-vector) sonaba a España; forzar el seseo en el
+texto no lo arregló del todo.
 
-| | Valor por defecto | Quién lo aplica |
-|---|---|---|
-| **P(idioma) del `ref.wav`** | **≥ 0.99** (`gates.ref_min_p_lang`) | `voz design` descarta la candidata. **Es el único que detecta el acento extranjero:** la que sonaba a inglés daba 0.90 y las buenas dan 0.998–1.0 |
-| Tono (f0 mediana) | 230–275 Hz (`voice.perfil.f0_hz`) | `voz design` lo mide por autocorrelación y marca «fuera de perfil». Es una banda de cordura, no distingue acentos |
-| Ritmo | 2.0–2.6 palabras/s (`voice.perfil.words_per_s`) | igual que el tono. La voz aprobada iba a 2.2 |
-| WER por línea | ≤ 0.08 (`gates.max_wer`) | `voz lines` reintenta con otra semilla |
-| Nivel | −18 LUFS, 44.1 kHz mono | `voz lines`, automático |
-| Música debajo de la voz | 12.5 dB (`bgm.under_voice_db`) | `./vl musica` |
+### Lo que hace `./vl voz lines` (y por qué)
 
-Las candidatas se ordenan **primero por perfil cumplido** y luego por P(idioma) y WER, así que
-la primera de la lista es la que más se parece a la que funcionó. 🛑 La elección final sigue
-siendo del usuario, de oído: el filtro es una señal, no un veredicto.
+| Paso | Por qué |
+|---|---|
+| Recorta la frase de la referencia que el clon dice antes de la línea | el clon **arrastra la última frase del `ref_text`** al inicio de cada toma. Si la línea empieza con esa misma frase, recortar «donde empieza la línea» conservaba las dos: así llegó una frase doble a un video |
+| Detector de habla oculta: huecos > 1 s que no son silencio y < 2,3 palabras/s | **Whisper transcribe una frase repetida una sola vez**: el WER sale 0 con una frase doble. Las líneas sanas miden 2,6–3,4 palabras/s |
+| Reintenta con otra semilla las líneas con WER alto o habla oculta | lo que falla una vez casi nunca falla con otra semilla |
+| −18 LUFS por línea, 48 kHz mono | el master final (`./vl final`) lleva todo a −16 |
 
-**Cómo se construye:** `./vl voz design` genera la referencia con
-`Qwen3-TTS-12Hz-1.7B-VoiceDesign` a partir del instruct; `./vl voz lines` clona cada línea con
-`-Base` (temperatura 0.8, top_p 0.95, semilla `4242 + frame`), la recorta al habla y la nivela.
+**Una línea marcada «revisar» se escucha antes de seguir.** Nunca digas que la narración está
+limpia apoyándote solo en el WER.
 
-**El guion importa tanto como la voz.** Para que suene natural y el WER quede en 0:
+### Diseñar una voz nueva (solo si el usuario la pide)
 
-- **Números y fechas con letras:** «dos mil veintiséis», «setenta coma cuatro por ciento», «el
-  trece de octubre». En dígitos, el TTS los lee mal o los salta.
-- **Siglas y marcas en `respell`**, solo lo que oye el TTS: `{"CRM": "ce erre eme",
-  "Wompi": "Uómpi"}`.
-- **Una sola forma de trato** en todo el guion (tú o usted), y líneas de 45 palabras máximo.
-- **El nombre del producto fuera del `ref_text`** si es de otro idioma: baja P(idioma) y ninguna
-  candidata pasa. En las líneas, va con `respell`.
+1. En `audio.json`: `voice.ref_text` de 20–30 palabras en el idioma del video, **sin nombres
+   de otro idioma** (bajan P(idioma) y ninguna candidata pasa). `instructs` en el idioma del
+   video, describiendo a una hablante **nativa de una ciudad concreta** (un instruct en inglés da
+   acento extranjero; `voice.py` lo rechaza).
+2. `./vl voz design` y `./vl esperar voz`: candidatas ordenadas por P(idioma) ≥ 0,99 (el único
+   umbral que detecta el acento extranjero), WER, tono y ritmo.
+3. 🛑 El usuario elige **de oído, a ciegas** (sin decirle cuál es cuál).
+4. `./vl voz guardar <nombre>` la guarda en la biblioteca para todos los proyectos.
 
-**Si una línea sale con acento extranjero, el problema es la referencia, no la línea.** Mira la
-P(idioma) del `ref.wav` antes de regenerar líneas una por una.
-
-> El audio de referencia no se publica con la skill: cada proyecto genera el suyo, porque el
-> `ref_text` nombra al producto de ese video. La receta de arriba reproduce una voz equivalente.
-
-### Diseñar la voz de un proyecto
-
-1. En `audio.json`, escribe `voice.ref_text`: 20–30 palabras en el idioma del video sobre el
-   producto. Si su nombre es de otro idioma ("Books to Scrape" en un video en español), déjalo
-   fuera de `ref_text`: baja P(idioma) y ninguna candidata pasa; en las líneas del guion usa
-   `respell`. Los `instructs` van en el idioma del video y describen a una hablante **nativa**
-   de una ciudad concreta; un instruct en inglés para otro idioma da acento extranjero
-   (`voice.py` lo rechaza).
-2. `./vl voz design` y `./vl esperar voz`: 3 candidatas por instruct, ordenadas por P(español)
-   y WER.
-3. 🛑 Envía al usuario las rutas de las mejores (✓) y deja que elija de oído. Pon su elección en
-   `audio.json` → `voice.ref_audio`. Si ya hay una voz aprobada de otro proyecto, puedes
-   reusarla con la misma `ref_text`.
-4. `./vl voz lines` y `./vl esperar voz`: clona cada línea, reintenta con otra semilla las de
-   WER alto, nivela a −18 LUFS y escribe `audio_meta.json` y `cues.md` (segundo de cada palabra).
-
-Si una línea no pasa: mira qué oyó Whisper. Si pronuncia mal una marca o sigla, agrégala a
-`respell` (p. ej. `{"Wompi": "Uómpi", "CRM": "ce erre eme"}`; solo cambia lo que oye el TTS) y
-repite `./vl voz lines --frames N`. Si cambias una línea del guion, repite solo esa.
+**Respell** (`audio.json → respell`): solo cambia lo que oye el TTS: `{"Claude": "Clod",
+"CRM": "ce erre eme"}`. Si una sigla suena mal, ahí se arregla.
 
 ### Otros idiomas
 
@@ -127,130 +119,99 @@ chino, japonés y coreano. Para otro que no sea español, en `audio.json` cambia
 Probado: inglés y portugués de Brasil (WER 0, P(idioma) > 0.98). Fuera de esos 10 idiomas,
 la voz local no sirve.
 
-## Música (opcional)
+## El caso concreto (lo que más subió la calidad)
 
-**Licencia.** `facebook/musicgen-small` es CC-BY-NC-4.0: úsalo solo en videos internos o no
-comerciales. 🛑 Si el video es comercial (cliente, redes, ventas), pide una pista con licencia,
-cópiala a `assets/bgm/track.wav` y corre solo `./vl musica mezclar`; o entrega sin música.
+En el video en producción las tarjetas mostraban **barras grises** en lugar de texto: el ojo no
+tenía qué leer mientras la voz explicaba. La versión que ganó usa **un solo caso ficticio que
+recorre toda la cápsula** (p. ej. un «Informe de ventas del tercer trimestre» con cuatro
+afirmaciones y un resumen de IA con una cifra que no está en el informe).
 
-`./vl musica` y `./vl esperar musica`: MusicGen genera la pista con `bgm.prompt` (2–6 min),
-calibra el volumen `under_voice_db` (12.5 dB) por debajo de la voz y arma
-`renders/preview-audio.mp3`. 🛑 Envíalo al usuario. Más música → baja `under_voice_db`; menos →
-súbelo; luego `./vl musica mezclar` (instantáneo). Otro estilo → cambia el prompt y regenera.
-Sin música: sáltate este paso; el ensamblador acepta `bgm: null`.
+- Rotula cada documento inventado con el chip `.chip.fic` «Ejemplo ficticio».
+- Cifras coherentes entre escenas; ninguna que parezca un dato real de alguien.
+- 3–4 afirmaciones legibles por tarjeta, nunca más de 12 palabras visibles por tarjeta.
+- Si el curso tiene un prompt o una plantilla, **muéstralo escrito** en una ventana de
+  conversación genérica (sin logos ni colores de Claude o ChatGPT) con sus marcadores en acento.
 
-## Storyboard (STORYBOARD.md)
+## Escenas (givemotion)
 
-**Campos que necesitan los scripts de ensamblado** (fijos), un bloque por línea del guion:
+Lee `.claude/skills/givemotion/SKILL.md` en el proyecto (y solo las 1–3 recetas que el video
+necesite: `camera-moves`, `text-reveals`, `numbers-and-charts`, `scene-transitions`).
 
-```markdown
-## Frame N — Título corto
+**Estructura** (plantillas en `assets/templates/givemotion/` de la skill):
 
-- src: compositions/frames/fNN-<slug>.html   (NN con dos dígitos; slug en minúsculas)
-- duration: 11.59s                            (`./vl prep` lo sincroniza con la voz)
-- transition_in: crossfade                    (cut, crossfade, blur-crossfade,
-                                               push-slide LEFT, zoom-through, squeeze)
-- status: animated
-- voiceover: "<la línea N de SCRIPT.md>"
-- asset_candidates: assets/a.png — qué es; assets/b.png — qué es
-```
+- `video.html`: comentario DIRECTION (look, caso, lista de tomas con segundos de `cues.md`),
+  `marca.css`, la secuencia de `<gm-include src="scenes/sNN.html">`, encabezado fijo y barra de
+  progreso. **El encabezado se arma solo** desde los atributos de cada escena:
+  `data-seccion="CÓMO LO RESUELVES"` y `data-paso="2 de 4"`; sin `data-seccion` la escena va
+  sin encabezado (portada y cierre, sobre `.campo`).
+- `scenes/sNN.html`: una por línea del guion, con su voz `<audio src="assets/voice/NN.wav">`,
+  `data-duration` = voz + 0,6 s (+1,2 s antes de un cambio de sección). Parte de
+  `escena-ejemplo.html` (tarjetas y caso) o de `escena-ventana.html` (una pantalla capturada).
+- **Pantallas de la app** (`escena-ventana.html`): la captura a 2x dentro de `.win`, los
+  anillos con `data-rect` **copiado de `capture/extracted/regions.md`** (o de `./vl medir`), y
+  el foco de `sceneCam` sobre el anillo que nombra la voz. `video.html` los escala solos.
+- **Colores solo de `marca.css`**: `var(--token)` en CSS y `C('token')` en los tweens. Un hex en
+  una escena hace que la marca siguiente herede los colores de este video
+  (`./vl check escenas` lo avisa).
 
-Todo lo demás es libre: describe la escena como quieras que la construya el worker. Lo que
-mejor funcionó fue concreto: líneas `Scene N (a–bs): …` con el segundo de cada revelado sacado
-de `cues.md` y los rects `[x,y,w,h]` copiados de `capture/extracted/regions.md`. Un storyboard
-vago da escenas genéricas. Ejemplo completo: `assets/templates/STORYBOARD.md`.
+**Reglas que separaron el video ganador del original:**
 
-**Ideas de forma.** `assets/galeria/INDICE.md` lista 12 escenas reales de ese video
-(ventana con zoom, clic que abre modal, comparación, tarjetas, stepper, cierre con logo…).
-Úsalas como inspiración o punto de partida, o busca otra forma en `/hyperframes-animation`
-(blueprints): un campo opcional `- blueprint: <id>` en el bloque mete ese blueprint en el
-paquete del worker. Consejos de ritmo: alterna escenas densas con respiros y varía las transiciones
-(`zoom-through` para cambios de sección).
+| Regla | Antes | Ahora |
+|---|---|---|
+| Texto mínimo | 16–22 px | etiquetas 24 px, contenido 30 px, títulos 60 px |
+| Lienzo | contenido hasta el 64 % del alto | la composición va de y ≈ 200 a 900; tarjetas que llenan el ancho |
+| Franja inferior | vacía o con contenido | y > 900 libre para los subtítulos de la plataforma |
+| Quietud | portada fija 13 s, tramos de 4–6 s | algo se mueve cada ≤ 1,5 s; la portada está armada en t = 0 pero respira (push lento, motivo que se anima en su palabra) |
+| Foco | ninguno | un foco por escena con `sceneCam(world, dur, {at, back, fit, dim})`: zoom ≤ 1,25 a lo que nombra la voz, el resto atenuado; el título vive fuera del mundo y nunca se tapa |
+| Sincronía | aproximada | cada revelado 0,04–0,08 s antes de su palabra en `cues.md` |
+| Estados | colores sueltos | verde = respaldado (`.row.ok`, `.chip.ok`), rojo = no aparece (`.row.bad`, `.st.bad`), acento = la idea clave |
 
-**Escenas sin capturas (modo explicativo).** Una idea por escena, dicha en pantalla con 3–6
-palabras; la voz explica el resto. Formas que funcionan: título cinético (palabra a palabra en
-su cue), diagrama que se construye nodo a nodo, número grande que cuenta hasta su valor,
-comparación en dos columnas, lista que se revela ítem a ítem y cierre con la idea central. Sin
-`asset_candidates` de capturas: iconos o formas simples en SVG inline con los colores de
-`frame.md`. Cada cifra o nombre en pantalla debe estar en el texto del usuario.
+**Errores de givemotion 0.1.6 ya resueltos en la plantilla** (no los vuelvas a descubrir):
+`gm.timing(<última escena>).end` devuelve un negativo (usa inicio + `data-duration`); fuera de `gm.onFrame`, `gm.timing()` devuelve 0 para todas las escenas (léelo dentro); un
+`gm.timeline()` sobre elementos fuera de la secuencia no aplica sus tweens (usa `gm.onFrame`);
+los `data-expect` usan tiempo del video, no de la escena; una clase global (`.blue`) se cuela en
+`.chip.blue` sin aviso: usa los nombres de `marca.css`.
 
-**Video direction.** Después del frontmatter (`format`, `duration`, `message`, `music`), un
-bloque `## Video direction` con la paleta por rol, cómo se muestran las pantallas, el
-movimiento y lo prohibido (UI inventada, datos falsos, stock, emojis).
+## Sonido
 
-`./vl prep` sincroniza duraciones, copia los assets a `assets/`, arma un paquete por escena en
-`.hyperframes/frame-packets/` y corre `./vl check storyboard`.
+- **Música:** solo con licencia comercial: CC0 (p. ej. el catálogo de FreePD) o comprada.
+  `./vl musica <pista> --licencia "…"` la copia y la anota en `CREDITOS.md`. **MusicGen ya no
+  se usa: es CC-BY-NC** y un curso de pago es uso comercial.
+- **Mezcla** (`./vl final`): plena antes de la primera palabra, `bgm.under_voice_db` (18 dB) bajo
+  la voz, +6 dB en las pausas, +9 dB en los cambios de sección (`bgm.secciones`: números de
+  escena), fundido de 2 s al final.
+- **Efectos:** discretos, 18–22 dB bajo la voz: clic suave en cada check, «pop» en la entrada de
+  una tarjeta importante (no en todas), barrido corto en los cambios de sección. La librería de
+  `media-use` (`~/.agents/skills/media-use/audio/assets/sfx/`) es de licencia Pixabay, apta para
+  uso comercial. Van como `<audio … data-start data-volume>` dentro de la escena.
+- **Master:** −16 LUFS integrados, pico ≤ −1,5 dBTP, 48 kHz estéreo.
 
-## Escenas
+## Revisión
 
-Cada escena es `compositions/frames/fNN-slug.html`. Puedes escribirlas tú o despachar un worker
-por escena (hasta 4 en paralelo; Claude Code: `Agent` con `general-purpose`; OpenCode: `task`
-con `general`). Prompt sugerido:
+`./vl revisar` corre `givemotion check` (guardado en `.vl/check.json`), las hojas de cuadros en
+`renders/review/` y `./vl check escenas`. **Abre las hojas y mira.** Para un momento exacto:
+`./vl gm still video.html -t 12.3 -o f.png`. Revisa:
 
-```text
-Eres el worker de la escena <id> de un video HyperFrames. Trabaja solo en <ruta>.
-Lee <ruta>/.hyperframes/frame-packets/_role.md, <ruta>/.hyperframes/frame-packets/<id>.md,
-<skill>/references/oficio.md § Escenas (ruta de la skill: `dirname $(dirname $(readlink -f ./vl))`), y los cues y rects de
-tu frame en <ruta>/cues.md y <ruta>/capture/extracted/regions.md. Si tu bloque cita un ejemplo
-de assets/galeria/, adáptalo. Crea <ruta>/compositions/frames/<id>.html y corre
-`./vl check <id>` desde <ruta> hasta ✅ (esto manda sobre el "no corras la CLI" de _role.md). No edites otros archivos. Responde en una línea.
-```
+1. Ningún texto cortado, encimado ni menor de 24 px.
+2. El tercio inferior no queda vacío en escenas de contenido; nada importante bajo y = 900.
+3. El foco cae sobre lo que nombra la voz y no se mete bajo el encabezado.
+4. Ningún tramo `still` sin motivo; ninguna escena arranca quieta.
+5. Colores y logo de `marca.css`; el caso ficticio rotulado.
+6. Cortes limpios entre escenas.
 
-**Lo que rompe el render** (lo avisa `./vl check <id>`):
+Avisos de givemotion: ✖ y ⚠ son fallas reales salvo que sean a propósito (dilo); ℹ son estilo.
+Para un juicio independiente, pide una crítica a un subagente que no haya visto el código
+(`./vl gm review video.html` arma su material).
 
-- Id = nombre del archivo (`f06-planes`): `data-composition-id="f06-planes"`, todos los ids
-  empiezan por `f06-` (un id que empieza con dígito rompe el CSS) y el timeline se registra
-  en `window.__timelines["f06-planes"] = tl;`.
-- `gsap.timeline({ paused: true })`; nada de `Math.random`, `Date.now`, `repeat: -1` ni `yoyo`
-  (si algo va y vuelve, dos tweens).
-- Sin fuentes de red (usa el `@font-face` de `frame.md`), sin `<audio>`, solo imágenes de
-  `assets/`.
-- `data-duration` de la raíz y de los clips de fondo = duración exacta del frame; si quedan más
-  cortos, la transición sale en blanco.
+## Entrega (plataformas de cursos)
 
-**Lo que se ve bien:**
+`./vl render` (imagen + voces + efectos, CRF 16) y `./vl final`:
 
-- Rects en píxeles de la imagen nombrada: escálalos con el mismo factor con que la muestras
-  (2880 px mostrada a 1120 px → × 1120/2880); no los estimes a ojo.
-- Cada revelado cae en el segundo de su palabra en `cues.md` (0.04–0.08 s antes). La segunda
-  mitad también revela algo; al final la escena se sostiene quieta.
-- Etiquetas cortas en pantalla (eyebrow, h2 de 3–6 palabras, chips); repetir la frase de la voz
-  entera suele sobrar, salvo en gancho y cierre.
-- Zoom ≤ 1.6 sobre capturas con poco contenido. Nada importante en el 17 % inferior.
-- `frame.md` manda sobre colores, fuente y el CSS de ventana, eyebrow, chip y anillo.
-
-## Ensamblado
-
-`./vl ensamblar` arma `index.html` con voz y música, inyecta transiciones y corre `hyperframes
-lint` (`.vl/lint.txt`) y `check` (`.vl/check.txt`). No edites `index.html` a mano: se regenera.
-
-| Hallazgo | Arreglo |
+| Archivo | Para qué |
 |---|---|
-| `content_overlap` entre palabras de un mismo título | `data-layout-allow-overlap` en el contenedor más pequeño de esas palabras |
-| `content_overlap` entre dos textos | mueve uno o haz que el otro salga antes |
-| `text_clipping` / `container_overflow` | ensancha la caja o baja la fuente; no lo escondas con `overflow: hidden` |
-| `primary-offscreen` | revisa `left`/`top` y la cámara; limita el foco del zoom con `clamp` |
-| `id_requires_css_escape` | prefijo `fNN-`, nunca `NN-` |
-| `timeline_track_too_dense` | vuelve a correr `./vl ensamblar` |
-| timeline no registrado o duración 0 | falta `window.__timelines["<id>"] = tl` o el id no coincide |
+| `renders/video.mp4` | 1080p30 H.264 de alta calidad: Hotmart y similares recodifican y no mejoran la calidad |
+| `renders/video.vtt` | subtítulos desde los tiempos de la voz con la ortografía del guion («cero», no «0»); ≤ 2 líneas de ≤ 42 caracteres |
+| `renders/miniatura.png` | el primer cuadro (la portada) |
+| `renders/video-720p.mp4` | solo si el original pesa más de 25 MB, para compartir por correo o chat |
 
-## Revisión visual
-
-`./vl snap` toma inicio, medio y final de cada escena y cada corte, y arma
-`renders/review/escenas-N.jpg`. **Abre cada hoja y mírala.** Revisa:
-
-1. Ningún texto cortado ni encimado.
-2. Cada ventana muestra la pantalla correcta, sin error ni spinner; ningún zoom la deja vacía.
-3. El anillo o la píldora cae sobre lo que nombra la voz.
-4. Colores y logo de `frame.md`.
-5. El medio muestra más que el inicio (si `qa-report.json` marca "sin movimiento", revísala).
-6. Cortes limpios, sin cuadro negro.
-7. Nada importante en el 17 % inferior.
-
-Corrige y repite con `./vl snap --frames 4,6`. 🛑 Envía las hojas al usuario antes del render.
-
-## Render y entrega
-
-`./vl render` (10–25 min, en segundo plano), `./vl esperar render` hasta ✅ y `./vl final`
-(métricas, grilla y 720p si pesa > 30 MB; corre `./vl check entrega`). Entrega
-`renders/video.mp4`, el 720p si existe y `renders/review/final-grilla.jpg`.
+Hotmart: hasta 20 GB por archivo y 3 videos por clase; acepta subtítulos `.srt` o `.vtt`.

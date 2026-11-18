@@ -37,17 +37,6 @@ def test_white_logo_on_alpha_is_not_blank(tmp_path):
     assert imagenes.gray_std(tmp_path / "flat.png") < 6
 
 
-def test_stale_clip_duration_is_flagged():
-    """Un clip que termina justo antes del final (duración vieja) se marca; uno corto no."""
-    import checks  # pylint: disable=import-outside-toplevel,import-error
-    html = ('<div id="root" data-duration="12.19">'
-            '<div id="f01-x-bg" data-start="0" data-duration="12.09"></div>'
-            '<div id="f01-x-chip" data-start="1" data-duration="3"></div>'
-            '<div id="f01-x-stage" data-start="0" data-duration="12.69"></div></div>')
-    issues = checks._frame_timing(html, "f01-x", 12.19)  # pylint: disable=protected-access
-    assert len(issues) == 1 and "f01-x-bg" in issues[0]
-
-
 def test_readable_oscurece_acento_hasta_contraste_aa():
     """Un naranja claro como texto se oscurece hasta 4.6:1; uno ya legible no cambia."""
     orange = colores.readable("#FF7B1D", "#2E2E3A", "#F6F6F9")

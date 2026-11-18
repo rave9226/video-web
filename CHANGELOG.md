@@ -3,6 +3,47 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 [SemVer](https://semver.org/lang/es/). La versión vigente está en `video-web/VERSION`.
 
+## [2.0.0] — 2026-11-18
+
+Piloto de una cápsula de un curso de pago en Hotmart: la voz, el motor y el
+estilo se eligieron en pruebas a ciegas; los fallos que el usuario encontró son ahora reglas.
+**Rompe proyectos 1.x** (escenas HyperFrames): se terminan con la 1.2.0.
+
+### Cambiado
+- **Escenas con givemotion** (MIT, versión fijada en `compat.json`) en vez de HyperFrames: ganó
+  la comparación a ciegas de dos escenas idénticas. `vl init` instala su skill en el proyecto;
+  `video.html` trae encabezado, sección, «Paso N de M», barra de progreso y cámara con foco
+  (`sceneCam`) calculados desde los atributos de cada escena. Comandos nuevos: `./vl revisar`
+  (givemotion check + hojas), `./vl gm …`; `./vl render` + `./vl final`.
+- **Marca:** `./vl marca` escribe `marca.css` (fuentes locales, tokens y componentes del sistema
+  visual ganador) en vez de `frame.md`. `./vl check marca` mide cada texto sobre su fondo.
+- **Voz:** biblioteca de voces fuera del repo (`audio.json → voice.library`,
+  `~/.config/video-web/voces/`), `./vl voz guardar`; clon con referencia completa (la receta que
+  ganó a ciegas); salida a 48 kHz. Rutas de la máquina en `~/.config/video-web/entorno.sh`.
+- **Música solo con licencia comercial:** `./vl musica <pista> --licencia "…"` (anota en
+  `CREDITOS.md`). `./vl final` mezcla con la música que baja con la voz y sube en las secciones,
+  y masteriza a −16 LUFS / −1,5 dBTP.
+
+### Agregado
+- **Entrega para cursos:** `renders/video.vtt` con la ortografía del guion y `miniatura.png`.
+- **Detector de habla oculta:** Whisper transcribe una frase repetida una sola vez (WER 0); una
+  frase doble llegó así al piloto. `voice.py` marca huecos con habla y ritmo < 2,3 palabras/s,
+  reintenta, y `./vl check voz` lo muestra.
+- `./vl check escenas`: una escena por voz, duración ≥ voz, inclusión en `video.html`, sin
+  colores en hexadecimal y los avisos de givemotion.
+- `references/oficio.md`: el caso concreto rotulado «Ejemplo ficticio», tamaños mínimos, lienzo,
+  foco, quietud ≤ 1,5 s, sonido, entrega; los fallos conocidos de givemotion 0.1.6.
+- Evals: voz sin frases repetidas y cápsula de curso con entregables.
+
+### Corregido
+- **Frase dicha dos veces:** el clon arrastra la última frase de la referencia; si la línea
+  empezaba igual, el recorte conservaba ambas. Ahora se recorta la frase arrastrada.
+
+### Eliminado
+- HyperFrames y sus dependencias internas (`product-launch-video`, `media-use`),
+  `assets/galeria/`, `scenes.py`, `qa.py`, `bgm.py`, `./vl prep|escenas|ensamblar|snap` y
+  MusicGen (CC-BY-NC: no sirve para cursos de pago).
+
 ## [1.2.0] — 2026-10-01
 
 Lecciones de un video de capacitación real: lo que la skill ya detectaba y no mostraba, los

@@ -2,6 +2,7 @@
   "voice": {
     "language": "Spanish",
     "whisper_lang": "es",
+    "library": null,
     "ref_audio": null,
     "ref_text": "<FRASE DE REFERENCIA DE 20 A 30 PALABRAS QUE NOMBRE EL PRODUCTO>",
     "instructs": {
@@ -10,12 +11,12 @@
     },
     "perfil": {
       "f0_hz": [
-        230,
+        150,
         275
       ],
       "words_per_s": [
         2.0,
-        2.6
+        2.8
       ]
     },
     "seed": 4242
@@ -34,7 +35,9 @@
     "tries": 3
   },
   "bgm": {
-    "prompt": "uplifting corporate technology background music, warm electric piano and soft synth pads, light steady percussion, calm and confident, major key, 100 BPM, clean modern production, no vocals",
-    "under_voice_db": 12.5
+    "path": null,
+    "licencia": null,
+    "under_voice_db": 18,
+    "secciones": []
   }
 }

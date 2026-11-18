@@ -20,40 +20,43 @@ hasta que el cliente vio el render.
 
 El resto se **deriva** y no hay que escribirlo:
 
-- `dark` — el campo de portada y cierre: el primario oscurecido. Solo se declara si la marca
-  tiene un oscuro propio documentado (un azul corporativo, por ejemplo), nunca «uno que combine».
-- `spark` — el anillo de foco. Es **semántico, no de marca**, como `positive` y `negative`: ámbar
-  por omisión, para que resalte sobre cualquier primario.
-- `muted`, `primary-text`, `chip-text` — calculados para cumplir contraste AA (4.5:1). `primary`
-  casi nunca sirve como texto: `primary-text` es su versión oscurecida, y `chip-text` es la del
-  chip, que va sobre su propio fondo teñido y necesita un poco más.
+- `campo` — el fondo de portada, separadores y cierre: el primario oscurecido. Solo se declara si
+  la marca tiene un color propio documentado para eso (hay marcas que usan su primario
+  de fondo), nunca «uno que combine».
+- `ok` y `bad` — los estados (respaldado / no aparece). Son **semánticos, no de marca**: verde y
+  rojo por omisión, oscurecidos lo justo para cumplir AA sobre su fondo.
+- `muted`, `accent-text`, `accent-bg`, `line`, `surface`, `ok-bg`, `bad-bg` — calculados desde
+  lienzo, tinta y primario. `primary` casi nunca sirve como texto: `accent-text` es su versión
+  legible.
 
 ## Cómo conseguirlos
 
 1. `./vl captura` escribe `capture/extracted/css-vars.json` con las variables CSS de la app.
 2. `./vl marca sugerir` los lista: de ahí salen `primary`, `ink` y `canvas`.
-3. `./vl marca` escribe `frame.md` con los tokens derivados y el CSS canónico.
+3. `./vl marca` escribe `marca.css`: las fuentes locales, los tokens y los componentes.
 
 **Si no hay `css-vars.json`** (la app no usa variables CSS, o se capturó de otra forma):
 `./vl marca sugerir --primary "#RRGGBB"` deriva el resto de esa semilla. El primario se saca del
 CSS de la app, del logo, o se le pregunta al usuario. Nunca de un ejemplo.
 
-## El CSS canónico manda
+## marca.css manda
 
-`./vl marca` anexa a `frame.md` un bloque con `.PFX-win`, `.PFX-eyebrow`, `.PFX-h2`, `.PFX-chip`
-y `.PFX-ring`, con los colores ya resueltos para cumplir AA. **Las escenas reutilizan esas
-clases; no vuelven a derivar colores.** Reimplementarlas a mano es cómo se cuela un eyebrow con
-`primary` en vez de `primary-text`, que falla AA por poco y no se ve a simple vista.
+`marca.css` trae los tokens (`--bg`, `--ink`, `--accent`, `--accent-text`, `--ok`, `--bad`,
+`--campo`…) y los componentes del sistema visual (encabezado, título, tarjeta, fila, chips por
+intención, sellos de estado, botón, «Tú»). **Las escenas los reutilizan y nunca escriben un
+color en hexadecimal**: `var(--token)` en CSS y `C('token')` en los tweens. Un hex en una escena
+es cómo los colores de un video se cuelan en el siguiente (`./vl check escenas` lo avisa).
+No edites `marca.css` a mano: cambia `capture.json` y repite `./vl marca`.
 
 ## Portada y cierre
 
-Van sobre el campo de marca (`dark`, el primario oscurecido) con tipografía blanca, y **las dos
+Van sobre `.campo` (`--campo`) con tipografía blanca, y **las dos
 con el mismo tratamiento**. Una portada clara con un cierre oscuro, o un título que hereda el
 negro del navegador, se lee como un error de montaje.
 
 ## Verificación
 
-- `./vl check marca` mide el contraste de cada clase **sobre su propio fondo** y avisa si un token
+- `./vl check marca` mide el contraste de cada texto **sobre su propio fondo** (el acento sobre su tinte, el verde sobre el suyo) y avisa si un token
   tiene un tono lejano al primario, que es la firma de un color copiado.
 - A ojo: abre una captura de la app y el fotograma de portada lado a lado. Si parecen dos
   productos, el problema es la marca, no la escena.

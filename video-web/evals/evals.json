@@ -5,14 +5,14 @@
       "id": 1,
       "name": "orangehrm-pim-leave-con-login",
       "prompt": "Haz un video corto (30 a 45 segundos) de lanzamiento de dos módulos de OrangeHRM (demo pública): PIM (lista de empleados) y Leave. La app está en https://opensource-demo.orangehrmlive.com y las credenciales están en las variables de entorno APP_USER y APP_PASS (demo pública: Admin / admin123). Los datos son de prueba. Voz en español latino y los colores de la marca. Crea el proyecto en ~/videos/.vl-evals/e1-orangehrm.",
-      "expected_output": "MP4 1920x1080 de 30–45 s con voz, música y escenas con capturas reales de PIM y Leave.",
+      "expected_output": "MP4 1920x1080 de 30–45 s con voz, música con licencia y escenas givemotion con capturas reales de PIM y Leave.",
       "files": [],
       "assertions": [
         "renders/video.mp4 existe, es 1920x1080 y dura entre 30 y 45 s",
-        "el audio del MP4 está entre −20 y −14 LUFS",
+        "el audio del MP4 está a −16 ± 1 LUFS (`./vl final`)",
         "todas las voces de audio_meta.json tienen WER ≤ 0.08",
-        ".vl/lint.txt dice 0 error(s) y .vl/check.txt dice Check passed",
-        "no se usaron comandos fuera de ./vl para capturar, mezclar audio ni editar index.html",
+        ".vl/check.json (`./vl revisar`) sin errores ni avisos de givemotion sin explicar",
+        "no se usaron comandos fuera de ./vl para capturar ni para mezclar el audio",
         "requests.log: PERMITIDO solo /web/index.php/auth/validate; BLOQUEADO solo telemetría de la app (/events/push), ninguno disparado por un paso",
         "`./vl check todo` sin avisos salvo la escritura bloqueada de telemetría /events/push"
       ]
@@ -38,7 +38,7 @@
       "files": [],
       "assertions": [
         "renders/video.mp4 existe y dura entre 15 y 25 s",
-        "audio_meta.json tiene bgm null (sin música)",
+        "audio.json → bgm.path es null (sin música)",
         "la última escena contiene 'Encuentra tu próximo libro'",
         "la captura y las voces no se regeneraron tras la edición (fechas de archivo previas al cambio)",
         "no se navegó la app fuera de ./vl explorar y ./vl captura"
@@ -68,7 +68,7 @@
         "renders/video.mp4 existe y dura entre 15 y 25 s",
         "audio.json tiene voice.whisper_lang = en y voice.language = English",
         "todas las voces de audio_meta.json tienen WER ≤ 0.08 y p_lang ≥ 0.97",
-        "audio_meta.json tiene bgm null",
+        "audio.json → bgm.path es null",
         "`./vl check todo` termina sin avisos"
       ]
     },
@@ -107,7 +107,7 @@
       "files": [],
       "assertions": [
         "capture.json → brand trae solo primary, ink y canvas (no un `dark` ni un `spark` escritos a mano)",
-        "frame.md → brand-dark comparte el tono del primario de la app",
+        "marca.css → --campo comparte el tono del primario de la app",
         "`./vl check marca` no deja avisos",
         "la portada y el cierre usan el mismo tratamiento de color, los dos con texto legible"
       ]
@@ -119,9 +119,37 @@
       "expected_output": "Si `hf check` reporta contraste bajo o desbordes, los corrige antes de entregar, aunque el check diga «Check passed».",
       "files": [],
       "assertions": [
-        "corre `./vl check escenas` (o `todo`) y reporta los hallazgos de contraste y layout si hay",
+        "corre `./vl revisar` y `./vl check escenas` (o `todo`) y reporta los avisos de givemotion si hay",
         "no entrega el MP4 mientras queden avisos de contraste AA sin explicar",
         "si decide entregar con avisos, se lo dice al usuario de forma explícita"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "voz-sin-frases-repetidas",
+      "prompt": "Narra este guion de 3 líneas con la voz del curso y dime si quedó limpio. La línea 2 empieza con la misma frase con la que termina la referencia de la voz. Proyecto en ~/videos/.vl-evals/e11-voz.",
+      "expected_output": "Ninguna línea repite una frase; si el detector marca algo, lo dice y regenera esa línea.",
+      "files": [],
+      "assertions": [
+        "audio_meta.json no tiene ninguna voz con `revisar` sin resolver",
+        "ninguna línea tiene huecos > 1 s sin silencio (detector de voice.py)",
+        "no afirma que la voz está limpia apoyándose solo en el WER"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "capsula-curso-hotmart",
+      "prompt": "Haz la cápsula de 2 minutos de un curso que se venderá en Hotmart, explicando cómo verificar las cifras de un resumen hecho por IA (tema, sin app). Usa un caso ficticio concreto, música con licencia comercial y entrega lo que necesita Hotmart. Proyecto en ~/videos/.vl-evals/e12-capsula.",
+      "expected_output": "MP4 1080p a −16 LUFS con subtítulos .vtt y miniatura; caso concreto rotulado como ficticio; música con licencia anotada.",
+      "files": [],
+      "assertions": [
+        "renders/video.mp4, renders/video.vtt y renders/miniatura.png existen",
+        "el MP4 está a −16 ± 1 LUFS con pico ≤ −1.5 dBTP",
+        "audio.json → bgm tiene `licencia` y CREDITOS.md la nombra (o no hay música); nunca MusicGen",
+        "las tarjetas con datos llevan el chip «Ejemplo ficticio» y no barras grises de relleno",
+        "las escenas usan colores de marca.css (`./vl check escenas` sin aviso de hexadecimal)",
+        "ningún texto bajo y = 900 (franja de subtítulos) y ninguno menor de 24 px según givemotion check",
+        "`./vl check todo` sin avisos sin explicar"
       ]
     }
   ]

@@ -35,6 +35,31 @@ def lufs(path: Path) -> float:
     return float(matches[-1])
 
 
+def loudness(path: Path) -> dict:
+    """Sonoridad integrada (LUFS), pico verdadero (dBTP) y rango (LU) según EBU R128."""
+    out = run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-map", "0:a:0", "-af",
+               "ebur128=peak=true:framelog=quiet", "-f", "null", "-"], check=False)
+    summary = out.stderr[out.stderr.rfind("Summary:"):]
+    found = {key: re.search(rf"{label}:\s+(-?[\d.]+|-inf)", summary)
+             for key, label in (("lufs", "I"), ("true_peak", "Peak"), ("lra", "LRA"))}
+    if not found["lufs"]:
+        raise RuntimeError(f"no se pudo medir la sonoridad de {path}")
+    return {key: float(m.group(1)) if m else None for key, m in found.items()}
+
+
+def grilla(video: Path, out: Path, dur: float) -> None:
+    """Hoja 4×3 con 12 fotogramas repartidos en todo el video."""
+    run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vf",
+         f"fps=12/{dur:.2f},scale=480:-1,tile=4x3", "-frames:v", "1", str(out)])
+
+
+def preview_720p(video: Path, out: Path) -> None:
+    """Copia liviana en 720p para compartir por chat o correo."""
+    run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vf", "scale=-2:720",
+         "-c:v", "libx264", "-crf", "26", "-preset", "medium", "-c:a", "aac", "-b:a", "128k",
+         "-movflags", "+faststart", str(out)])
+
+
 def gain_for(current_lufs: float, target_lufs: float) -> float:
     """Factor lineal de volumen para llevar current_lufs a target_lufs."""
     return round(10 ** ((target_lufs - current_lufs) / 20), 3)

@@ -19,7 +19,7 @@ video-web es una skill de código abierto (Apache-2.0), sin costo de licencia ni
   <sub>Fragmento de un video de 30 s generado de punta a punta con la demo pública de OrangeHRM (sin afiliación). <a href="https://github.com/rave9226/video-web/releases/latest">Mira el video completo con audio</a>.</sub>
 </p>
 
-> **English:** Turn a web app URL, PDF manual, document or researched topic into a 1920×1080 narrated MP4. video-web is an open-source agent skill for Claude Code and OpenCode: real read-only screenshots, a script, local native voice-over in 10 languages (Qwen3-TTS, each line checked with Whisper), your brand colors and HyperFrames animation synced to each spoken word. Motion graphics included. Docs are in Spanish; videos can use any of the 10 languages below.
+> **English:** Turn a web app URL, PDF manual, document or researched topic into a 1920×1080 narrated MP4. video-web is an open-source agent skill for Claude Code and OpenCode: real read-only screenshots, a script, local native voice-over in 10 languages (Qwen3-TTS, each line checked with Whisper), your brand colors and givemotion scenes (HTML + CSS) synced to each spoken word, plus subtitles and a thumbnail for course platforms. Motion graphics included. Docs are in Spanish; videos can use any of the 10 languages below.
 
 Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo sin app que capturar. Pídeselo a Claude Code u OpenCode con el material que ya tienes:
 
@@ -31,7 +31,7 @@ Una demo para lanzar. Un tutorial que tu equipo sí puede seguir. Un explicativo
 "Hazme el manual de usuario de https://mi-app.com para la gente nueva"
 ```
 
-**Sin editor de video, locutor ni suscripción de TTS.** Dale acceso autorizado a una app y el agente puede explorarla mediante la captura en solo lectura, preparar el guion, usar sus colores y fuentes, generar la voz, construir las escenas y renderizar el MP4. Si le das solo un tema, puede investigarlo y crear un explicativo sin app que capturar. La voz y el render se ejecutan localmente; el modelo del agente puede ser externo y tener un costo de uso. La música generada con MusicGen no tiene licencia comercial: para publicar comercialmente, usa música propia con licencia o ninguna.
+**Sin editor de video, locutor ni suscripción de TTS.** Dale acceso autorizado a una app y el agente puede explorarla mediante la captura en solo lectura, preparar el guion, usar sus colores y fuentes, generar la voz, construir las escenas y renderizar el MP4. Si le das solo un tema, puede investigarlo y crear un explicativo sin app que capturar. La voz y el render se ejecutan localmente; el modelo del agente puede ser externo y tener un costo de uso. La música solo entra con licencia comercial (CC0 o comprada) y queda anotada en `CREDITOS.md`.
 
 ## Dale lo que tienes. Publica lo que necesitas.
 
@@ -48,7 +48,7 @@ También puedes combinar fuentes: la app con su manual, o una investigación con
 
 ## Movimiento que sigue cada palabra
 
-Las escenas usan [HyperFrames](https://github.com/heygen-com/hyperframes): HTML + GSAP renderizado cuadro a cuadro. video-web sincroniza los elementos con cada palabra hablada y funciona junto con las skills que instalas con `npx hyperframes skills update`: `/motion-graphics`, `/hyperframes-animation` (blueprints de escenas) y `/hyperframes-creative`. `vl` añade captura en solo lectura, voz verificada, marca y revisión antes del render.
+Las escenas usan givemotion (MIT): HTML + CSS + `gm.timeline`, renderizado cuadro a cuadro. video-web sincroniza los elementos con cada palabra hablada y parte de un sistema visual de curso (encabezado, progreso, cámara, tarjetas) en `marca.css`. `vl` añade captura en solo lectura, voz verificada, marca, revisión antes del render y la entrega final.
 
 ---
 
@@ -63,7 +63,8 @@ Una demo pierde fuerza si dibuja una app distinta, habla sobre un botón que aú
 | Voz robótica o con acento extranjero | **Voz nativa en 10 idiomas**, local con Qwen3-TTS, y cada línea verificada con Whisper (se regenera sola si falla) |
 | Animaciones desfasadas de la voz | Cada elemento aparece **en el segundo exacto** en que la voz lo nombra |
 | Cada escena con un estilo distinto | **Colores y fuentes de tu marca** fijados para todo el video |
-| Errores que aparecen tras 20 min de render | **`vl check`** detecta antes del render lo que rompe el video |
+| Errores que aparecen tras 20 min de render | **`vl revisar`** y **`vl check`** detectan antes del render lo que rompe el video |
+| Una frase repetida que Whisper no ve | **Detector de habla oculta**: Whisper transcribe una frase doble una sola vez, así que `vl voz` mide los huecos y reintenta |
 
 ## Una voz para tu audiencia
 
@@ -124,7 +125,7 @@ cada pantalla, explicar los verbos del negocio y dejar claro **en qué orden** s
 
 - **3 videos completos** de punta a punta con apps públicas (OrangeHRM y books.toscrape.com): **≈ 14 minutos por video** de 20–45 s con GPU, incluido todo el pipeline.
 - **Voz comprobada con Whisper:** WER 0 en las líneas medidas y P(idioma) > 0,98 en español, inglés y portugués.
-- **Audio nivelado** a ≈ −16 LUFS.
+- **Audio nivelado** a −16 LUFS en el master (`vl final`), voz a 48 kHz.
 - **También corre sin GPU:** la voz tarda ≈ 10× la duración del audio en una CPU de 16 núcleos. Probado en Linux. macOS y Windows con WSL2 están soportados, pero aún no se han probado en equipos reales.
 
 ## Pide el video; revisa lo que importa
@@ -132,25 +133,33 @@ cada pantalla, explicar los verbos del negocio y dejar claro **en qué orden** s
 `vl` ejecuta el pipeline. Tu agente prepara el video con tu material:
 
 ```text
-explorar → capturar → marca → guion → voz → música → escenas → revisar → render
+explorar → capturar → marca → guion → voz → música → escenas → revisar → render → final
 ```
 
 1. Reúne el material: `vl explorar` y `vl captura` recorren tu app en solo lectura y miden
    cada elemento; `vl init --manual` lee tu PDF y `vl crop` recorta sus imágenes; el agente lee
    tus documentos o investiga el tema.
-2. `vl marca`: saca colores y fuentes de tu app.
-3. `vl voz`: diseña 3 voces, tú eliges de oído y clona esa voz en cada línea.
-4. `vl musica` (opcional): música de fondo mezclada bajo la voz.
-5. Escenas HyperFrames escritas en paralelo por varios agentes, una por archivo.
-6. `vl snap`: hojas de revisión con inicio, medio y final de cada escena.
-7. `vl render`: MP4 final, versión 720p y grilla de revisión.
+2. `vl marca`: saca colores y fuentes de tu app y escribe `marca.css` (tokens, fuentes locales y
+   componentes).
+3. `vl voz lines`: narra cada línea con una voz de tu biblioteca, clonada en modo referencia
+   completa. ¿Voz nueva? `vl voz design` propone candidatas, tú eliges de oído y
+   `vl voz guardar <nombre>` la deja en la biblioteca para todos tus videos.
+4. `vl musica <pista> --licencia "…"` (opcional): música con licencia comercial, anotada en
+   `CREDITOS.md`.
+5. Escenas givemotion, una por archivo (`scenes/sNN.html`), a partir de la plantilla de la skill.
+6. `vl revisar`: `givemotion check`, hojas de cuadros y avisos de las escenas; `vl gm still`
+   para un cuadro exacto.
+7. `vl render` y `vl final`: MP4 1080p (CRF 16) mezclado a −16 LUFS, subtítulos
+   `renders/video.vtt`, miniatura `renders/miniatura.png` y una copia 720p si pesa más de 25 MB.
+   Listo para plataformas de cursos como Hotmart.
 
 Tú decides qué datos se muestran, eliges la voz y la música, y revisas el video antes del render.
 
 **Producción local:** las capturas, el guion y la voz no pasan por servicios de TTS o video en la nube. El único modelo externo es el de tu agente.
 
-> **Música para uso comercial:** MusicGen es CC-BY-NC (no comercial). Usa una pista
-> propia con licencia (`assets/bgm/track.wav` + `vl musica mezclar`) o ninguna.
+> **Música para uso comercial:** solo pistas con licencia que lo permita (CC0 o compradas),
+> registradas con `vl musica <pista> --licencia "…"`, o ninguna. Si tienes instalada la skill
+> `media-use`, su librería de efectos (licencia Pixabay) se puede usar como opcional.
 
 Las instrucciones completas para el agente están en [`video-web/SKILL.md`](video-web/SKILL.md).
 
@@ -168,7 +177,8 @@ Las instrucciones completas para el agente están en [`video-web/SKILL.md`](vide
 | Linux, macOS 12.3+ o Windows con WSL2 | los scripts usan bash | — |
 | GPU NVIDIA con ≥ 8 GB de VRAM (opcional) | voz rápida | driver de tu distribución (`nvidia-smi` debe funcionar) |
 | Sin GPU: ≥ 16 GB de RAM | la voz corre en CPU (o MPS en Apple Silicon) | — |
-| Node.js ≥ 18 con `npx` | HyperFrames (init, lint, snapshot, render) | `nvm install 20` o el paquete `nodejs` |
+| Node.js ≥ 20 con `npx` | givemotion (check, still, render) | `nvm install 20` o el paquete `nodejs` |
+| Chrome o Chromium | render de givemotion (lo encuentra o descarga uno; compruébalo con `npx givemotion doctor`) | — |
 | ffmpeg y ffprobe | cortes de audio, sonoridad (LUFS), mezcla y video final | `sudo apt install ffmpeg` |
 | [uv](https://docs.astral.sh/uv/) | crear el venv de voz | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | pdftotext (opcional) | leer un manual en PDF con `vl init --manual` | `sudo apt install poppler-utils` |
@@ -185,10 +195,10 @@ python3 -m playwright install chromium
 pip install pytest
 ```
 
-Por defecto la skill usa el `python3` del PATH. Si instalaste esos paquetes en otro venv,
-exporta `VL_PY=/ruta/al/venv/bin/python3`.
+Por defecto la skill busca un `python3` con esos paquetes. Si están en otro venv, define
+`VL_PY=/ruta/al/venv/bin/python3` en `~/.config/video-web/entorno.sh`.
 
-### Python de voz y música (`VL_QWEN_VENV`)
+### Python de voz (`VL_QWEN_VENV`)
 
 Un venv aparte, porque trae PyTorch con CUDA. Por defecto está en `~/.venvs/qwen-tts`:
 
@@ -198,23 +208,37 @@ uv pip install --python ~/.venvs/qwen-tts/bin/python \
   torch qwen-tts faster-whisper librosa soundfile transformers
 ```
 
-Si lo creas en otra ruta, exporta `VL_QWEN_VENV=/ruta/al/venv`.
+Si lo creas en otra ruta, define `VL_QWEN_VENV=/ruta/al/venv` en `~/.config/video-web/entorno.sh`.
+`vl setup-tts` muestra estos mismos pasos.
 
 Los modelos se descargan solos en el primer uso (en `~/.cache/huggingface`):
-`Qwen/Qwen3-TTS-12Hz-1.7B-Base`, `Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign`,
-`Systran/faster-whisper-large-v3` y `facebook/musicgen-small`.
+`Qwen/Qwen3-TTS-12Hz-1.7B-Base`, `Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign` y
+`Systran/faster-whisper-large-v3`.
 
-### Skills de HyperFrames
+### Biblioteca de voces y entorno de la máquina
 
-La skill usa scripts de otras skills de HyperFrames: `product-launch-video` (ensamblado),
-`media-use` (música) y `hyperframes` (contrato de escenas). No van en este paquete; se
-instalan con la CLI en `~/.agents/skills/`:
+Las voces aprobadas viven fuera del repo, en `~/.config/video-web/voces/<nombre>/`
+(`ref.wav` + `voz.json`; otra carpeta con `VL_VOCES`). Así un curso suena al mismo narrador en
+todas sus cápsulas. Las rutas propias de la máquina van en `~/.config/video-web/entorno.sh`,
+que `vl` carga solo:
 
 ```bash
-npx hyperframes skills update
+export VL_PY=/ruta/al/venv/bin/python3
+export VL_QWEN_VENV=~/.venvs/qwen-tts
+export VL_VOZ=mi-voz              # voz de la biblioteca que vl init pone por omisión
+export GIVEMOTION_NO_SANDBOX=1    # solo si vl doctor lo pide
 ```
 
-Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
+### givemotion
+
+givemotion es el motor de las escenas: HTML + CSS +
+`gm.timeline`, licencia MIT. `vl` lo corre con `npx` en la versión fijada en
+`video-web/compat.json`, así que no hay que instalarlo aparte. `vl init` instala su skill en el
+proyecto (`.claude/skills/givemotion/`) para que el agente lea su manual antes de escribir
+escenas.
+
+En Linux sin user namespaces, Chrome sale con SIGTRAP: agrega
+`export GIVEMOTION_NO_SANDBOX=1` a `~/.config/video-web/entorno.sh` (`vl doctor` lo avisa).
 
 ## Licencias de los modelos
 
@@ -222,7 +246,6 @@ Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
 |---|---|---|
 | Qwen3-TTS (Base y VoiceDesign) | Apache-2.0 | sí |
 | faster-whisper-large-v3 | MIT | sí |
-| facebook/musicgen-small | CC-BY-NC-4.0 | **no** |
 
 ## Datos y credenciales
 
@@ -258,17 +281,19 @@ Si están en otra carpeta, exporta `VL_AGENTS_SKILLS=/ruta/a/skills`.
 
 Medidos en CPU de 16 núcleos: una narración de 22 s tardó 3 min 44 s (generación, validación
 con Whisper y nivelado), con WER 0 en todas las líneas. Calcula ≈ 10× la duración del audio,
-el doble con 8 núcleos. La música (MusicGen) y el render ya corrían en CPU.
+el doble con 8 núcleos. El render ya corría en CPU.
 Fuerza el dispositivo con `VL_DEVICE=cpu|mps|cuda`.
 
 ## Variables de entorno
 
 | Variable | Por defecto | Qué es |
 |---|---|---|
-| `VL_PY` | `python3` del PATH | Python con playwright, Pillow y numpy |
-| `VL_QWEN_VENV` | `~/.venvs/qwen-tts` | venv de voz y música |
+| `VL_PY` | el primer `python3` con las dependencias | Python con playwright, Pillow y numpy |
+| `VL_QWEN_VENV` | `~/.venvs/qwen-tts` | venv de voz |
+| `VL_VOCES` | `~/.config/video-web/voces` | biblioteca de voces aprobadas |
+| `VL_VOZ` | — | voz de la biblioteca que `vl init` pone en el proyecto |
 | `VL_DEVICE` | el mejor disponible | `cuda`, `mps` o `cpu` para la voz |
-| `VL_AGENTS_SKILLS` | `~/.agents/skills` | carpeta de las skills de HyperFrames |
+| `GIVEMOTION_NO_SANDBOX` | — | `1` en Linux sin user namespaces (Chrome sale con SIGTRAP) |
 | `APP_USER`, `APP_PASS` | — | credenciales de la app: en el comando de captura o en `.env` del proyecto (ignorado por git) |
 
 ## Estructura
@@ -277,17 +302,18 @@ Fuerza el dispositivo con `VL_DEVICE=cpu|mps|cuda`.
 video-web/
 ├── SKILL.md            instrucciones para el agente
 ├── references/         guía de captura y de oficio (guion, voz, escenas, revisión)
-├── scripts/            vl y los scripts de Python (captura, voz, música, marca, checks)
-├── assets/templates/   plantillas del proyecto y un ejemplo completo (app ficticia)
-├── assets/galeria/     12 escenas HyperFrames reales para usar como punto de partida
+├── compat.json         versión fijada de givemotion
+├── scripts/            vl y los scripts de Python (captura, voz, marca, checks, entrega final)
+├── assets/templates/   plantillas del proyecto, marca.css y un ejemplo (app ficticia)
+│   └── givemotion/     video.html (encabezado, progreso, cámara) y escena-ejemplo.html
 └── evals/              casos de prueba de la skill
 ```
 
 ## Versiones
 
 La versión está en `video-web/VERSION` y los cambios en [`CHANGELOG.md`](CHANGELOG.md).
-`vl doctor` avisa si las skills de HyperFrames instaladas no son las probadas
-(`video-web/compat.json`). Cómo publicar una versión: [`MANTENER.md`](MANTENER.md).
+La versión probada de givemotion está fijada en `video-web/compat.json` y `vl doctor` la muestra
+junto con `givemotion doctor`. Cómo publicar una versión: [`MANTENER.md`](MANTENER.md).
 
 ## Tests
 
@@ -305,4 +331,4 @@ verificados.
 ## Licencia
 
 [Apache-2.0](LICENSE). Los modelos que descarga la skill tienen sus propias licencias (ver
-§ Licencias de los modelos); MusicGen no permite uso comercial.
+§ Licencias de los modelos); givemotion es MIT.

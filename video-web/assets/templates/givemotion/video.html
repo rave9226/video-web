@@ -1,0 +1,121 @@
+<!doctype html>
+<!-- DIRECTION (lo escribe el modelo antes de animar: givemotion SKILL.md § The loop, paso 0)
+  Video: <NOMBRE> · <MÓDULO Y CÁPSULA O PRODUCTO>.
+  Look: sistema de marca.css (no inventes colores ni tamaños). Un solo acento por momento.
+  Caso: <EL CASO CONCRETO QUE RECORRE EL VIDEO, rotulado «Ejemplo ficticio» si es inventado>.
+  SHOT LIST (tiempos locales de cada escena, sacados de cues.md):
+  S1 …
+-->
+<!-- data-safe-zone: los 180 px inferiores quedan libres para los subtítulos de Hotmart -->
+<html data-width="1920" data-height="1080" data-fps="30" data-background="#FFFFFF"
+      data-safe-zone="0,0,180,0">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="marca.css">
+<script>
+// ---- Utilidades compartidas por todas las escenas ----
+const OUT = 'power3.out', IN = 'power2.in', MOVE = 'sine.inOut', ZOOM = 'in-out-cubic';
+const FULL = { x: 0, y: 0, w: 1920, h: 1080 }, PUSH = { x: 24, y: 14, w: 1872, h: 1053 };
+// Anillos sobre capturas: data-rect="x,y,w,h" en píxeles de la imagen (regions.md) → píxeles
+// mostrados, con el ancho nativo de .win-view[data-nativo] (2880 en una captura a 2x).
+// Cada escena la llama ANTES de sceneCam: la cámara calcula su encuadre al crearse, y con
+// anillos aún sin tamaño el zoom se disparaba (≈ 2,7× en vez de 1,25×).
+function ventanas(scope) {
+  (scope ? document.querySelector(scope) : document).querySelectorAll('.win-view').forEach(v => {
+    const img = v.querySelector('img');
+    const nativo = parseFloat(v.dataset.nativo) || (img && img.naturalWidth);
+    if (!nativo) return;
+    const k = v.clientWidth / nativo, pad = 6;
+    v.querySelectorAll('.ring[data-rect]').forEach(r => {
+      const [x, y, w, h] = r.dataset.rect.split(',').map(Number);
+      Object.assign(r.style, { left: (x - pad) * k + 'px', top: (y - pad) * k + 'px',
+        width: (w + 2 * pad) * k + 'px', height: (h + 2 * pad) * k + 'px' });
+    });
+  });
+}
+// Color de marca.css para los tweens (un tween no interpola `var(--x)`): C('ok-bg') → '#DCFCE7'
+const C = n => getComputedStyle(document.documentElement).getPropertyValue('--' + n).trim();
+// Cámara de una escena: push lento continuo (nunca hay cuadro quieto) y, si se pide, un foco
+// sobre lo que nombra la voz (1.00 → máx. 1.25) con vuelta al plano completo.
+// safe.top deja el foco bajo el título (que vive fuera del mundo y nunca se tapa) y
+// safe.bottom fuera de la franja de subtítulos. focus.dim: lo que el zoom cortaría en los
+// bordes se desvanece mientras dura el foco, en vez de verse cortado.
+function sceneCam(world, dur, focus) {
+  const cam = gm.camera(world, { breathe: false });
+  cam.shot(0, { fit: FULL, padding: 0 });
+  if (!focus) { cam.shot(0.05, { fit: PUSH, padding: 0, duration: dur - 0.7, ease: MOVE }); return cam; }
+  cam.shot(0.05, { fit: PUSH, padding: 0, duration: Math.max(0.6, focus.at - 0.1), ease: MOVE })
+     .shot(focus.at, { fit: focus.fit, padding: focus.pad || 24, maxZoom: 1.25,
+                       safe: { top: 236, bottom: 180 }, duration: 0.9, ease: ZOOM })
+     // mientras dura el foco la cámara sigue entrando despacio: nunca hay cuadro quieto
+     .shot(focus.at + 0.9, { fit: focus.fit, padding: (focus.pad || 24) * 0.8, maxZoom: 1.3,
+                             safe: { top: 236, bottom: 180 },
+                             duration: Math.max(0.4, focus.back - focus.at - 0.9), ease: MOVE })
+     .shot(focus.back, { fit: FULL, padding: 0, duration: 0.8, ease: ZOOM })
+     .shot(focus.back + 0.85, { fit: PUSH, padding: 0,
+                                duration: Math.max(0.6, dur - focus.back - 1.5), ease: MOVE });
+  if (focus.dim) gm.timeline(world)
+    .to(focus.dim, { opacity: 0, duration: 0.45, ease: MOVE }, focus.at)
+    .to(focus.dim, { opacity: 1, duration: 0.5, ease: MOVE }, focus.back + 0.55);
+  return cam;
+}
+</script>
+</head>
+<body>
+<div id="dots"></div>
+
+<!-- Una escena por línea de SCRIPT.md, en orden. Cada archivo: scenes/sNN.html
+     (plantilla: escena.html de la skill). La transición se aplica entre todas. -->
+<main data-sequence data-transition="push-left 0.6 in-out-cubic">
+  <gm-include src="scenes/s01.html"></gm-include>
+</main>
+
+<!-- encabezado fijo a propósito: carry-ok evita el aviso text-carried-over en cada escena -->
+<div id="hdr" data-check="carry-ok">
+  <img id="sym" src="assets/brand-simbolo.png" alt="">
+  <div id="eb"><span id="ebtxt"></span><span class="step" id="step"></span></div>
+  <div id="mod"><!-- p. ej. «Módulo 0 · Cápsula 1» --></div>
+</div>
+<div id="ptrack"></div><div id="pfill"></div>
+
+<script>
+// ---- Encabezado, sección, «Paso N de M» y progreso, calculados desde las escenas ----
+// Cada <section class="scene"> declara data-seccion="LA SITUACIÓN" (sin él, la escena va
+// sin encabezado: portada y cierre) y, si es un paso, data-paso="2 de 4".
+// Se calcula cuadro a cuadro con gm.onFrame: en givemotion 0.1.6 un gm.timeline() sobre
+// elementos fuera de la secuencia no aplica sus tweens, y gm.timing(último).end devuelve un
+// valor negativo; por eso el final se calcula como inicio + data-duration.
+// Los inicios se leen dentro de gm.onFrame: fuera de él, antes de que givemotion arme la
+// secuencia, gm.timing() devuelve 0 para todas las escenas y el encabezado salía corrido.
+let ESC = null, TOTAL = 1;
+function escenas() {
+  ESC = [...document.querySelectorAll('main .scene')].map(el => ({
+    ini: gm.timing('#' + el.id).start, dur: parseFloat(el.dataset.duration),
+    seccion: el.dataset.seccion || '', paso: el.dataset.paso || '',
+    campo: !el.dataset.seccion }));
+  if (ESC.length) TOTAL = ESC[ESC.length - 1].ini + ESC[ESC.length - 1].dur;
+}
+const $ = s => document.querySelector(s);
+const suave = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
+gm.onFrame(t => {
+  escenas();
+  const p = Math.min(1, Math.max(0, t / TOTAL));
+  $('#pfill').style.transform = 'scaleX(' + p + ')';
+  $('#dots').style.transform = 'translate(' + (40 * p) + 'px,' + (24 * p) + 'px)';
+  let i = 0; ESC.forEach((e, k) => { if (t >= e.ini) i = k; });
+  const e = ESC[i] || { campo: true }, desde = t - (e.ini || 0);
+  $('#pfill').style.background = e.campo ? '#FFFFFF' : 'var(--accent)';
+  $('#ptrack').style.background = e.campo ? 'rgba(255,255,255,.25)' : 'var(--line)';
+  // Entre dos escenas de contenido el encabezado no parpadea: solo entra después de una
+  // portada o separador (0.4 s tras el corte) y solo sale antes de uno (0.3 s).
+  const antesCampo = i === 0 || ESC[i - 1].campo, despuesCampo = !ESC[i + 1] || ESC[i + 1].campo;
+  const entra = antesCampo ? suave((desde - 0.4) / 0.4) : 1;
+  const sale = despuesCampo ? suave((e.ini + e.dur - t) / 0.3) : 1;
+  $('#hdr').style.opacity = e.campo ? 0 : Math.min(entra, sale);
+  $('#ebtxt').textContent = e.seccion;
+  $('#step').textContent = e.paso ? 'Paso ' + e.paso : '';
+  $('#step').style.display = e.paso ? '' : 'none';
+});
+</script>
+</body>
+</html>

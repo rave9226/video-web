@@ -10,12 +10,12 @@ audience: "<A QUIÉN VA DIRIGIDO>"
 length: 60s
 language: es-419
 aspect: 1920x1080
-captions: no
+captions: vtt      # subtítulos aparte (renders/video.vtt); quemados en pantalla solo si se pide
 datos: "<DE PRUEBA O REALES>"
-workflow: product-launch-video
+engine: givemotion
 flow: automation
 narration: yes
-voice: qwen3-tts-12hz-1.7b
+voice: qwen3-tts (biblioteca de voces, audio.json → voice.library)
 ---
 
 ## Intención

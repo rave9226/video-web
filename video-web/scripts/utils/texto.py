@@ -72,7 +72,7 @@ def english_ratio(text: str) -> float:
 
 
 def parse_frontmatter(md: str) -> dict[str, str]:
-    """Frontmatter YAML plano (clave: valor) de BRIEF.md / STORYBOARD.md."""
+    """Frontmatter YAML plano (clave: valor) de BRIEF.md, sin los comentarios ` # …`."""
     match = re.match(r"^---\n(.*?)\n---", md, re.DOTALL)
     if not match:
         return {}
@@ -80,7 +80,12 @@ def parse_frontmatter(md: str) -> dict[str, str]:
     for line in match.group(1).splitlines():
         if ":" in line and not line.startswith(" "):
             key, value = line.split(":", 1)
-            out[key.strip()] = value.strip().strip('"')
+            # la plantilla de BRIEF.md explica cada campo con un comentario en la misma línea:
+            # sin quitarlo, `formato: explicativo # para qué…` no era un formato válido
+            value = value.strip()
+            if not value.startswith('"'):
+                value = re.sub(r"\s+#.*$", "", value)
+            out[key.strip()] = value.strip('"')
     return out
 
 

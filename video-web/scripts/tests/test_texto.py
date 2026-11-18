@@ -100,3 +100,10 @@ def test_wer_otros_alfabetos():
     assert texto.wer("你好世界", "你好世界") == 0
     assert texto.wer("你好世界", "你好地界") == 0.25
     assert texto.wer("Über Straße", "uber strasse") == 0.5  # ß no se translitera
+
+
+def test_frontmatter_quita_comentarios_de_la_plantilla():
+    """`formato: explicativo # para qué…` es `explicativo`; un valor entre comillas se respeta."""
+    md = '---\nformato: explicativo # para qué es el video\nmessage: "Uno # dos"\n---\n'
+    front = texto.parse_frontmatter(md)
+    assert front["formato"] == "explicativo" and front["message"] == "Uno # dos"

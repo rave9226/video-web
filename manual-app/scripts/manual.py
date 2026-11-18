@@ -29,8 +29,22 @@ def _marca() -> dict:
     return dict(MARCA_BASE)
 
 
+def _marca_desde_css(css_path: Path) -> dict | None:
+    """Lee los colores de marca.css de video-web 2.x (tokens ya ajustados a contraste AA)."""
+    if not css_path.exists():
+        return None
+    css = css_path.read_text(encoding="utf-8")
+    col = dict(re.findall(r"--([\w-]+):\s*(#[0-9A-Fa-f]{6})\b", css))
+    if not col.get("accent"):
+        return None
+    fuente = re.search(r"--font:\s*([^;]+);", css)
+    return {"primary": col.get("accent-text", col["accent"]), "ink": col.get("ink", "#111827"),
+            "canvas": col.get("bg", "#F9FAFB"), "muted": col.get("muted", "#6B7280"),
+            "font": fuente.group(1).strip() if fuente else MARCA_BASE["font"]}
+
+
 def _marca_desde_frame(frame: Path) -> dict | None:
-    """Lee los colores de un frame.md de video-web, para no volver a definirlos."""
+    """Lee los colores de un frame.md de video-web 1.x, para no volver a definirlos."""
     if not frame.exists():
         return None
     md = frame.read_text(encoding="utf-8")
@@ -68,11 +82,14 @@ def cmd_init(desde: str, titulo: str) -> int:
             if copiadas:
                 break
         print(f"  ✓ {copiadas} captura(s) en {IMG}/")
-        marca = _marca_desde_frame(proy / "frame.md")
+        # video-web 2.x escribe marca.css; los proyectos 1.x, frame.md
+        origen = next((f for f in ("marca.css", "frame.md") if (proy / f).exists()), "")
+        marca = (_marca_desde_css(proy / origen) if origen == "marca.css"
+                 else _marca_desde_frame(proy / origen) if origen else None)
         if marca and not MARCA.exists():
             MARCA.write_text(json.dumps(marca, indent=2, ensure_ascii=False) + "\n",
                              encoding="utf-8")
-            print(f"  ✓ {MARCA} con los colores de {proy / 'frame.md'}")
+            print(f"  ✓ {MARCA} con los colores de {proy / origen}")
     if not MARCA.exists():
         print(f"  · sin {MARCA}: el PDF saldrá en grises neutros. Para usar la marca, escribe "
               f'{MARCA} con primary, ink, canvas y font (los colores salen de la app, '
