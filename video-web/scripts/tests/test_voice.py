@@ -118,3 +118,24 @@ def test_marcadores_ignorados_con_biblioteca():
     assert "ref_text" not in voice.claves_usadas(cfg, "lines")["voice"]
     assert voice.claves_usadas(cfg, "design") is cfg
     assert voice.claves_usadas({"voice": {"ref_text": "<X>"}}, "lines")["voice"]["ref_text"]
+
+
+def test_voz_de_la_skill_y_propia_con_prioridad(tmp_path, monkeypatch):
+    """La voz del curso viene con la skill; una propia con el mismo nombre manda sobre ella."""
+    monkeypatch.setenv("VL_VOCES", str(tmp_path))
+    skill = voice.voz_folder("instructora-2026")
+    assert skill == voice.VOCES_SKILL / "instructora-2026"
+    assert (skill / "ref.wav").exists()
+    entry = json.loads((skill / "voz.json").read_text(encoding="utf-8"))
+    assert entry["semilla"] == 7242 and "Biónica" not in entry["ref_text"]
+    (tmp_path / "instructora-2026").mkdir()
+    (tmp_path / "instructora-2026/voz.json").write_text('{"ref_text": "x"}', encoding="utf-8")
+    assert voice.voz_folder("instructora-2026") == tmp_path / "instructora-2026"
+    assert voice.voz_folder("no-existe") is None
+
+
+def test_plantilla_usa_la_voz_del_curso():
+    """Un proyecto nuevo narra con la voz del curso sin configurar nada."""
+    plantilla = json.loads((voice.VOCES_SKILL.parent / "templates/audio.json")
+                           .read_text(encoding="utf-8"))
+    assert plantilla["voice"]["library"] == "instructora-2026"

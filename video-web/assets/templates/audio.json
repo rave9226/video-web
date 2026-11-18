@@ -2,7 +2,7 @@
   "voice": {
     "language": "Spanish",
     "whisper_lang": "es",
-    "library": null,
+    "library": "instructora-2026",
     "ref_audio": null,
     "ref_text": "<FRASE DE REFERENCIA DE 20 A 30 PALABRAS QUE NOMBRE EL PRODUCTO>",
     "instructs": {

@@ -68,9 +68,12 @@ alumno y el nombre de la cápsula siguiente. 2–4 min, 12–14 líneas.
 
 ### La voz sale de la biblioteca
 
-Las voces aprobadas viven fuera del repo, en `$VL_VOCES/<nombre>/` (por omisión
-`~/.config/video-web/voces/`): `ref.wav` + `voz.json` con su `ref_text` exacto y su semilla.
-`audio.json → voice.library` elige una; `vl init` pone la de `VL_VOZ` del entorno. **No
+La skill trae la voz del curso, **`instructora-2026`** (`assets/voces/`), y es la de la
+plantilla: un proyecto nuevo narra con ella sin configurar nada. Las voces propias van en
+`$VL_VOCES/<nombre>/` (por omisión `~/.config/video-web/voces/`) y mandan sobre las de la skill
+si se llaman igual. Cada voz es `ref.wav` + `voz.json` con su `ref_text` exacto y su semilla:
+**no los cambies**, son los que dan el mismo tono en todos los videos. `audio.json →
+voice.library` elige la voz; `vl init` pone la de `VL_VOZ` si está definida. **No
 diseñes una voz nueva por proyecto**: un curso debe sonar al mismo narrador en todas sus
 cápsulas.
 

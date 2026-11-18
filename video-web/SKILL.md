@@ -58,7 +58,7 @@ voces, `GIVEMOTION_NO_SANDBOX`) viven en `~/.config/video-web/entorno.sh`, fuera
 | capturar la app | `./vl captura [--only a,b]` según `capture.json` → `references/captura.md` |
 | recortar o medir | `./vl crop …` · `./vl medir /ruta --texto "Nombre"` |
 | colores y fuentes | `./vl marca sugerir [--primary "#RRGGBB"]`, luego `./vl marca` → `marca.css` |
-| voz | `./vl voz lines [--frames N]` con la voz de la biblioteca; voz nueva: `./vl voz design` → 🛑 elige el usuario → `./vl voz guardar <nombre>` |
+| voz | `./vl voz lines [--frames N]` con la voz del curso (`instructora-2026`, viene con la skill); voz nueva: `./vl voz design` → 🛑 elige el usuario → `./vl voz guardar <nombre>` |
 | música | `./vl musica <pista> --licencia "…"` (opcional) |
 | revisar escenas | `./vl revisar`: `givemotion check`, hojas de cuadros y `./vl check escenas` |
 | render | `./vl render` (imagen + voces + efectos) y `./vl final` (mezcla −16 LUFS, `video.vtt`, miniatura) |

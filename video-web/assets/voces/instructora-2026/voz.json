@@ -1,0 +1,10 @@
+{
+  "nombre": "Instructora 2026",
+  "descripcion": "Mujer colombiana de unos treinta años, español latinoamericano con acento colombiano suave; tono cálido y seguro de instructora de curso, ritmo medio. Voz sintética (Qwen3-TTS VoiceDesign), no es la grabación de una persona.",
+  "ref_wav": "ref.wav",
+  "ref_text": "Define el alcance. Ese archivo será la única referencia durante todo el ejercicio. Pide un resumen que use exclusivamente el archivo adjunto.",
+  "semilla": 7242,
+  "como_se_hizo": "Qwen3-TTS-12Hz-1.7B-VoiceDesign con una instrucción de instructora colombiana de curso (semilla 1017), recortada a 10,5 s + 0,6 s de silencio. Se clona con -Base en modo referencia completa (ICL), una generación por línea, semilla 7242.",
+  "notas": "Elegida a ciegas el 2026-11-18 frente a la voz por línea anterior, CosyVoice3 y variantes. El clon arrastra al inicio la última frase de ref_text: voice.py la recorta. Licencia: generada con pesos Apache-2.0, apta para uso comercial.",
+  "fecha": "2026-11-18"
+}

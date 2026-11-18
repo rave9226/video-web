@@ -450,15 +450,30 @@ def voces_dir() -> Path:
     return Path(os.environ.get("VL_VOCES", VOCES_DEFAULT)).expanduser()
 
 
+# Voces que vienen con la skill (repo): todo el equipo narra con la misma voz sin configurar
+# nada. Una voz propia con el mismo nombre en $VL_VOCES manda sobre la de la skill.
+VOCES_SKILL = Path(__file__).resolve().parents[1] / "assets/voces"
+
+
+def voz_folder(name: str) -> Path | None:
+    """Carpeta de la voz: primero la biblioteca propia, luego las voces de la skill."""
+    for base in (voces_dir(), VOCES_SKILL):
+        if (base / name / "voz.json").exists():
+            return base / name
+    return None
+
+
 def resolve_voice(voice: dict) -> dict:
     """Con voice.library, toma ref_audio, ref_text y semilla de la biblioteca."""
     name = voice.get("library")
     if not name:
         return voice
-    folder = voces_dir() / name
-    if not (folder / "voz.json").exists():
-        sys.exit(f"✗ no existe la voz «{name}» en {voces_dir()} (falta voz.json). Disponibles: "
-                 f"{', '.join(sorted(p.parent.name for p in voces_dir().glob('*/voz.json')))}")
+    folder = voz_folder(name)
+    if folder is None:
+        disponibles = sorted({p.parent.name for base in (voces_dir(), VOCES_SKILL)
+                              for p in base.glob("*/voz.json")})
+        sys.exit(f"✗ no existe la voz «{name}» en {voces_dir()} ni en la skill. Disponibles: "
+                 f"{', '.join(disponibles)}")
     entry = json.loads((folder / "voz.json").read_text(encoding="utf-8"))
     resolved = dict(voice, ref_audio=str(folder / entry.get("ref_wav", "ref.wav")),
                     ref_text=entry["ref_text"])

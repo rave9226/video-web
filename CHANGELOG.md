@@ -3,6 +3,14 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 [SemVer](https://semver.org/lang/es/). La versión vigente está en `video-web/VERSION`.
 
+## [2.1.0] — 2026-11-18
+
+### Agregado
+- **La voz del curso viene con la skill:** `assets/voces/instructora-2026` (la que ganó la
+  prueba a ciegas) y es la voz por omisión de la plantilla. Todo el equipo narra con el mismo
+  tono sin configurar nada. `voice.py` busca la voz primero en `$VL_VOCES` (las propias mandan)
+  y luego en la skill; `vl doctor` lista ambas.
+
 ## [2.0.0] — 2026-11-18
 
 Piloto de una cápsula de un curso de pago en Hotmart: la voz, el motor y el
