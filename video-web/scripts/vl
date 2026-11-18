@@ -90,10 +90,11 @@ cmd_doctor() {
     Systran--faster-whisper-large-v3; do
     [[ -d "$HF_HUB/models--$m" ]] && ok "modelo $m" || warn "modelo $m: se descarga en el primer uso"
   done
+  ok "voces de la skill: $(ls "$SKILL/assets/voces" 2> /dev/null | tr '\n' ' ')"
   local voces
   voces="$(ls "$VOCES" 2> /dev/null | tr '\n' ' ')"
-  [[ -n "$voces" ]] && ok "voces en $VOCES: $voces" ||
-    warn "biblioteca de voces vacía ($VOCES): diseña una con ./vl voz design y ./vl voz guardar"
+  [[ -n "$voces" ]] && ok "voces propias en $VOCES: $voces" ||
+    echo "· sin voces propias en $VOCES (opcional: ./vl voz design y ./vl voz guardar)"
   local free
   free="$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2> /dev/null | head -1)"
   if [[ -z "$free" ]]; then

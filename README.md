@@ -217,15 +217,20 @@ Los modelos se descargan solos en el primer uso (en `~/.cache/huggingface`):
 
 ### Biblioteca de voces y entorno de la máquina
 
-Las voces aprobadas viven fuera del repo, en `~/.config/video-web/voces/<nombre>/`
-(`ref.wav` + `voz.json`; otra carpeta con `VL_VOCES`). Así un curso suena al mismo narrador en
-todas sus cápsulas. Las rutas propias de la máquina van en `~/.config/video-web/entorno.sh`,
+La skill trae una voz lista: **`instructora-2026`** (`video-web/assets/voces/`), una
+narradora colombiana de curso, cálida y segura, elegida en una prueba a ciegas. Es la voz por
+omisión de todo proyecto nuevo: cualquiera del equipo narra con el mismo tono sin configurar
+nada. Es sintética (Qwen3-TTS, pesos Apache-2.0), apta para uso comercial.
+
+Tus voces propias van fuera del repo, en `~/.config/video-web/voces/<nombre>/` (`ref.wav` +
+`voz.json`; otra carpeta con `VL_VOCES`); una propia con el mismo nombre manda sobre la de la
+skill. Así un curso suena al mismo narrador en todas sus cápsulas. Las rutas propias de la máquina van en `~/.config/video-web/entorno.sh`,
 que `vl` carga solo:
 
 ```bash
 export VL_PY=/ruta/al/venv/bin/python3
 export VL_QWEN_VENV=~/.venvs/qwen-tts
-export VL_VOZ=mi-voz              # voz de la biblioteca que vl init pone por omisión
+export VL_VOZ=mi-voz              # otra voz por omisión (sin esto: instructora-2026)
 export GIVEMOTION_NO_SANDBOX=1    # solo si vl doctor lo pide
 ```
 
@@ -291,7 +296,7 @@ Fuerza el dispositivo con `VL_DEVICE=cpu|mps|cuda`.
 | `VL_PY` | el primer `python3` con las dependencias | Python con playwright, Pillow y numpy |
 | `VL_QWEN_VENV` | `~/.venvs/qwen-tts` | venv de voz |
 | `VL_VOCES` | `~/.config/video-web/voces` | biblioteca de voces aprobadas |
-| `VL_VOZ` | — | voz de la biblioteca que `vl init` pone en el proyecto |
+| `VL_VOZ` | `instructora-2026` (de la plantilla) | voz que `vl init` pone en el proyecto |
 | `VL_DEVICE` | el mejor disponible | `cuda`, `mps` o `cpu` para la voz |
 | `GIVEMOTION_NO_SANDBOX` | — | `1` en Linux sin user namespaces (Chrome sale con SIGTRAP) |
 | `APP_USER`, `APP_PASS` | — | credenciales de la app: en el comando de captura o en `.env` del proyecto (ignorado por git) |
