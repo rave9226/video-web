@@ -44,3 +44,8 @@ def muted_between(ink: str, canvas: str, minimum: float = 4.6) -> str:
             break
         best = candidate
     return best
+
+
+def sobre(fondo: str, ink: str) -> str:
+    """Color de texto sobre `fondo`: blanco o la tinta, el que más contraste da."""
+    return "#FFFFFF" if contrast("#FFFFFF", fondo) >= contrast(ink, fondo) else ink

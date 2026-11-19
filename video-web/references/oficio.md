@@ -17,6 +17,21 @@ escena, numeradas de 1 a N, con el texto hablado indentado con 4 espacios. Plant
   sola forma de trato (tú o usted). Cada línea nombra lo que se verá en su escena.
 - **Datos.** Solo lo que muestran la app o el manual. Nada de cifras ni clientes inventados.
 
+### Un concepto por video
+
+Cada video enseña **una sola idea**, y su arco va de la pregunta a la respuesta sin desvíos. Si
+el tema junta dos preguntas («qué es X y por qué falla», «cómo se configura y cómo se reporta»),
+son dos videos, o una manda y la otra no pasa de una línea al servicio de la primera. En un
+piloto, una clase mezcló «qué es un modelo» con «por qué se equivoca» y hubo que separarla
+después de la voz.
+
+- **Prueba antes de escribir:** el `message` del BRIEF cabe en una frase sin «y además», y el
+  título no tiene dos preguntas.
+- **Prueba al terminar:** cada línea del guion sirve a esa idea; la que abre otra (un segundo
+  «¿por qué?», otra definición) se corta o va al video siguiente, que el cierre anuncia.
+- **Arco claro:** situación → la idea → cómo se aplica → qué te llevas. Una idea nueva a mitad
+  de camino rompe el arco aunque cada línea esté bien escrita.
+
 ### El arco depende del `formato` del BRIEF
 
 **🛑 Si el BRIEF no trae `formato`, pregúntaselo al usuario antes de escribir una línea.** Un
@@ -62,7 +77,7 @@ alumno y el nombre de la cápsula siguiente. 2–4 min, 12–14 líneas.
   pueden repetir errores» en la 9 y «dos respuestas coincidentes pueden repetir el mismo error»
   en la 11): el alumno lo oye como una repetición.
 - **Números y fechas con letras** en el guion («setenta coma cuatro por ciento»); en pantalla,
-  en cifras.
+  en cifras. Whisper los oye en cifras, y el WER los compara así (no es un error).
 
 ## Voz (Qwen3-TTS local)
 
@@ -92,6 +107,12 @@ texto no lo arregló del todo.
 | Detector de habla oculta: huecos > 1 s que no son silencio y < 2,3 palabras/s | **Whisper transcribe una frase repetida una sola vez**: el WER sale 0 con una frase doble. Las líneas sanas miden 2,6–3,4 palabras/s |
 | Reintenta con otra semilla las líneas con WER alto o habla oculta | lo que falla una vez casi nunca falla con otra semilla |
 | −18 LUFS por línea, 48 kHz mono | el master final (`./vl final`) lleva todo a −16 |
+
+**La voz sigue al guion por contenido.** Cada toma guarda la huella del texto, la voz y el
+`respell` con que se generó (`assets/voice/firmas.json`). `./vl voz lines` genera solo las líneas
+nuevas o cambiadas (`--todas` las rehace todas) y, si `SCRIPT.md` cambia mientras corre o
+después, la línea queda marcada y `./vl check voz` lo avisa: un video salió con cuatro líneas
+del guion anterior.
 
 **Una línea marcada «revisar» se escucha antes de seguir.** Nunca digas que la narración está
 limpia apoyándote solo en el WER.
@@ -161,13 +182,19 @@ necesite: `camera-moves`, `text-reveals`, `numbers-and-charts`, `scene-transitio
 
 | Regla | Antes | Ahora |
 |---|---|---|
-| Texto mínimo | 16–22 px | etiquetas 24 px, contenido 30 px, títulos 60 px |
-| Lienzo | contenido hasta el 64 % del alto | la composición va de y ≈ 200 a 900; tarjetas que llenan el ancho |
+| Texto mínimo | 16–22 px | etiquetas 24 px, contenido 30 px (28 px dentro de tarjetas), cifras clave 64 px, títulos 60 px |
+| Lienzo | contenido hasta el 64 % del alto | la composición va de y ≈ 200 a 900; tarjetas que llenan el ancho (≥ 70–80 %) con texto real del caso, nunca barras grises como contenido |
 | Franja inferior | vacía o con contenido | y > 900 libre para los subtítulos de la plataforma |
 | Quietud | portada fija 13 s, tramos de 4–6 s | algo se mueve cada ≤ 1,5 s; la portada está armada en t = 0 pero respira (push lento, motivo que se anima en su palabra) |
 | Foco | ninguno | un foco por escena con `sceneCam(world, dur, {at, back, fit, dim})`: zoom ≤ 1,25 a lo que nombra la voz, el resto atenuado; el título vive fuera del mundo y nunca se tapa |
 | Sincronía | aproximada | cada revelado 0,04–0,08 s antes de su palabra en `cues.md` |
 | Estados | colores sueltos | verde = respaldado (`.row.ok`, `.chip.ok`), rojo = no aparece (`.row.bad`, `.st.bad`), acento = la idea clave |
+
+**Portada y cierre (`.campo`):** el texto va en `var(--on-campo)` y, sobre un relleno de
+acento, en `var(--on-accent)`; nunca `var(--bg)` ni blanco fijo (con un campo claro no se lee).
+Si el campo es del color del acento, una burbuja, un botón o un punto de acento desaparece
+sobre él: ahí va en `var(--bg)` con texto `var(--accent-text)`. El mensaje final no se atenúa
+(opacidad ≥ 0,85): givemotion lo da por legible por ser grande, pero no se lee bien.
 
 **Errores de givemotion 0.1.6 ya resueltos en la plantilla** (no los vuelvas a descubrir):
 `gm.timing(<última escena>).end` devuelve un negativo (usa inicio + `data-duration`); fuera de `gm.onFrame`, `gm.timing()` devuelve 0 para todas las escenas (léelo dentro); un
@@ -192,7 +219,16 @@ los `data-expect` usan tiempo del video, no de la escena; una clase global (`.bl
 ## Revisión
 
 `./vl revisar` corre `givemotion check` (guardado en `.vl/check.json`), las hojas de cuadros en
-`renders/review/` y `./vl check escenas`. **Abre las hojas y mira.** Para un momento exacto:
+`renders/review/`, **un cuadro por escena al 65 % de su duración** en `renders/review/escenas/`
+(las hojas automáticas pueden caer al inicio de una escena, cuando aún está vacía) y `./vl check
+escenas`, que además de givemotion avisa de:
+
+- **escena pobre:** en su cuadro, el contenido ocupa < 60 % del ancho, < 40 % del alto útil o
+  < 3 % del área (las escenas aprobadas del piloto miden ≈ 90 %, 95 % y 5–20 %);
+- **texto chico:** `font-size` menor de 24 px (givemotion solo avisa bajo 22);
+- **texto con `color: var(--bg)`** y lo que se pierde o se atenúa sobre el campo (§ Escenas).
+
+**Abre las hojas y mira.** Para un momento exacto:
 `./vl gm still video.html -t 12.3 -o f.png`. Revisa:
 
 1. Ningún texto cortado, encimado ni menor de 24 px.

@@ -1,7 +1,9 @@
 """Narración local con Qwen3-TTS (VoiceDesign → clon con Base) verificada con Whisper.
 
     voice.py design [--n 3]        voces candidatas por instruct, rankeadas por P(idioma) y WER
-    voice.py lines [--frames 3,7]  clona la voz elegida por línea; reintenta semillas si falla
+    voice.py lines [--frames 3,7] [--todas]
+                                   clona la voz por línea: solo las que cambiaron en SCRIPT.md
+                                   (o las pedidas); reintenta semillas si falla
     voice.py finalize              recorta, nivela y agrega pausas a los NN.raw.wav existentes
     voice.py guardar <nombre> [--desde ref.wav] [--texto "..."]
                                    guarda la voz elegida en la biblioteca ($VL_VOCES)
@@ -33,6 +35,10 @@ from pathlib import Path
 from utils import medios, texto  # pylint: disable=import-error
 
 VOICE_DIR, REF_DIR = Path("assets/voice"), Path("assets/voice/ref")
+# Con qué texto y qué voz se generó cada NN.raw.wav: si el guion cambia mientras la voz corre, o
+# después, la línea queda vieja y se regenera sola. Así un video salió con cuatro líneas del
+# guion anterior y nadie lo notó hasta escucharlo.
+FIRMAS = VOICE_DIR / "firmas.json"
 DESIGN_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 BASE_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
 GEN_KWARGS = {"temperature": 0.8, "top_p": 0.95, "max_new_tokens": 2048}
@@ -211,12 +217,37 @@ def cmd_design(cfg: dict, count: int) -> int:
     return 0
 
 
+def voz_id(voice: dict) -> str:
+    """Qué voz narra: la de la biblioteca o el archivo de referencia."""
+    return str(voice.get("library") or voice.get("ref_audio") or "")
+
+
+def firma(cfg: dict, linea: str) -> dict:
+    """Texto (huella) y voz con que se genera una línea."""
+    return {"texto": texto.huella(linea), "voz": voz_id(cfg["voice"]),
+            "respell": texto.huella(json.dumps(cfg.get("respell", {}), sort_keys=True))}
+
+
+def firmas() -> dict:
+    """{frame: firma} de los NN.raw.wav existentes."""
+    return {int(k): v for k, v in json.loads(FIRMAS.read_text(encoding="utf-8")).items()} \
+        if FIRMAS.exists() else {}
+
+
+def pendientes(cfg: dict, script: dict) -> set[int]:
+    """Frames sin WAV crudo o cuya firma (texto, voz, respell) no es la de ahora."""
+    hechas = firmas()
+    return {f for f, linea in script.items()
+            if not (VOICE_DIR / f"{f:02d}.raw.wav").exists() or hechas.get(f) != firma(cfg, linea)}
+
+
 def synth(cfg: dict, ref: Path, jobs: dict[int, int], script: dict) -> None:
     """Genera NN.raw.wav para cada {frame: intento} con semilla distinta por intento."""
     import torch  # pylint: disable=import-outside-toplevel,import-error
     voice = cfg["voice"]
     tts = load(BASE_MODEL)
     prompt = tts.create_voice_clone_prompt(ref_audio=str(ref), ref_text=voice["ref_text"])
+    hechas = firmas()
     for frame, attempt in sorted(jobs.items()):
         # semilla fija por voz (la receta aprobada usa la misma en todas las líneas)
         torch.manual_seed(voice.get("seed", 4242) + 1000 * attempt)
@@ -224,14 +255,25 @@ def synth(cfg: dict, ref: Path, jobs: dict[int, int], script: dict) -> None:
             text=texto.respell(script[frame], cfg.get("respell", {})),
             language=voice["language"], voice_clone_prompt=prompt, **GEN_KWARGS)
         save_wav(wavs[0], rate, VOICE_DIR / f"{frame:02d}.raw.wav")
+        # la firma es la del texto que se USÓ, no la del SCRIPT.md de después
+        hechas[frame] = firma(cfg, script[frame])
+        FIRMAS.write_text(json.dumps({f"{k:02d}": v for k, v in sorted(hechas.items())},
+                                     indent=2), encoding="utf-8")
         print(f"  ✓ {frame:02d}.raw.wav (intento {attempt + 1})", flush=True)
 
 
-def cmd_lines(cfg: dict, ref: Path, frames: set[int]) -> int:
-    """Clona todas las líneas (o las pedidas), reintenta las de WER alto y finaliza."""
+def cmd_lines(cfg: dict, ref: Path, frames: set[int], todas: bool = False) -> int:
+    """Clona las líneas que cambiaron (o las pedidas, o todas), reintenta las que fallan y
+    finaliza."""
     script = texto.parse_script(Path("SCRIPT.md").read_text(encoding="utf-8"))
-    jobs = {f: 0 for f in (frames or set(script))}
-    for attempt in range(cfg["gates"].get("tries", 3)):
+    frames = frames or (set(script) if todas else pendientes(cfg, script))
+    if not frames:
+        print("✓ todas las líneas tienen voz con el texto y la voz de ahora (--todas para "
+              "regenerarlas)", flush=True)
+    else:
+        print(f"Líneas a generar: {', '.join(map(str, sorted(frames)))}", flush=True)
+    jobs = {f: 0 for f in frames}
+    for attempt in range(cfg["gates"].get("tries", 3) if jobs else 0):
         synth(cfg, ref, jobs, script)
         jobs = {frame: attempt + 1 for frame in failing_lines(cfg, sorted(jobs), script)}
         if not jobs:
@@ -389,11 +431,16 @@ def finalize_line(cfg: dict, whisper, frame: int, meta: dict) -> dict:
     for word in words:  # Whisper pega a 0.0 la primera palabra tras un silencio inicial
         word["start"] = max(word["start"], head)
         word["end"] = max(word["end"], word["start"])
+    revisar = revisar_habla(words, silencios(final))
+    hecha = firmas().get(frame)
+    if hecha and hecha["texto"] != texto.huella(meta["script"][frame]):
+        revisar.insert(0, "SCRIPT.md cambió después de generar esta voz (dice el texto viejo)")
     return {"frame": frame, "path": str(final), "duration_s": round(medios.duration(final), 3),
             "wer": round(texto.wer_respell(meta["script"][frame], heard,
                                            cfg.get("respell", {})), 3),
             "p_lang": p_lang(whisper, final, lang), "trim_s": round(start, 3), "heard": heard,
-            "revisar": revisar_habla(words, silencios(final)),
+            "revisar": revisar, "texto": hecha["texto"] if hecha else None,
+            "voz": hecha["voz"] if hecha else None,
             "words": [dict(w, id=f"w{i}") for i, w in enumerate(words)]}
 
 
@@ -430,8 +477,10 @@ def cmd_finalize(cfg: dict) -> int:
     Path("cues.md").write_text("\n".join(cues), encoding="utf-8")
     print(f"Total narración: {sum(v['duration_s'] for v in voices):.1f} s · "
           f"a revisar: {bad or 'ninguna'}")
-    print("SIGUIENTE: " + (f"`./vl voz lines --frames {','.join(map(str, bad))}` (o ajusta "
-                           "respell en audio.json)" if bad else "`./vl musica <pista> --licencia \"…\"` (opcional) y las escenas"))
+    print("SIGUIENTE: " + (f"`./vl voz lines` (regenera las que cambiaron) o `./vl voz lines "
+                           f"--frames {','.join(map(str, bad))}` (o ajusta respell en audio.json)"
+                           if bad else "`./vl musica <pista> --licencia \"…\"` (opcional) y "
+                           "las escenas"))
     return 1 if bad else 0
 
 
@@ -527,6 +576,43 @@ def main() -> int:
                  "\nCierra alguno y repite, o corre sin GPU con VL_DEVICE=cpu (más lento).")
 
 
+PLANTILLA_AUDIO = Path(__file__).resolve().parents[1] / "assets/templates/audio.json"
+
+
+def avisos_1x(cfg: dict) -> list[str]:
+    """Señales de un audio.json de video-web 1.x copiado a un proyecto 2.x.
+
+    Un kit de proyecto con el audio.json de 1.x pisó la plantilla: la voz por omisión de 2.x no
+    se usó y nada lo dijo. `bgm.prompt` (MusicGen) y una referencia dentro de la skill vieja
+    (`assets/voice/voces/`) solo existen en 1.x."""
+    avisos = []
+    if "prompt" in (cfg.get("bgm") or {}):
+        avisos.append("bgm.prompt es de MusicGen (1.x, no comercial): se ignora; la música se "
+                      "pone con `./vl musica <pista> --licencia`")
+    if "/assets/voice/voces/" in str(cfg.get("voice", {}).get("ref_audio") or ""):
+        avisos.append("voice.ref_audio apunta a la biblioteca de la skill 1.x: se ignora")
+    plantilla = json.loads(PLANTILLA_AUDIO.read_text(encoding="utf-8"))["voice"]["library"]
+    if avisos and cfg.get("voice", {}).get("library") != plantilla:
+        avisos.append(f"la voz es «{cfg['voice'].get('library') or 'sin biblioteca'}», no la de "
+                      f"la plantilla 2.x («{plantilla}»): si no es a propósito, copia "
+                      f"{PLANTILLA_AUDIO}")
+    return avisos
+
+
+def migrar_1x(cfg: dict) -> dict:
+    """Quita lo de 1.x que 2.x no usa (MusicGen, referencia de la skill vieja) y avisa."""
+    avisos = avisos_1x(cfg)
+    for aviso in avisos:
+        print(f"⚠ audio.json de video-web 1.x: {aviso}", flush=True)
+    if not avisos:
+        return cfg
+    voz = dict(cfg["voice"])
+    if "/assets/voice/voces/" in str(voz.get("ref_audio") or ""):
+        voz["ref_audio"] = None
+    return dict(cfg, voice=voz, bgm={k: v for k, v in (cfg.get("bgm") or {}).items()
+                                     if k != "prompt"})
+
+
 def claves_usadas(cfg: dict, cmd: str) -> dict:
     """La parte de audio.json que el subcomando usa: con voice.library (salvo en design) la
     referencia sale de la biblioteca, así que ref_text e instructs pueden seguir con marcadores."""
@@ -541,14 +627,17 @@ def run() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("design").add_argument("--n", type=int, default=3)
-    sub.add_parser("lines").add_argument("--frames", default="")
+    lines = sub.add_parser("lines")
+    lines.add_argument("--frames", default="")
+    lines.add_argument("--todas", action="store_true",
+                       help="regenera todas, aunque su texto y su voz no hayan cambiado")
     sub.add_parser("finalize")
     guardar = sub.add_parser("guardar")
     guardar.add_argument("nombre")
     guardar.add_argument("--desde", default="")
     guardar.add_argument("--texto", default="")
     args = parser.parse_args()
-    cfg = json.loads(Path("audio.json").read_text(encoding="utf-8"))
+    cfg = migrar_1x(json.loads(Path("audio.json").read_text(encoding="utf-8")))
     if re.search(r"<[A-ZÁÉÍÓÚÑ_ ]{3,}>", json.dumps(claves_usadas(cfg, args.cmd),
                                                     ensure_ascii=False)):
         sys.exit("✗ audio.json aún tiene marcadores <...>: complétalo (references/oficio.md § Voz)")
@@ -558,7 +647,8 @@ def run() -> int:
         return cmd_design(cfg, args.n)
     cfg["voice"] = resolve_voice(cfg["voice"])
     if args.cmd == "lines":
-        return cmd_lines(cfg, chosen_voice(cfg), {int(f) for f in args.frames.split(",") if f})
+        return cmd_lines(cfg, chosen_voice(cfg), {int(f) for f in args.frames.split(",") if f},
+                         args.todas)
     return cmd_finalize(cfg)
 
 

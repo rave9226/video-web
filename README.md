@@ -156,10 +156,11 @@ explorar → capturar → marca → guion → voz → música → escenas → re
 1. Reúne el material: `vl explorar` y `vl captura` recorren tu app en solo lectura y miden
    cada elemento; `vl init --manual` lee tu PDF y deja cada página como imagen para que
    `vl crop` recorte sus capturas; el agente lee tus documentos o investiga el tema.
-2. `vl marca`: saca colores y fuentes de tu app y escribe `marca.css` (tokens, fuentes locales y
-   componentes).
+2. `vl marca`: saca colores y fuentes de tu app (o usa los tonos exactos de tu manual de marca)
+   y escribe `marca.css` (tokens, fuentes locales y componentes).
 3. `vl voz lines`: narra cada línea con la voz del curso (`instructora-2026`, viene con la
-   skill) u otra de tu biblioteca, clonada en modo referencia completa. ¿Voz nueva?
+   skill) u otra de tu biblioteca, clonada en modo referencia completa. Si cambias el guion,
+   solo rehace las líneas que cambiaron. ¿Voz nueva?
    `vl voz design` propone candidatas, tú eliges de oído y `vl voz guardar <nombre>` la deja en
    la biblioteca para todos tus videos.
 4. `vl musica <pista> --licencia "…"` (opcional): música con licencia comercial, anotada en
@@ -167,8 +168,9 @@ explorar → capturar → marca → guion → voz → música → escenas → re
 5. Escenas givemotion, una por archivo (`scenes/sNN.html`), a partir de las plantillas de la
    skill: `escena-ventana.html` para una pantalla capturada (anillos con las medidas reales) y
    `escena-ejemplo.html` para tarjetas, comparaciones y el caso concreto.
-6. `vl revisar`: `givemotion check`, hojas de cuadros y avisos de las escenas; `vl gm still`
-   para un cuadro exacto.
+6. `vl revisar`: `givemotion check`, hojas de cuadros, un cuadro de cada escena ya armada y
+   avisos de las escenas (pobres, texto chico, contraste sobre la portada); `vl gm still` para un
+   cuadro exacto.
 7. `vl render` y `vl final`: MP4 1080p (CRF 16) mezclado a −16 LUFS, subtítulos
    `renders/video.vtt`, miniatura `renders/miniatura.png` y una copia 720p si pesa más de 25 MB.
    Listo para plataformas de cursos como Hotmart.

@@ -104,8 +104,9 @@ gm.onFrame(t => {
   $('#dots').style.transform = 'translate(' + (40 * p) + 'px,' + (24 * p) + 'px)';
   let i = 0; ESC.forEach((e, k) => { if (t >= e.ini) i = k; });
   const e = ESC[i] || { campo: true }, desde = t - (e.ini || 0);
-  $('#pfill').style.background = e.campo ? '#FFFFFF' : 'var(--accent)';
-  $('#ptrack').style.background = e.campo ? 'rgba(255,255,255,.25)' : 'var(--line)';
+  $('#pfill').style.background = e.campo ? 'var(--on-campo)' : 'var(--accent)';
+  $('#ptrack').style.background = e.campo ? 'color-mix(in srgb, var(--on-campo) 25%, transparent)'
+    : 'var(--line)';
   // Entre dos escenas de contenido el encabezado no parpadea: solo entra después de una
   // portada o separador (0.4 s tras el corte) y solo sale antes de uno (0.3 s).
   const antesCampo = i === 0 || ESC[i - 1].campo, despuesCampo = !ESC[i + 1] || ESC[i + 1].campo;

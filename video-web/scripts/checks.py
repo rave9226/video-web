@@ -59,8 +59,11 @@ def check_marca(proj: Path) -> list[str]:
               if k not in colors]
     # Cada texto se mide sobre el fondo donde va: el chip de acento está sobre su propio
     # tinte, no sobre bg, y ahí el contraste baja (pasó en un video entregado).
-    pares = [("ink", "bg"), ("muted", "bg"), ("accent-text", "bg"), ("accent-text", "accent-bg"),
-             ("ok", "ok-bg"), ("bad", "bad-bg")]
+    # Portada y cierre llevan texto sobre --campo, y los chips sólidos sobre --accent: con un
+    # blanco fijo, un campo claro quedaba ilegible y nadie lo medía.
+    pares = [("ink", "bg"), ("muted", "bg"), ("muted", "surface"), ("accent-text", "bg"),
+             ("accent-text", "accent-bg"), ("ok", "ok-bg"), ("bad", "bad-bg"),
+             ("on-campo", "campo"), ("on-accent", "accent")]
     for texto_k, fondo_k in pares:
         if texto_k in colors and fondo_k in colors:
             ratio = colores.contrast(colors[texto_k], colors[fondo_k])
@@ -74,7 +77,8 @@ def check_marca(proj: Path) -> list[str]:
 
 
 # Tokens que no comparten el tono del primario a propósito: neutros y semánticos.
-TOKENS_LIBRES = {"bg", "ink", "muted", "line", "surface", "ok", "ok-bg", "bad", "bad-bg"}
+TOKENS_LIBRES = {"bg", "ink", "muted", "line", "surface", "ok", "ok-bg", "bad", "bad-bg",
+                 "on-campo", "on-accent"}
 TONO_MAX = 40  # grados de diferencia en el círculo de color antes de avisar
 
 
@@ -161,12 +165,24 @@ def check_voz(proj: Path) -> list[str]:
     meta = _json(proj / "audio_meta.json")
     if meta is None:
         return ["no hay audio_meta.json: corre `./vl voz lines`"]
-    gates = (_json(proj / "audio.json") or {}).get("gates", {})
+    cfg = _json(proj / "audio.json") or {}
+    gates = cfg.get("gates", {})
     lines = texto.parse_script(_read(proj / "SCRIPT.md"))
     voices = meta.get("voices", [])
     issues = [] if len(voices) == len(lines) else [
         f"voces {len(voices)} ≠ líneas del guion {len(lines)}: `./vl voz lines`"]
+    from voice import avisos_1x  # pylint: disable=import-outside-toplevel,import-error
+    issues += [f"audio.json de video-web 1.x: {a}" for a in avisos_1x(cfg)]
+    voz_actual = cfg.get("voice", {}).get("library") or cfg.get("voice", {}).get("ref_audio")
     for voice in voices:
+        # la voz guarda la huella del texto con que se generó (voice.py → firmas.json)
+        linea = lines.get(voice["frame"])
+        if voice.get("texto") and linea and voice["texto"] != texto.huella(linea):
+            issues.append(f"frame {voice['frame']}: SCRIPT.md cambió después de generar su voz "
+                          "→ `./vl voz lines` (regenera solo las que cambiaron)")
+        if voice.get("voz") and voz_actual and voice["voz"] != voz_actual:
+            issues.append(f"frame {voice['frame']}: narrada con «{voice['voz']}» y audio.json "
+                          f"pide «{voz_actual}» → `./vl voz lines`")
         if not (proj / voice["path"]).exists():
             issues.append(f"no existe {voice['path']}")
         if voice.get("wer", 1) > gates.get("max_wer", 0.08):
@@ -219,6 +235,11 @@ def check_escenas(proj: Path) -> list[str]:
         if re.search(r"#[0-9A-Fa-f]{6}\b", re.sub(r"<!--.*?-->", "", html, flags=re.S)):
             issues.append(f"{escena.name}: colores en hexadecimal; usa var(--token) o C('token') "
                           "de marca.css (si no, una marca nueva hereda los de este video)")
+        issues += [f"{escena.name}: {i}" for i in _legibilidad(html)]
+        if _es_campo(html):
+            issues += [f"{escena.name}: {i}" for i in _sobre_campo(proj, html, video)]
+    issues += [f"video.html: {i}" for i in _legibilidad(video)]
+    issues += _densidad(proj, escenas)
     reporte = _json(proj / ".vl/check.json")
     if reporte is None:
         return issues + ["sin revisión de givemotion: corre `./vl revisar`"]
@@ -229,6 +250,145 @@ def check_escenas(proj: Path) -> list[str]:
             momento = f" ({item['time']:.1f}–{item.get('until', item['time']):.1f} s)" \
                 if "time" in item else ""
             issues.append(f"givemotion {item.get('code')}{momento}: {item.get('message')}")
+    return issues
+
+
+TEXTO_MIN_PX = 24  # etiquetas 24, contenido 30, títulos 60 (oficio.md § Escenas)
+OPACIDAD_MIN_CAMPO = 0.85
+ANCHO_MIN = 0.6  # fracción del ancho que debe ocupar el contenido de una escena
+ALTO_MIN = 0.4  # fracción de la franja y 228–900
+# píxeles con contenido en esa franja: las escenas aprobadas del piloto miden 0,05–0,2; un
+# inicio de escena con un rótulo suelto, 0,003–0,015
+RELLENO_MIN = 0.03
+
+
+def _sin_comentarios(html: str) -> str:
+    return re.sub(r"<!--.*?-->|/\*.*?\*/", "", html, flags=re.S)
+
+
+def _es_campo(html: str) -> bool:
+    """La escena va sobre el campo (portada, separador o cierre)."""
+    return bool(re.search(r'<section[^>]*class="[^"]*\bcampo\b', html))
+
+
+def _legibilidad(html: str) -> list[str]:
+    """Texto menor que el mínimo y texto pintado con el color del fondo.
+
+    givemotion solo avisa bajo 22 px; los videos se ven en el celular y el piloto tuvo que
+    agrandar tarjetas enteras. `color: var(--bg)` se lee solo si el fondo es oscuro por
+    casualidad: en una portada de campo claro, o al cambiar de marca, desaparece."""
+    limpio, issues = _sin_comentarios(html), []
+    chicos = sorted({float(n) for n in re.findall(r"font-size:\s*(\d+(?:\.\d+)?)px", limpio)
+                     if float(n) < TEXTO_MIN_PX})
+    if chicos:
+        issues.append(f"texto de {', '.join(f'{n:g}' for n in chicos)} px (< {TEXTO_MIN_PX}): "
+                      "etiquetas ≥ 24, contenido ≥ 30, títulos ≥ 60")
+    if re.search(r"(?<![\w-])color:\s*var\(--bg\)", limpio):
+        issues.append("texto con color var(--bg): sobre el campo usa var(--on-campo); sobre un "
+                      "relleno de acento, var(--on-accent)")
+    return issues
+
+
+def _clases_rellenas_de_acento(css: str) -> list[set[str]]:
+    """Conjuntos de clases (último tramo del selector) con fondo var(--accent)."""
+    out = []
+    for selectores, cuerpo in re.findall(r"([^{}]+)\{([^{}]*)\}", _sin_comentarios(css)):
+        if re.search(r"background(?:-color)?:\s*var\(--accent\)", cuerpo):
+            for sel in selectores.split(","):
+                clases = set(re.findall(r"\.([\w-]+)", sel.split()[-1] if sel.split() else ""))
+                if clases:
+                    out.append(clases)
+    return out
+
+
+def _sobre_campo(proj: Path, html: str, video: str) -> list[str]:
+    """Portada y cierre: rellenos de acento invisibles y texto atenuado.
+
+    Con una marca que usa su primario de campo, la burbuja «Tú» (fondo de acento) desapareció
+    sobre la portada; y un título de cierre atenuado a 0,55 pasó givemotion (3:1 por ser
+    grande) pero el dueño no lo leía."""
+    issues = []
+    colors = dict(re.findall(r"--([\w-]+):\s*(#[0-9A-Fa-f]{6})\b", _read(proj / "marca.css")))
+    if "accent" in colors and "campo" in colors and \
+            (ratio := colores.contrast(colors["accent"], colors["campo"])) < 3:
+        estilos = "".join(re.findall(r"<style[^>]*>(.*?)</style>", html, re.S))
+        propias = [c for sel, cuerpo in re.findall(r"([^{}]+)\{([^{}]*)\}", estilos)
+                   if re.search(r"background", cuerpo) and
+                   not re.search(r"background(?:-color)?:\s*var\(--accent\)", cuerpo)
+                   for c in [set(re.findall(r"\.([\w-]+)", sel.split()[-1]))] if c]
+        css = _read(proj / "marca.css") + "".join(
+            re.findall(r"<style[^>]*>(.*?)</style>", video + html, re.S))
+        usadas = [set(c.split()) for c in re.findall(r'class="([^"]+)"', html)]
+        for rellena in _clases_rellenas_de_acento(css):
+            if any(rellena <= u for u in usadas) and not any(rellena == p for p in propias):
+                issues.append(f"{'.' + '.'.join(sorted(rellena))} va relleno de acento sobre el "
+                              f"campo ({ratio:.1f}:1, se pierde): ahí usa fondo var(--bg) y texto "
+                              "var(--accent-text)")
+    for valor in re.findall(r"\.to\([^)]*?opacity:\s*(0?\.\d+)", _sin_comentarios(html)):
+        if 0.05 < float(valor) < OPACIDAD_MIN_CAMPO:
+            issues.append(f"en portada y cierre algo se atenúa a {valor}: el mensaje que queda "
+                          f"se lee completo (opacidad ≥ {OPACIDAD_MIN_CAMPO})")
+    return issues
+
+
+def tiempos(proj: Path) -> list[tuple[str, float]]:
+    """(id de la escena, segundo del 65 % de ella), según `givemotion inspect` (.vl/inspect.json).
+
+    Las hojas de givemotion muestran momentos automáticos, a veces el inicio de una escena,
+    cuando aún no ha aparecido nada: así no se puede juzgar si quedó pobre. Al 65 % ya está
+    armada. Sumar los data-duration no sirve: las transiciones solapan las escenas."""
+    clips = (_json(proj / ".vl/inspect.json") or {}).get("clips", [])
+    escenas = sorted((c for c in clips if c.get("scene")), key=lambda c: c["start"])
+    return [(c["selector"].lstrip("#"), round(c["start"] + 0.65 * (c["end"] - c["start"]), 2))
+            for c in escenas]
+
+
+def _uso_del_lienzo(cuadro: Path) -> tuple[float, float, float] | None:
+    """(ancho, alto, área) que ocupa el contenido en la franja y 228–900; None si no hay nada."""
+    import numpy as np  # pylint: disable=import-outside-toplevel,import-error
+    from PIL import Image  # pylint: disable=import-outside-toplevel,import-error
+    img = np.asarray(Image.open(cuadro).convert("RGB"), dtype=np.int16)
+    alto, ancho = img.shape[:2]
+    franja = img[int(alto * 228 / 1080):int(alto * 900 / 1080)]
+    fondo = np.median(franja.reshape(-1, 3), axis=0)
+    # la retícula de puntos del fondo difiere ~16 del lienzo: no cuenta como contenido
+    marca = np.abs(franja - fondo).max(axis=2) > 40
+    cols = np.flatnonzero(marca.sum(axis=0) >= 3)
+    filas = np.flatnonzero(marca.sum(axis=1) >= 3)
+    if cols.size == 0:
+        return None
+    return ((cols[-1] - cols[0]) / ancho, (filas[-1] - filas[0]) / len(franja),
+            float(marca.mean()))
+
+
+def _densidad(proj: Path, escenas: list[Path]) -> list[str]:
+    """Escenas de contenido que usan poco lienzo, medidas en el cuadro de `./vl revisar`.
+
+    En el piloto de un curso las primeras escenas dejaron media pantalla vacía con tarjetas
+    chicas y pasaron todas las revisiones; hubo que rehacerlas."""
+    cuadros = sorted((proj / "renders/review/escenas").glob("t*.png"),
+                     key=lambda p: float(p.stem[1:-1].replace("_", ".")))
+    orden = [ident for ident, _ in tiempos(proj)]
+    if not cuadros or len(cuadros) != len(orden):
+        return []
+    por_id = {}
+    for escena in escenas:
+        ident = re.search(r'<section[^>]*\bid="([^"]+)"', _read(escena))
+        if ident:
+            por_id[ident.group(1)] = escena
+    issues = []
+    for ident, cuadro in zip(orden, cuadros):
+        if ident not in por_id or _es_campo(_read(por_id[ident])):
+            continue
+        uso = _uso_del_lienzo(cuadro)
+        if uso is None:
+            issues.append(f"{por_id[ident].name}: sin contenido visible al 65 % de la escena "
+                          f"({cuadro.name})")
+        elif uso[0] < ANCHO_MIN or uso[1] < ALTO_MIN or uso[2] < RELLENO_MIN:
+            issues.append(f"{por_id[ident].name}: escena pobre, el contenido ocupa {uso[0]:.0%} "
+                          f"del ancho, {uso[1]:.0%} del alto útil y {uso[2]:.1%} del área (mín. "
+                          f"{ANCHO_MIN:.0%}, {ALTO_MIN:.0%} y {RELLENO_MIN:.0%}; {cuadro.name}): "
+                          "tarjetas que llenen el lienzo y texto real del caso")
     return issues
 
 
@@ -304,6 +464,9 @@ def main() -> int:
     proj = Path.cwd()
     if what == "estado":
         return estado(proj)
+    if what == "tiempos":  # lo usa `./vl revisar` para los cuadros de cada escena
+        print(",".join(f"{t:g}" for _, t in tiempos(proj)))
+        return 0
     if what == "todo":
         issues = []
         for name, check in CHECKS.items():

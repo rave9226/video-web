@@ -58,7 +58,7 @@ voces, `GIVEMOTION_NO_SANDBOX`) viven en `~/.config/video-web/entorno.sh`, fuera
 | capturar la app | `./vl captura [--only a,b]` según `capture.json` → `references/captura.md` |
 | recortar o medir | `./vl crop …` · `./vl medir /ruta --texto "Nombre"` |
 | colores y fuentes | `./vl marca sugerir [--primary "#RRGGBB"]`, luego `./vl marca` → `marca.css` |
-| voz | `./vl voz lines [--frames N]` con la voz del curso (`instructora-2026`, viene con la skill); voz nueva: `./vl voz design` → 🛑 elige el usuario → `./vl voz guardar <nombre>` |
+| voz | `./vl voz lines` con la voz del curso (`instructora-2026`, viene con la skill): genera solo las líneas que cambiaron en `SCRIPT.md` (`--frames N` o `--todas` para forzar); voz nueva: `./vl voz design` → 🛑 elige el usuario → `./vl voz guardar <nombre>` |
 | música | `./vl musica <pista> --licencia "…"` (opcional) |
 | revisar escenas | `./vl revisar`: `givemotion check`, hojas de cuadros y `./vl check escenas` |
 | render | `./vl render` (imagen + voces + efectos) y `./vl final` (mezcla −16 LUFS, `video.vtt`, miniatura) |
@@ -76,11 +76,12 @@ dijo, pregúntaselo**: rehacerlo después cuesta el guion, la voz y todas las es
 
 | | `lanzamiento` | `capacitacion` | `explicativo` (cápsula, tema) |
 |---|---|---|---|
-| Para qué | que quieran el producto | que sepan usarlo | que entiendan una idea y la apliquen |
+| Para qué | que quieran el producto | que sepan usarlo | que entiendan **una** idea y la apliquen |
 | Duración | 30–120 s | 3–10 min (o módulos de 3–6) | 1–4 min |
 | Cada línea | nombra lo que se verá | dice **para qué sirve** | una idea, con su ejemplo |
 
-Detalle de los arcos: `references/oficio.md` § Guion. ¿Solo un manual escrito? Skill `manual-app`.
+En los tres, **un concepto por video**: si el tema junta dos preguntas, son dos videos
+(`references/oficio.md` § Un concepto por video). Detalle de los arcos: `references/oficio.md` § Guion. ¿Solo un manual escrito? Skill `manual-app`.
 
 ## Recorrido habitual
 
@@ -89,8 +90,9 @@ Detalle de los arcos: `references/oficio.md` § Guion. ¿Solo un manual escrito?
 2. **Capturar** (si hay app): `./vl captura`. **Abre cada hoja `capture/review/capturas-N.jpg`**
    y busca errores, tablas vacías, spinners o modales que no abrieron. Repite con `--only`.
 3. **Marca:** `./vl marca sugerir`, solo `primary`, `ink` y `canvas` en `capture.json → brand`
-   (y `campo` si la portada va en otro color de la marca). **No inventes ni copies colores**
-   (`references/marca.md`). `./vl marca` escribe `marca.css`.
+   (y `campo` si la portada va en otro color de la marca; si la marca tiene manual, sus tokens
+   exactos: `references/marca.md`). **No inventes ni copies colores**. `./vl marca` escribe
+   `marca.css`.
 4. **Guion y voz:** `SCRIPT.md` según el `formato`, `./vl voz lines`. Lee los avisos: una línea
    marcada para revisar **se escucha antes de seguir** (§ Voz en `references/oficio.md`).
 5. **Escenas:** en el comentario DIRECTION de `video.html`, el caso concreto y la lista de
@@ -99,8 +101,9 @@ Detalle de los arcos: `references/oficio.md` § Guion. ¿Solo un manual escrito?
    `escena-ventana.html` para mostrar una pantalla capturada (anillos con los rects de
    `regions.md`) y `escena-ejemplo.html` para tarjetas, comparaciones y el caso concreto.
    Reglas de oficio: `references/oficio.md` § Escenas.
-6. **Revisión:** `./vl revisar`, mira las hojas y los cuadros exactos; corrige hasta que
-   `./vl check escenas` quede limpio. 🛑 Muestra cuadros al usuario antes del render final.
+6. **Revisión:** `./vl revisar`, mira las hojas y el cuadro de cada escena ya armada
+   (`renders/review/escenas/`); corrige hasta que `./vl check escenas` quede limpio (también
+   mide escenas pobres, texto chico y lo que se pierde sobre el campo). 🛑 Muestra cuadros al usuario antes del render final.
 7. **Entrega:** `./vl render`, `./vl esperar render`, `./vl final`. Entrega `renders/video.mp4`,
    `renders/video.vtt`, `renders/miniatura.png` (y el 720p si existe).
 
@@ -146,6 +149,9 @@ el caso ficticio y números que crecen; nunca una interfaz que imite un producto
 | La captura muestra "No fue posible…" | sube `retry_wait_s` en capture.json y repite con `--only` |
 | Un paso de captura "no encontré" | el texto no coincide: mira `./vl explorar` y usa el texto exacto |
 | Una voz marcada para revisar | escúchala; si repite o salta algo, `./vl voz lines --frames N` |
+| «SCRIPT.md cambió después de generar su voz» | `./vl voz lines`: regenera solo esas líneas |
+| WER alto solo por cifras («148» frente a «ciento cuarenta y ocho») | ya no pasa: el WER compara los números en cifras; si aparece, es otra palabra |
+| Aviso «de video-web 1.x» en `./vl marca` o `./vl voz` | el proyecto heredó un `capture.json` o `audio.json` viejo: renombra `dark` a `campo`, quita `bgm.prompt` y revisa `voice.library` |
 | WER alto en una línea | `respell` en audio.json o reescribe la línea |
 | givemotion: Chrome sale con SIGTRAP | `export GIVEMOTION_NO_SANDBOX=1` en `~/.config/video-web/entorno.sh` |
 | `still` en `./vl revisar` | algo debe moverse cada ≤ 1.5 s: un revelado, la cámara o un foco |

@@ -18,7 +18,11 @@ hasta que el cliente vio el render.
 | `ink` | el color del texto | los títulos sobre fondo claro |
 | `canvas` | el fondo | el fondo de la página, no el de las tarjetas |
 
-El resto se **deriva** y no hay que escribirlo:
+El resto se **deriva** y no hay que escribirlo, salvo que la marca tenga un manual con esos
+tonos: entonces cualquiera de `muted`, `accent-text`, `accent-bg`, `line`, `surface`, `campo`,
+`ok`, `ok-bg`, `bad` y `bad-bg` se escribe en `capture.json → brand` y se usa **tal cual**
+(`./vl check marca` mide su contraste). Un curso con manual de marca salió con tintes
+aproximados y portada azul oscuro hasta que se fijaron así.
 
 - `campo` — el fondo de portada, separadores y cierre: el primario oscurecido. Solo se declara si
   la marca tiene un color propio documentado para eso (hay marcas que usan su primario
@@ -28,6 +32,11 @@ El resto se **deriva** y no hay que escribirlo:
 - `muted`, `accent-text`, `accent-bg`, `line`, `surface`, `ok-bg`, `bad-bg` — calculados desde
   lienzo, tinta y primario. `primary` casi nunca sirve como texto: `accent-text` es su versión
   legible.
+- `on-campo` y `on-accent` — el texto sobre el campo y sobre un relleno de acento: blanco o la
+  tinta, el que contraste más. Siempre se derivan.
+
+**Claves de video-web 1.x:** `dark` era el campo y `spark` ya no existe. `./vl marca` pasa
+`dark` a `campo` y avisa; ignorarla en silencio dio una portada del primario oscurecido.
 
 ## Cómo conseguirlos
 
@@ -50,13 +59,13 @@ No edites `marca.css` a mano: cambia `capture.json` y repite `./vl marca`.
 
 ## Portada y cierre
 
-Van sobre `.campo` (`--campo`) con tipografía blanca, y **las dos
-con el mismo tratamiento**. Una portada clara con un cierre oscuro, o un título que hereda el
+Van sobre `.campo` (`--campo`) con texto `var(--on-campo)`, y **las dos con el mismo
+tratamiento**. Una portada clara con un cierre oscuro, o un título que hereda el
 negro del navegador, se lee como un error de montaje.
 
 ## Verificación
 
-- `./vl check marca` mide el contraste de cada texto **sobre su propio fondo** (el acento sobre su tinte, el verde sobre el suyo) y avisa si un token
+- `./vl check marca` mide el contraste de cada texto **sobre su propio fondo** (el acento sobre su tinte, el verde sobre el suyo, el texto sobre el campo y sobre el acento, el gris sobre la superficie) y avisa si un token
   tiene un tono lejano al primario, que es la firma de un color copiado.
 - A ojo: abre una captura de la app y el fotograma de portada lado a lado. Si parecen dos
   productos, el problema es la marca, no la escena.

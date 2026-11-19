@@ -56,7 +56,8 @@ MARCA = """@font-face { font-family: 'Geist'; src: url(assets/fonts/Geist-Bold.w
 :root {
   --bg: #FFFFFF; --ink: #111827; --muted: #6B7280; --accent: #1D4ED8;
   --accent-text: #1D4ED8; --accent-bg: #EEF2FF; --ok: #15803D; --ok-bg: #DCFCE7;
-  --bad: #B91C1C; --bad-bg: #FEF2F2; --campo: #1D4ED8;
+  --bad: #B91C1C; --bad-bg: #FEF2F2; --campo: #1D4ED8; --surface: #F8FAFC;
+  --on-campo: #FFFFFF; --on-accent: #FFFFFF;
 }"""
 
 
@@ -124,3 +125,86 @@ def test_perfil_de_voz_en_la_plantilla():
     assert perfil["f0_hz"][0] <= 170 and 250 <= perfil["f0_hz"][1]
     assert perfil["words_per_s"][0] <= 2.2 <= perfil["words_per_s"][1], "iba a 2.2 palabras/s"
     assert "prompt" not in (plantilla.get("bgm") or {}), "MusicGen es no comercial"
+
+
+def test_marca_mide_texto_sobre_campo_y_acento(tmp_path):
+    """Un campo claro con texto blanco fijo no se lee: el check mide --on-campo sobre --campo."""
+    css = MARCA.replace("--campo: #1D4ED8", "--campo: #93C5FD")
+    (tmp_path / "marca.css").write_text(css, encoding="utf-8")
+    assert any("--on-campo sobre --campo" in i for i in checks.check_marca(tmp_path))
+
+
+def test_voz_vieja_por_guion_cambiado(tmp_path):
+    """Si SCRIPT.md cambió después de generar la voz, el check lo dice (huella del texto)."""
+    (tmp_path / "SCRIPT.md").write_text("## Line 1 — x (Frame 1)\n\n    Texto nuevo.\n",
+                                        encoding="utf-8")
+    (tmp_path / "audio.json").write_text('{"voice": {"library": "instructora-2026"}}',
+                                         encoding="utf-8")
+    (tmp_path / "assets/voice").mkdir(parents=True)
+    (tmp_path / "assets/voice/01.wav").write_bytes(b"x")
+    _voz(tmp_path, texto=checks.texto.huella("Texto viejo."), voz="bogota-2026")
+    issues = " ".join(checks.check_voz(tmp_path))
+    assert "SCRIPT.md cambió" in issues and "narrada con «bogota-2026»" in issues
+    _voz(tmp_path, texto=checks.texto.huella("Texto nuevo."), voz="instructora-2026")
+    assert checks.check_voz(tmp_path) == []
+
+
+def test_voz_avisa_audio_json_1x(tmp_path):
+    """Un audio.json de 1.x (MusicGen, otra voz) copiado de un kit viejo se avisa."""
+    (tmp_path / "SCRIPT.md").write_text("## Line 1 — x (Frame 1)\n\n    Hola.\n",
+                                        encoding="utf-8")
+    (tmp_path / "audio.json").write_text(json.dumps({
+        "voice": {"library": "bogota-2026",
+                  "ref_audio": "/x/video-web/assets/voice/voces/bogota-2026/ref.wav"},
+        "bgm": {"prompt": "calm corporate music"}}), encoding="utf-8")
+    _voz(tmp_path)
+    issues = " ".join(checks.check_voz(tmp_path))
+    assert "MusicGen" in issues and "«bogota-2026», no la de la plantilla" in issues
+
+
+def _proyecto_campo(tmp_path: Path, escena: str) -> None:
+    (tmp_path / "scenes").mkdir()
+    (tmp_path / "scenes/s01.html").write_text(escena, encoding="utf-8")
+    (tmp_path / "video.html").write_text(
+        '<style>.msg.tu { background: var(--accent); color: var(--on-accent); }</style>'
+        '<gm-include src="scenes/s01.html"></gm-include>', encoding="utf-8")
+    (tmp_path / "marca.css").write_text(MARCA, encoding="utf-8")
+
+
+def test_escena_de_campo_legible(tmp_path):
+    """Portada con campo = acento: la burbuja de acento se pierde, el cierre no se atenúa,
+    nada de texto chico ni color var(--bg). La burbuja redefinida en la escena pasa."""
+    portada = ('<section class="scene campo" id="s1" data-duration="5"><style>'
+               '#s1 .t { font-size: 18px; color: var(--bg); }</style>'
+               '<div class="msg tu">Resume esto</div><h2 class="t">Título</h2>'
+               "<script>tl.to('#s1 .t', { opacity: 0.55, duration: 0.6 }, 4.2);</script>"
+               '</section>')
+    _proyecto_campo(tmp_path, portada)
+    issues = " ".join(checks.check_escenas(tmp_path))
+    assert ".msg.tu va relleno de acento sobre el campo" in issues
+    assert "se atenúa a 0.55" in issues and "texto de 18 px" in issues
+    assert "color var(--bg)" in issues
+    arreglada = portada.replace("#s1 .t { font-size: 18px; color: var(--bg); }",
+                                "#s1 .t { font-size: 84px; color: var(--on-campo); } "
+                                "#s1 .msg.tu { background: var(--bg); }").replace("0.55", "0.9")
+    (tmp_path / "scenes/s01.html").write_text(arreglada, encoding="utf-8")
+    issues = " ".join(checks.check_escenas(tmp_path))
+    assert "campo" not in issues and "px" not in issues and "var(--bg)" not in issues
+
+
+def test_escena_pobre_por_cuadro(tmp_path):
+    """El cuadro al 65 % de la escena mide cuánto lienzo usa: una tarjeta chica avisa."""
+    from PIL import Image, ImageDraw  # pylint: disable=import-outside-toplevel,import-error
+    _proyecto_campo(tmp_path, '<section class="scene" id="s1" data-duration="5"></section>')
+    (tmp_path / ".vl").mkdir()
+    (tmp_path / ".vl/inspect.json").write_text(json.dumps({"clips": [
+        {"selector": "#s1", "start": 0, "end": 10, "scene": True}]}), encoding="utf-8")
+    assert checks.tiempos(tmp_path) == [("s1", 6.5)]
+    (tmp_path / "renders/review/escenas").mkdir(parents=True)
+    img = Image.new("RGB", (1920, 1080), "white")
+    ImageDraw.Draw(img).rectangle((96, 300, 700, 520), fill="#1D4ED8")
+    img.save(tmp_path / "renders/review/escenas/t6_50s.png")
+    assert any("escena pobre" in i for i in checks.check_escenas(tmp_path))
+    ImageDraw.Draw(img).rectangle((96, 300, 1820, 860), outline="#111827", width=6)
+    img.save(tmp_path / "renders/review/escenas/t6_50s.png")
+    assert not any("escena pobre" in i for i in checks.check_escenas(tmp_path))
