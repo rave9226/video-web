@@ -3,6 +3,28 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 [SemVer](https://semver.org/lang/es/). La versión vigente está en `video-web/VERSION`.
 
+## [2.3.0] — 2026-11-19
+
+El estilo aprobado de las clases de un curso (calma con intención) pasa de ser un kit de proyecto a
+ser el método por defecto de la skill.
+
+### Añadido
+- **Plantilla `video.html`:** `calma()` (cámara casi quieta, empuje ≤ 1,06, un origen por escena
+  acotado a la caja de contenido), `T()` (titular con palabra clave), `AN()` (anillo al aterrizar),
+  ambiente de fondo, encabezado con fundidos correctos entre escenas y un solo empalme lateral
+  suave (`push-left 0.8 in-out-sine`). `sceneCam` se conserva para pantallas capturadas.
+- **`assets/templates/escenas.css`:** componentes de escena para celular (hoja, caja, burbuja,
+  fila, chip, sello, hilo, anillo, ambiente) sobre los tokens de `marca.css`. `vl init` lo copia y
+  la plantilla lo enlaza.
+- **`oficio.md` § Escenas:** estilo por defecto, lo rechazado, mínimos para celular y revisión
+  a 480 px con 3 cuadros por empalme.
+- **GPU:** `vl voz` y `vl render` toman un candado (`flock`) y comprueban memoria libre antes de
+  empezar; mensaje claro si falta. Nuevo `vl gpu`.
+
+### Cambiado
+- El aviso `still` de `check escenas` ya no castiga tramos quietos de ≤ 6 s (pasos pequeños
+  sincronizados con la voz); los más largos siguen avisando.
+
 ## [2.2.0] — 2026-11-18
 
 Lecciones de las dos primeras clases de un curso producidas con 2.1: cada tropiezo que hubo que

@@ -1,0 +1,135 @@
+/* escenas.css — kit de escenas pensado para el celular. Va DESPUÉS de marca.css; solo usa sus tokens (nada de colores propios).
+   `./vl init` lo copia y video.html lo enlaza.
+   Lienzo 1920×1080, visto en un celular a ~480 px de ancho (escala 0,25): lo que mide < 36 px no se lee.
+   Mínimos: titular 76 · apoyo ≥ 40 · cuerpo ≥ 44 · nada < 36.
+   Zona de foco: x 96–1824, y 250–890 (arriba el titular, abajo los 180 px de subtítulos). El foco ocupa ≥ 70 % del ancho.
+
+   Reglas de uso (bugs ya vividos):
+   - El texto de una caja/burbuja/fila va dentro de UN solo hijo (<p class="tx">): en un contenedor flex, cada <span>
+     suelto es un ítem y se pierden los espacios («Los datos son <span>exactos</span>» salía «Losdatossonexactos»).
+   - Todo componente `position:absolute` se coloca con left/top/width/height en línea. Dentro de una hoja o tarjeta
+     usa los hijos (.ht, .hr, .fila, .chip), que van en flujo.
+   - .chip.fic (rótulo «Ejemplo ficticio») no hereda top/right de marca.css: se coloca con left/bottom o left/top.
+   - Sin «barrido de luz» ni degradados que cruzan la pantalla: parecen un error de render. El movimiento es del foco. */
+
+/* ---------- Encabezado fijo (video.html) ---------- */
+#eb, .step { font-size: 44px; }
+#eb { letter-spacing: .06em; gap: 22px; top: 32px; height: 52px; }
+.step { padding: 0 20px; line-height: 52px; }
+#sym { top: 34px; width: 48px; height: 48px; }
+#mod { display: none; } /* en el celular sobraba: la sección ya dice dónde vas */
+
+/* ---------- Titular y apoyo ---------- */
+.tapa { height: 232px; }
+h1.tt { font-size: 76px; line-height: 84px; top: 122px; }
+.ap { position: absolute; left: 96px; top: 208px; font-size: 44px; line-height: 52px; font-weight: 500;
+  color: var(--muted); z-index: 21; white-space: nowrap; } /* solo si el foco NO ya lo dice; mejor omitirlo */
+
+/* ---------- Hoja / documento ----------
+   <div class="hoja" style="left:96px;top:290px;width:560px;height:580px">
+     <div class="ht">Informe</div><div class="hr">Ingresos</div><div class="hr hi">Dato</div> ...
+   Las «líneas de texto» son 2-3 palabras reales grandes (.hr), nunca barras grises. */
+.hoja { position: absolute; box-sizing: border-box; background: var(--bg); border: 2px solid var(--line);
+  border-radius: 18px; padding: 26px 32px; box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--ink) 30%, transparent); }
+.hoja .ht { font-size: 56px; line-height: 64px; font-weight: 700; margin-bottom: 14px; }
+.hoja .hr { font-size: 52px; line-height: 64px; font-weight: 500; color: var(--muted); margin: 0 0 8px;
+  padding: 0 14px; border-radius: 10px; white-space: nowrap; }
+.hoja .hr.hi { color: var(--ink); background: var(--accent-bg); font-weight: 700; }
+.hoja .hr.bad { color: var(--bad); background: var(--bad-bg); font-weight: 700; }
+
+/* ---------- Caja (casilla, fila grande, resultado) ----------
+   <div class="caja ok izq" style="..."><p class="tx">Texto</p></div> */
+.caja { position: absolute; box-sizing: border-box; border-radius: 22px; border: 3px solid var(--line);
+  background: var(--bg); display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 52px; line-height: 60px; font-weight: 700; }
+.caja.izq { justify-content: flex-start; text-align: left; padding-left: 34px; padding-right: 20px; }
+.caja.col { flex-direction: column; gap: 4px; }
+.caja.ac { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+.caja.ok { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.caja.bad { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.caja.hueco { border: 4px dashed var(--bad); background: transparent; }
+/* marca.css ya define `.tx` (30 px, flex:1): aquí el texto de un componente hereda el tamaño del componente */
+.caja .tx, .burbuja .tx, .fila .tx, .tarjeta .tx { margin: 0; display: block; font-size: inherit; line-height: inherit; flex: none; }
+
+/* ---------- Burbuja de chat ---------- */
+.burbuja { position: absolute; box-sizing: border-box; border-radius: 30px; padding: 20px 34px; display: flex;
+  align-items: center; font-size: 56px; line-height: 66px; font-weight: 600; }
+.burbuja.ia { background: var(--surface); border: 2px solid var(--line); border-bottom-left-radius: 8px; }
+.burbuja.ia.ac { background: var(--accent-bg); border-color: var(--accent); }
+.burbuja.tu { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 8px; }
+.burbuja .hueco { display: inline-block; width: 170px; height: 64px; background: var(--ink); border-radius: 10px;
+  margin: 0 14px; vertical-align: -8px; }
+
+/* ---------- Tarjeta (lleva filas dentro) ---------- */
+.tarjeta { position: absolute; box-sizing: border-box; background: var(--bg); border: 2px solid var(--line);
+  border-radius: 20px; padding: 24px 28px; box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--ink) 30%, transparent); }
+.tarjeta .ht { font-size: 52px; line-height: 60px; font-weight: 700; margin-bottom: 12px; }
+
+/* ---------- Fila + círculo numerado (lista numerada / checklist) ----------
+   <div class="fila"><span class="num">1</span><p class="tx">Respaldo</p></div> */
+.fila { display: flex; align-items: center; gap: 22px; box-sizing: border-box; min-height: 72px; padding: 6px 20px;
+  border-radius: 16px; font-size: 46px; line-height: 54px; font-weight: 600; }
+.fila.ok { background: var(--ok-bg); }
+.fila.bad { background: var(--bad-bg); color: var(--bad); }
+.fila.ac { background: var(--accent-bg); }
+.num { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 38px; font-weight: 700; background: var(--accent); color: var(--on-accent); }
+.num.gris { background: var(--line); color: var(--muted); }
+.num.ok { background: var(--ok); color: var(--bg); }
+.num.grande { width: 104px; height: 104px; font-size: 64px; }
+
+/* ---------- Chip y sello ---------- */
+.chip { display: inline-block; font-size: 40px; font-weight: 600; line-height: 48px; padding: 4px 22px;
+  border-radius: 999px; white-space: nowrap; border: 2px solid; }
+.chip.ab { position: absolute; }
+.chip.fic { position: absolute; top: auto; right: auto; left: auto; bottom: auto; font-size: 36px; line-height: 44px;
+  color: var(--muted); background: var(--surface); border-color: var(--line); } /* coloca con left+bottom o left+top */
+.sello { position: absolute; font-size: 72px; line-height: 84px; font-weight: 700; padding: 6px 34px; border: 8px solid;
+  border-radius: 20px; background: var(--bg); white-space: nowrap; }
+.sello.ac { color: var(--accent-text); border-color: var(--accent); box-shadow: 0 20px 40px -16px color-mix(in srgb, var(--accent) 45%, transparent); }
+.sello.bad { color: var(--bad); border-color: var(--bad); }
+.sello.ok { color: var(--ok); border-color: var(--ok); }
+.sello.med { font-size: 56px; line-height: 64px; border-width: 6px; }
+
+/* ---------- Contador ----------
+   <div class="cont" style="left:..;top:.."><span class="cifra">14</span><span class="etq">contratos</span></div> */
+.cont { position: absolute; display: flex; align-items: baseline; gap: 20px; white-space: nowrap; }
+.cont .cifra { font-size: 120px; line-height: 128px; font-weight: 700; color: var(--accent-text); }
+.cont .etq { font-size: 48px; line-height: 56px; font-weight: 600; }
+
+/* ---------- Conexión entre elementos (svg.ov a pantalla completa) ----------
+   <svg class="ov" width="1920" height="1080"><path class="hilo ok" d="M x y C ..."/></svg>
+   Se dibuja con .fromTo(sel, {draw:0}, {draw:1}). `.pun` = punteado. */
+.hilo { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.hilo.ok { stroke: var(--ok); } .hilo.bad { stroke: var(--bad); }
+.hilo.pun { stroke-width: 7; stroke-dasharray: 3 14; }
+.ck { stroke: var(--ok); stroke-width: 12; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Varios ---------- */
+.yo { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: var(--ink); color: var(--bg);
+  display: grid; place-items: center; font-size: 44px; font-weight: 700; } /* «Tú» */
+.rot { position: absolute; font-size: 64px; line-height: 72px; font-weight: 700; white-space: nowrap; } /* rótulo grande suelto */
+.rot.ac { color: var(--accent-text); }
+.k { color: var(--accent-text); font-weight: 700; } .r { color: var(--bad); font-weight: 700; } .g { color: var(--ok); font-weight: 700; }
+.ico { position: absolute; overflow: visible; }
+
+/* ---------- Ambiente y detalle (capas 2 y 3 de cada momento clave) ----------
+   Ambiente: <div id="amb"><div class="blob" id="bl1"></div><div class="blob" id="bl2"></div></div> fuera de <main>,
+   movido desde gm.onFrame (video.html lo hace). Detalle: .anillo sale del elemento al aterrizar (helper AN()). */
+#amb { position: absolute; inset: 0; overflow: hidden; }
+.blob { position: absolute; width: 1100px; height: 1100px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 13%, transparent), transparent); }
+#bl1 { left: -300px; top: -250px; } #bl2 { left: 1100px; top: 350px; }
+.anillo { position: absolute; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%;
+  border: 6px solid var(--accent); opacity: 0; pointer-events: none; }
+
+/* ---------- Pautas de movimiento (givemotion) — versión calma ----------
+   1. Caja de contenido: x 156–1764, y 272–878 (60 px más adentro que los márgenes de 96). Así la cámara puede
+      empujar hasta 1,06 sin cortar nada.
+   2. Cámara: calma('#sN', '#wN', dur, [[t, 1.05]], [ox, oy]) — deriva casi imperceptible y, en 3-4 momentos
+      del video, un empuje lento hacia lo que nombra la voz. Nunca zooms de 1,3+ ni regresos de cámara.
+   3. Un solo empalme para todo el video: push-left 0.8 in-out-sine. Morph solo si el MISMO objeto sigue en la
+      escena siguiente (data-morph en ambos); la escena que entra con morph trae su titular con T(..., entra).
+   4. El movimiento cuenta la idea: cada elemento entra 0,05–0,1 s antes de que la voz lo nombre (cues.md);
+      resaltados que avanzan, hilos que se dibujan, conteos. Cada escena queda completa pronto y se sostiene.
+   5. Lo nuevo nace de algo que ya está (gm.fly desde su origen); nada aparece y desaparece en el mismo beat. */

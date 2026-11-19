@@ -49,11 +49,17 @@ Corre `./vl` desde la carpeta del proyecto (solo `doctor` e `init` van con la ru
 `~/.agents/skills/video-web/scripts/vl`). Las rutas propias de la máquina (venvs, biblioteca de
 voces, `GIVEMOTION_NO_SANDBOX`) viven en `~/.config/video-web/entorno.sh`, fuera del repo.
 
+**GPU compartida:** `./vl voz` y `./vl render` toman un candado (`flock` sobre
+`~/.cache/video-web/gpu.lock`, o `VL_GPU_LOCK`) y, con el candado, comprueban que haya ≥ 4000 MiB libres
+(`VL_GPU_MIN_MIB`); si otro video la usa esperan su turno (hasta `VL_GPU_ESPERA_S`, 3600 s) y si falta
+memoria terminan con un mensaje que dice quién la ocupa. `VL_DEVICE=cpu` salta ambas comprobaciones.
+
 | Para… | Comando |
 |---|---|
 | revisar el equipo | `vl doctor` (y `vl setup-tts` si falta el venv de voz) |
 | crear el proyecto | `vl init <ruta> [--manual manual.pdf]`: plantillas, `video.html`, skill de givemotion, `./vl` |
 | ver qué hay hecho | `./vl estado` (lo deduce de los archivos) |
+| ver si la GPU está libre | `./vl gpu` (mismo chequeo que hacen `voz` y `render` al arrancar) |
 | mirar una pantalla | `./vl explorar <url o /ruta> [--auth] [--steps '[…]']` |
 | capturar la app | `./vl captura [--only a,b]` según `capture.json` → `references/captura.md` |
 | recortar o medir | `./vl crop …` · `./vl medir /ruta --texto "Nombre"` |
@@ -128,7 +134,8 @@ el caso ficticio y números que crecen; nunca una interfaz que imite un producto
 | `references/oficio.md` | guion, voz, el caso concreto, escenas, sonido, revisión y entrega para cursos |
 | `references/captura.md` | `capture.json`, login (incluido SSO), medir rects, fallos del navegador |
 | `references/marca.md` | de dónde salen los colores y por qué nunca se copian de un ejemplo |
-| `assets/templates/givemotion/` | `video.html` (encabezado, progreso, cámara), `escena-ventana.html` (pantalla de la app) y `escena-ejemplo.html` (tarjetas) |
+| `assets/templates/givemotion/` | `video.html` (encabezado, progreso, cámara `calma()`), `escena-ventana.html` (pantalla de la app) y `escena-ejemplo.html` (tarjetas) |
+| `assets/templates/escenas.css` | componentes de escena para celular (hoja, caja, burbuja, fila, chip, sello, hilo, anillo, ambiente) sobre los tokens de `marca.css`; `vl init` lo copia |
 | `.claude/skills/givemotion/` (en el proyecto) | el motor: timeline, cámara, revisión, códigos de check |
 
 ## Cómo trabajar
@@ -154,6 +161,7 @@ el caso ficticio y números que crecen; nunca una interfaz que imite un producto
 | Aviso «de video-web 1.x» en `./vl marca` o `./vl voz` | el proyecto heredó un `capture.json` o `audio.json` viejo: renombra `dark` a `campo`, quita `bgm.prompt` y revisa `voice.library` |
 | WER alto en una línea | `respell` en audio.json o reescribe la línea |
 | givemotion: Chrome sale con SIGTRAP | `export GIVEMOTION_NO_SANDBOX=1` en `~/.config/video-web/entorno.sh` |
-| `still` en `./vl revisar` | algo debe moverse cada ≤ 1.5 s: un revelado, la cámara o un foco |
+| `still` en `./vl revisar` | un tramo quieto > 6 s: algo debe moverse (un revelado, un hilo, un foco). Tramos ≤ 6 s con la voz narrando no se avisan (estilo calma) |
 | Sonoridad fuera de −16 LUFS | vuelve a correr `./vl final` (nunca subas el volumen a mano) |
-| La GPU no tiene memoria | pide cerrar otros procesos de GPU (`vl doctor` los muestra) |
+| «la GPU tiene N MiB libres y hacen falta M» | otro proceso usa la GPU: espera o ciérralo (`./vl gpu` la comprueba; `vl doctor` los muestra) |
+| «la GPU está en uso por otro video» | normal: `voz` y `render` hacen turno con un candado; espera, o `VL_GPU_ESPERA_S` cambia el tiempo máximo |

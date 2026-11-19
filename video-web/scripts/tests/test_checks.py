@@ -208,3 +208,11 @@ def test_escena_pobre_por_cuadro(tmp_path):
     ImageDraw.Draw(img).rectangle((96, 300, 1820, 860), outline="#111827", width=6)
     img.save(tmp_path / "renders/review/escenas/t6_50s.png")
     assert not any("escena pobre" in i for i in checks.check_escenas(tmp_path))
+
+
+def test_still_corto_no_se_castiga_pero_el_largo_si():
+    """Quietud calmada (≤ 6 s, con voz) no es falla; una pausa larga sí lo sigue siendo."""
+    corto = {"severity": "warning", "code": "still", "time": 4.0, "until": 9.7, "ranges": [[4.0, 9.7]]}
+    largo = {"severity": "warning", "code": "still", "time": 4.0, "until": 12.0, "ranges": [[4.0, 12.0]]}
+    assert checks._still_calmo(corto) and not checks._still_calmo(largo)
+    assert not checks._still_calmo({"code": "overlap", "time": 1, "until": 2})

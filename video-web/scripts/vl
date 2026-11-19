@@ -38,8 +38,41 @@ gm() { npx --yes "givemotion@$(gm_version)" "$@"; }
 
 # Tareas largas (voz, música, render) en segundo plano: sobreviven al límite de tiempo del
 # agente. `./vl esperar NOMBRE` espera de a poco y muestra el final del log.
+# GPU compartida: voz y render toman un candado (flock) y comprueban memoria libre antes de
+# empezar, para que dos proyectos no se pisen la GPU y mueran a medias con «out of memory».
+# VL_GPU_LOCK cambia el archivo del candado; VL_GPU_MIN_MIB (4000) la memoria mínima libre;
+# VL_GPU_ESPERA_S (3600) cuánto esperar el turno; VL_DEVICE=cpu salta ambas comprobaciones.
+gpu_memoria() {  # MiB libres de la primera GPU NVIDIA; vacío si no hay
+  nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2> /dev/null | head -1 | tr -d ' '
+}
+gpu_listo() {
+  [[ "${VL_DEVICE:-}" == cpu ]] && return 0
+  local free min="${VL_GPU_MIN_MIB:-4000}"
+  free="$(gpu_memoria)"
+  [[ "$free" =~ ^[0-9]+$ ]] || return 0  # sin GPU NVIDIA: corre en CPU/MPS, nada que cuidar
+  ((free >= min)) && return 0
+  echo "✗ la GPU tiene ${free} MiB libres y hacen falta ${min}. Otro proceso la está usando:" >&2
+  nvidia-smi --query-compute-apps=pid,used_memory,name --format=csv,noheader >&2 2> /dev/null
+  echo "  Espera a que termine o ciérralo y repite (VL_GPU_MIN_MIB cambia el mínimo; VL_DEVICE=cpu corre sin GPU)." >&2
+  return 1
+}
+gpu_candado() {  # toma el candado en el descriptor 9; vive hasta que termina el proceso
+  [[ "${VL_DEVICE:-}" == cpu ]] && return 0
+  command -v flock > /dev/null || { echo "⚠ sin flock: sin candado de GPU" >&2; return 0; }
+  local lock="${VL_GPU_LOCK:-${XDG_CACHE_HOME:-$HOME/.cache}/video-web/gpu.lock}"
+  mkdir -p "$(dirname "$lock")"
+  exec 9> "$lock"
+  flock -n 9 && return 0
+  echo "⏳ la GPU está en uso por otro video (candado $lock); esperando turno…" >&2
+  flock -w "${VL_GPU_ESPERA_S:-3600}" 9 ||
+    { echo "✗ la GPU sigue ocupada tras ${VL_GPU_ESPERA_S:-3600} s: otro video la tiene (candado $lock)." >&2; return 1; }
+}
+
 if [[ "${1:-}" == _run ]]; then
   name="$2"; shift 2
+  if [[ "${VL_GPU:-}" == 1 ]] && ! { gpu_candado && gpu_listo; }; then
+    echo 1 > ".vl/tareas/$name.estado"; exit 0
+  fi
   "$@"; echo $? > ".vl/tareas/$name.estado"; exit 0
 fi
 
@@ -50,7 +83,7 @@ bg() {
     die "'$name' ya está corriendo: ./vl esperar $name"
   echo corriendo > ".vl/tareas/$name.estado"
   # setsid no existe en macOS: nohup basta para sobrevivir al fin del agente
-  $(command -v setsid || echo nohup) "$VL_SELF" _run "$name" "$@" > ".vl/tareas/$name.log" 2>&1 < /dev/null &
+  VL_GPU="${GPU:-}" $(command -v setsid || echo nohup) "$VL_SELF" _run "$name" "$@" > ".vl/tareas/$name.log" 2>&1 < /dev/null &
   echo "⏳ '$name' corre en segundo plano (log: .vl/tareas/$name.log)"
   echo "SIGUIENTE: ./vl esperar $name"
 }
@@ -154,6 +187,7 @@ cmd_init() {
     [[ -f "$f" ]] || cp "$SKILL/assets/templates/$f" .
   done
   [[ -f video.html ]] || cp "$SKILL/assets/templates/givemotion/video.html" .
+  [[ -f escenas.css ]] || cp "$SKILL/assets/templates/escenas.css" .
   # Efectos de sonido con licencia comercial (Pixabay) de media-use, si está instalada
   local sfx="${VL_SFX_DIR:-$HOME/.agents/skills/media-use/audio/assets/sfx}"
   if [[ -d "$sfx" ]] && ! ls assets/sfx/*.mp3 > /dev/null 2>&1; then
@@ -243,16 +277,17 @@ case "$cmd" in
     [[ "${1:-}" =~ ^(design|lines|finalize|guardar)$ ]] ||
       die "uso: ./vl voz design|lines [--frames 3,7]|finalize|guardar <nombre>"
     [[ "$1" == guardar ]] && { "$QWEN/bin/python" "$S/voice.py" "$@"; exit $?; }
-    bg voz "$QWEN/bin/python" "$S/voice.py" "$@" ;;
+    GPU=1 bg voz "$QWEN/bin/python" "$S/voice.py" "$@" ;;
   musica) cmd_musica "$@" ;;
   revisar) cmd_revisar ;;
+  gpu) gpu_listo && echo "✓ GPU lista (o sin GPU NVIDIA)" ;;
   gm) gm "$@" ;;
   render)
     # CRF 16: las plataformas de cursos recodifican; el original debe llegar limpio
-    bg render npx --yes "givemotion@$(gm_version)" render video.html -o renders/imagen-voz.mp4 \
+    GPU=1 bg render npx --yes "givemotion@$(gm_version)" render video.html -o renders/imagen-voz.mp4 \
       --crf 16 ;;
   final) "$PY" "$S/final.py" "$@" && chk entrega ;;
   esperar) cmd_esperar "$@" ;;
   *) die "comando desconocido '$cmd'. Comandos: doctor setup-tts init estado check explorar
-  captura crop medir marca voz musica revisar render final esperar gm" ;;
+  captura crop medir marca voz musica revisar render final esperar gpu gm" ;;
 esac
