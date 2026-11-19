@@ -12,6 +12,7 @@
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="marca.css">
+<link rel="stylesheet" href="escenas.css">
 <script>
 // ---- Utilidades compartidas por todas las escenas ----
 const OUT = 'power3.out', IN = 'power2.in', MOVE = 'sine.inOut', ZOOM = 'in-out-cubic';
@@ -59,14 +60,50 @@ function sceneCam(world, dur, focus) {
     .to(focus.dim, { opacity: 1, duration: 0.5, ease: MOVE }, focus.back + 0.55);
   return cam;
 }
+// ---- Estilo por defecto: «calma con intención» (references/oficio.md § Escenas) ----
+// calma() para escenas de ideas; sceneCam() solo para pantallas capturadas que piden foco sobre un anillo.
+// Caja de contenido de toda escena y límites que nunca se cruzan (márgenes de 96 px, titular arriba,
+// subtítulos de Hotmart abajo). La cámara calma se calcula contra estas cifras.
+const CAJA = { l: 156, r: 1764, t: 272, b: 878 }, LIM = { l: 96, r: 1824, t: 240, b: 900 };
+// Cámara calma: escala que solo crece, con un único origen por escena (cambiarlo a mitad haría saltar el cuadro).
+// Deriva muy lenta todo el tiempo y, opcional, empujes [[t, escala], …] de 1,6 s hasta 1,06 como máximo.
+// El origen se acota para que, a la escala mayor, la caja de contenido siga dentro de los márgenes.
+function calma(scene, world, dur, pushes = [], origen = [960, 575]) {
+  const smax = Math.max(1.012, ...pushes.map(p => p[1]));
+  if (smax > 1.06) throw new Error(world + ': empuje > 1.06');
+  const k = smax - 1, cl = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const ox = cl(origen[0], (smax * CAJA.r - LIM.r) / k, (smax * CAJA.l - LIM.l) / k);
+  const oy = cl(origen[1], (smax * CAJA.b - LIM.b) / k, (smax * CAJA.t - LIM.t) / k);
+  document.querySelector(world).style.transformOrigin = ox + 'px ' + oy + 'px';
+  const tl = gm.timeline(scene); let t = 0, s = 1;
+  pushes.forEach(([at, to]) => {
+    if (at - t > 0.3) { tl.to(world, { scale: s + 0.004, duration: at - t, ease: MOVE }, t); s += 0.004; }
+    tl.to(world, { scale: to, duration: 1.6, ease: MOVE }, at); s = to; t = at + 1.6;
+  });
+  if (dur - t > 0.3) tl.to(world, { scale: Math.min(smax, s + 0.008), duration: dur - t, ease: MOVE }, t);
+  return tl;
+}
+// Titular: llega con la escena (el push lo trae armado) y su palabra clave toma el acento cuando la escena
+// ya se asentó. `entra` > 0 (escena que entra con morph): las palabras aparecen después del empalme, para
+// que nunca se crucen dos titulares.
+const T = (s, t, clave = 0.9, entra = 0) => {
+  const tl = gm.timeline(s);
+  if (entra) tl.from(t + ' .gm-word', { y: 14, opacity: 0, duration: 0.45, ease: OUT, stagger: 0.05 }, entra);
+  return tl.fromTo(t + ' .key', { color: C('ink') }, { color: C('accent-text'), duration: 0.5, ease: OUT }, clave);
+};
+// Anillo que sale de un elemento al aterrizar (detalle que vende el momento):
+// <div class="anillo" id=".." style="left;top"> y AN(tl, '#id', t).
+const AN = (tl, id, t) => tl.fromTo(id, { opacity: 0.9, scale: 0.5 }, { opacity: 0, scale: 2.2, duration: 0.7, ease: 'out-cubic' }, t);
 </script>
 </head>
 <body>
 <div id="dots"></div>
+<div id="amb"><div class="blob" id="bl1"></div><div class="blob" id="bl2"></div></div>
 
 <!-- Una escena por línea de SCRIPT.md, en orden. Cada archivo: scenes/sNN.html
-     (plantilla: escena.html de la skill). La transición se aplica entre todas. -->
-<main data-sequence data-transition="push-left 0.6 in-out-cubic">
+     (plantilla: escena-ejemplo.html de la skill). Un solo empalme para todo el video; un morph
+     (data-morph en ambas escenas) solo donde el MISMO objeto continúa. -->
+<main data-sequence data-transition="push-left 0.8 in-out-sine">
   <gm-include src="scenes/s01.html"></gm-include>
 </main>
 
@@ -99,6 +136,9 @@ const $ = s => document.querySelector(s);
 const suave = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
 gm.onFrame(t => {
   escenas();
+  // ambiente: dos manchas suaves de acento que derivan con periodos distintos (persisten entre escenas)
+  $('#bl1').style.transform = 'translate(' + (200 * Math.sin(t / 7)) + 'px,' + (110 * Math.cos(t / 9)) + 'px)';
+  $('#bl2').style.transform = 'translate(' + (-180 * Math.cos(t / 11)) + 'px,' + (140 * Math.sin(t / 8)) + 'px)';
   const p = Math.min(1, Math.max(0, t / TOTAL));
   $('#pfill').style.transform = 'scaleX(' + p + ')';
   $('#dots').style.transform = 'translate(' + (40 * p) + 'px,' + (24 * p) + 'px)';
@@ -107,15 +147,23 @@ gm.onFrame(t => {
   $('#pfill').style.background = e.campo ? 'var(--on-campo)' : 'var(--accent)';
   $('#ptrack').style.background = e.campo ? 'color-mix(in srgb, var(--on-campo) 25%, transparent)'
     : 'var(--line)';
-  // Entre dos escenas de contenido el encabezado no parpadea: solo entra después de una
-  // portada o separador (0.4 s tras el corte) y solo sale antes de uno (0.3 s).
+  // Entre dos escenas de contenido el encabezado no parpadea: después de una portada entra cuando el push
+  // ya terminó (0,8 s: el push de 0.8) y antes de un cierre se va 0,35 s antes del corte (el siguiente inicio, no el final
+  // de esta escena: la transición solapa las dos y el encabezado se apagaba de golpe a mitad del push).
   const antesCampo = i === 0 || ESC[i - 1].campo, despuesCampo = !ESC[i + 1] || ESC[i + 1].campo;
-  const entra = antesCampo ? suave((desde - 0.4) / 0.4) : 1;
-  const sale = despuesCampo ? suave((e.ini + e.dur - t) / 0.3) : 1;
+  const entra = antesCampo ? suave((desde - 0.8) / 0.4) : 1;
+  const sale = despuesCampo && ESC[i + 1] ? suave((ESC[i + 1].ini - t) / 0.35) : 1;
   $('#hdr').style.opacity = e.campo ? 0 : Math.min(entra, sale);
+  // Un rótulo que cambia entre dos escenas no salta: se apaga 0,25 s antes del corte y se enciende
+  // 0,35 s después, mientras el push lleva el contenido (sin texto a medio cambiar).
+  const prev = ESC[i - 1], next = ESC[i + 1];
+  const fundido = campo => (prev && !prev.campo && prev[campo] !== e[campo] ? suave((desde - 0.25) / 0.35) : 1) *
+    (next && !next.campo && next[campo] !== e[campo] ? suave((next.ini - t) / 0.25) : 1);
   $('#ebtxt').textContent = e.seccion;
+  $('#ebtxt').style.opacity = fundido('seccion');
   $('#step').textContent = e.paso ? 'Paso ' + e.paso : '';
   $('#step').style.display = e.paso ? '' : 'none';
+  $('#step').style.opacity = fundido('paso');
 });
 </script>
 </body>

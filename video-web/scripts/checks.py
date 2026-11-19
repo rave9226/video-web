@@ -246,11 +246,26 @@ def check_escenas(proj: Path) -> list[str]:
     # ✖ errores y ⚠ avisos de givemotion son fallas reales salvo que sean a propósito;
     # ℹ son sugerencias de estilo y no se listan.
     for item in reporte.get("issues", []):
-        if item.get("severity") in ("error", "warning"):
+        if item.get("severity") in ("error", "warning") and not _still_calmo(item):
             momento = f" ({item['time']:.1f}–{item.get('until', item['time']):.1f} s)" \
                 if "time" in item else ""
             issues.append(f"givemotion {item.get('code')}{momento}: {item.get('message')}")
     return issues
+
+
+# `still` de givemotion = «poco cambia en pantalla». En el estilo calma una escena puede tener
+# pasos pequeños y sincronizados con la voz (una palabra que cambia de color, un hilo que avanza)
+# que givemotion mide como quietud. Un tramo así de corto, con la voz narrando, no es falla; uno
+# más largo sí (la voz sola no sostiene el interés).
+STILL_MAX_S = 6.0
+
+
+def _still_calmo(item: dict) -> bool:
+    """True si es un aviso `still` cuyos tramos duran todos <= STILL_MAX_S."""
+    if item.get("code") != "still":
+        return False
+    tramos = item.get("ranges") or [[item.get("time", 0), item.get("until", item.get("time", 0))]]
+    return all(fin - ini <= STILL_MAX_S for ini, fin in tramos)
 
 
 TEXTO_MIN_PX = 24  # etiquetas 24, contenido 30, títulos 60 (oficio.md § Escenas)

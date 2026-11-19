@@ -182,13 +182,36 @@ necesite: `camera-moves`, `text-reveals`, `numbers-and-charts`, `scene-transitio
 
 | Regla | Antes | Ahora |
 |---|---|---|
-| Texto mínimo | 16–22 px | etiquetas 24 px, contenido 30 px (28 px dentro de tarjetas), cifras clave 64 px, títulos 60 px |
+| Texto mínimo | 16–22 px | pensado para celular: ver «Mínimos para celular» abajo (`escenas.css` ya los trae) |
 | Lienzo | contenido hasta el 64 % del alto | la composición va de y ≈ 200 a 900; tarjetas que llenan el ancho (≥ 70–80 %) con texto real del caso, nunca barras grises como contenido |
 | Franja inferior | vacía o con contenido | y > 900 libre para los subtítulos de la plataforma |
 | Quietud | portada fija 13 s, tramos de 4–6 s | algo se mueve cada ≤ 1,5 s; la portada está armada en t = 0 pero respira (push lento, motivo que se anima en su palabra) |
 | Foco | ninguno | un foco por escena con `sceneCam(world, dur, {at, back, fit, dim})`: zoom ≤ 1,25 a lo que nombra la voz, el resto atenuado; el título vive fuera del mundo y nunca se tapa |
 | Sincronía | aproximada | cada revelado 0,04–0,08 s antes de su palabra en `cues.md` |
 | Estados | colores sueltos | verde = respaldado (`.row.ok`, `.chip.ok`), rojo = no aparece (`.row.bad`, `.st.bad`), acento = la idea clave |
+
+**Estilo por defecto: «calma con intención».** `video.html` y `escenas.css` lo traen hecho:
+
+- *Aprobado:* cámara casi quieta con `calma(escena, mundo, dur, [[t, 1.05]], origen)`: deriva muy
+  lenta y, en 3–4 momentos del video, un empuje de ≤ 1,06 hacia lo que nombra la voz, con un solo
+  origen por escena acotado a la caja de contenido (x 156–1764, y 272–878) para que nada cruce los
+  márgenes; un solo empalme lateral suave para todo el video (`push-left 0.8 in-out-sine`); morph
+  solo donde el MISMO objeto continúa (`data-morph` en ambas escenas, y el titular de la que entra
+  con `T(…, entra)`); el movimiento cuenta la idea al ritmo de `cues.md`; lo nuevo nace de algo ya en
+  pantalla; el encabezado se apaga antes del corte y se enciende cuando el empalme termina.
+- *Rechazado:* zooms de 1,3–1,5× y regresos de cámara, transiciones mezcladas (un empalme distinto
+  por escena), barridos de luz o degradados que cruzan la pantalla (parecen un error de render).
+- `sceneCam` (foco con zoom hasta 1,25) queda solo para pantallas capturadas, donde hay que acercarse
+  a un anillo para que se lea.
+
+**Mínimos para celular** (el video se ve a ~480 px de ancho, escala 0,25): texto principal ≥ 64 px,
+nada < 36 px, ≤ 12 palabras visibles por escena, un foco que ocupe ≥ 70 % del ancho útil, márgenes de
+96 px. Sin «→» si la fuente de la marca no lo trae (Geist no): usa una forma o un hilo.
+
+**Antes de renderizar:** mira la hoja de cuadros reducida a 480 px (`ffmpeg -i hoja.png -vf scale=480:-1
+hoja-480.png`) y **3 cuadros por empalme** (el último de la escena que sale, uno a mitad del empalme, el
+primero estable de la que entra); si algo se ve cortado, encimado o ilegible así, está mal aunque
+a 1920 px se vea bien.
 
 **Portada y cierre (`.campo`):** el texto va en `var(--on-campo)` y, sobre un relleno de
 acento, en `var(--on-accent)`; nunca `var(--bg)` ni blanco fijo (con un campo claro no se lee).
@@ -234,7 +257,8 @@ escenas`, que además de givemotion avisa de:
 1. Ningún texto cortado, encimado ni menor de 24 px.
 2. El tercio inferior no queda vacío en escenas de contenido; nada importante bajo y = 900.
 3. El foco cae sobre lo que nombra la voz y no se mete bajo el encabezado.
-4. Ningún tramo `still` sin motivo; ninguna escena arranca quieta.
+4. Ningún tramo `still` > 6 s (los más cortos, sincronizados con la voz, son el estilo calma y no se avisan); ninguna escena arranca quieta.
+   Con el estilo calma, la hoja de 480 px y los 3 cuadros por empalme de § Escenas.
 5. Colores y logo de `marca.css`; el caso ficticio rotulado.
 6. Cortes limpios entre escenas.
 
