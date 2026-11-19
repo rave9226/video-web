@@ -107,3 +107,21 @@ def test_frontmatter_quita_comentarios_de_la_plantilla():
     md = '---\nformato: explicativo # para qué es el video\nmessage: "Uno # dos"\n---\n'
     front = texto.parse_frontmatter(md)
     assert front["formato"] == "explicativo" and front["message"] == "Uno # dos"
+
+
+def test_wer_numeros_en_letras_y_cifras():
+    """El guion dice los números en letras y Whisper los escribe en cifras: no es error."""
+    guion = ("Recibes una ficha: los tipos de solicitud suman ciento treinta y nueve, no ciento "
+             "cuarenta y ocho, el setenta coma cuatro por ciento desde dos mil veinticinco.")
+    oido = ("Recibes una ficha. Los tipos de solicitud suman 139, no 148, el 70,4% desde "
+            "2025.")
+    assert texto.wer(guion, oido) == 0
+    assert texto.comparables("mil quinientos") == texto.comparables("1.500") == ["1500"]
+    assert texto.comparables("por ciento") == ["por", "ciento"]
+    assert texto.wer("ciento cuarenta y ocho", "149") == 1
+
+
+def test_huella_cambia_con_el_texto():
+    """La huella de una línea solo cambia si cambia su texto (no por espacios)."""
+    assert texto.huella("Hola  mundo.") == texto.huella("Hola mundo.")
+    assert texto.huella("Hola mundo.") != texto.huella("Hola, mundo.")

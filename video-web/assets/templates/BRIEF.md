@@ -5,7 +5,8 @@ formato: <FORMATO> # para qué es el video: capacitacion | lanzamiento | explica
                    # cambia el arco, la duración y qué dice cada línea (oficio.md § Guion).
 producto: "<NOMBRE DEL PRODUCTO>"
 url: "<URL DE LA APP O SITIO>"
-message: "<MENSAJE CENTRAL EN UNA FRASE>"
+message: "<LA ÚNICA IDEA QUE SE LLEVA, EN UNA FRASE SIN «Y ADEMÁS»>"
+                   # un concepto por video: dos preguntas son dos videos (oficio.md § Guion)
 audience: "<A QUIÉN VA DIRIGIDO>"
 length: 60s
 language: es-419

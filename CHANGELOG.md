@@ -3,6 +3,41 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones:
 [SemVer](https://semver.org/lang/es/). La versión vigente está en `video-web/VERSION`.
 
+## [2.2.0] — 2026-11-18
+
+Lecciones de las dos primeras clases de un curso producidas con 2.1: cada tropiezo que hubo que
+parchar desde fuera de la skill es ahora una corrección o un aviso.
+
+### Corregido
+- **Marca:** `./vl marca` respeta los tokens que fija la marca (`muted`, `accent-text`,
+  `accent-bg`, `line`, `surface`, `campo`, `ok`, `ok-bg`, `bad`, `bad-bg`) en vez de
+  aproximarlos. La clave `dark` de 1.x se ignoraba en silencio y la portada salió del primario
+  oscurecido (#08163C) en vez del azul de la marca: ahora pasa a `campo` con un aviso, y las
+  claves desconocidas se avisan. `./vl marca sugerir` ya no propone `dark`.
+- **Texto sobre fondos de marca:** tokens nuevos `--on-campo` y `--on-accent` (blanco o tinta,
+  el que contraste); portada, cierre, chip sólido y barra de progreso los usan en vez de
+  blanco fijo. `./vl check marca` mide también el texto sobre el campo, sobre el acento y el
+  gris sobre la superficie.
+- **Voz desfasada:** cada toma guarda la huella de su texto, su voz y su `respell`
+  (`assets/voice/firmas.json`). `./vl voz lines` genera solo las líneas nuevas o cambiadas
+  (`--todas` para rehacerlas) y una línea cuyo guion cambió después de generarse queda en
+  revisar; `./vl check voz` lo avisa, igual que una voz distinta de la de `audio.json`.
+- **Falsos REV por números:** el WER compara los números en cifras («ciento cuarenta y ocho»
+  = «148», «mil quinientos» = «1.500», «coma» y «%»).
+- **Configuraciones de 1.x:** un `audio.json` viejo (`bgm.prompt` de MusicGen, referencia en la
+  skill 1.x) se migra en memoria y se avisa en `./vl voz` y `./vl check voz`, con la voz de la
+  plantilla.
+
+### Agregado
+- `./vl revisar` saca un cuadro de cada escena al 65 % de su duración
+  (`renders/review/escenas/`, tiempos de `givemotion inspect`): las hojas automáticas podían
+  caer en el inicio vacío de una escena.
+- `./vl check escenas` avisa de escenas pobres (medidas en ese cuadro: ancho, alto y área que
+  ocupa el contenido), texto menor de 24 px, `color: var(--bg)`, rellenos de acento que se
+  pierden sobre un campo del mismo color y texto atenuado en portada y cierre.
+- `references/oficio.md` § Un concepto por video: una sola idea y un arco claro en todo
+  formato; el `message` del BRIEF lo pide.
+
 ## [2.1.0] — 2026-11-18
 
 ### Agregado

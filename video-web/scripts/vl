@@ -213,6 +213,12 @@ cmd_revisar() {
   gm check video.html --json > .vl/check.json 2> .vl/check.err
   gm check video.html 2>&1 | tail -n 25
   gm snapshot video.html -o renders/review 2>&1 | tail -n 3
+  # un cuadro al 65 % de cada escena (ya armada): las hojas automáticas pueden caer en su
+  # inicio, vacío. `check escenas` mide en ellos cuánto lienzo usa cada una.
+  local t; gm inspect video.html > .vl/inspect.json 2> /dev/null; t="$(chk tiempos)"
+  rm -rf renders/review/escenas
+  [[ -n "$t" ]] && gm snapshot video.html --times "$t" -o renders/review/escenas > /dev/null 2>&1 &&
+    echo "✓ un cuadro por escena en renders/review/escenas/ (al 65 % de cada una)"
   chk escenas
   echo "SIGUIENTE: mira TÚ las hojas de renders/review (lista en references/oficio.md § Revisión);"
   echo "  para un momento exacto: npx givemotion@$(gm_version) still video.html -t 12.3 -o f.png"

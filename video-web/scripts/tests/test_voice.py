@@ -139,3 +139,30 @@ def test_plantilla_usa_la_voz_del_curso():
     plantilla = json.loads((voice.VOCES_SKILL.parent / "templates/audio.json")
                            .read_text(encoding="utf-8"))
     assert plantilla["voice"]["library"] == "instructora-2026"
+
+
+def test_solo_regenera_lineas_cambiadas(tmp_path, monkeypatch):
+    """La voz se invalida por contenido: texto, voz o respell distintos del de su toma."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "assets/voice").mkdir(parents=True)
+    cfg = {"voice": {"library": "instructora-2026"}, "respell": {}}
+    script = {1: "Uno.", 2: "Dos.", 3: "Tres."}
+    for frame in script:
+        (tmp_path / f"assets/voice/{frame:02d}.raw.wav").write_bytes(b"x")
+    voice.FIRMAS.write_text(json.dumps({"01": voice.firma(cfg, "Uno."),
+                                        "02": voice.firma(cfg, "Dos viejo.")}), encoding="utf-8")
+    assert voice.pendientes(cfg, script) == {2, 3}
+    otra = dict(cfg, voice={"library": "bogota-2026"})
+    assert voice.pendientes(otra, script) == {1, 2, 3}
+
+
+def test_audio_json_1x_se_migra_y_avisa(capsys):
+    """bgm.prompt (MusicGen) y la referencia de la skill 1.x se quitan, con aviso."""
+    viejo = {"voice": {"library": "bogota-2026",
+                       "ref_audio": "/h/.agents/skills/video-web/assets/voice/voces/b/ref.wav"},
+             "bgm": {"prompt": "calm music", "under_voice_db": 12.5}}
+    nuevo = voice.migrar_1x(viejo)
+    assert nuevo["voice"]["ref_audio"] is None and "prompt" not in nuevo["bgm"]
+    assert "instructora-2026" in capsys.readouterr().out
+    plantilla = json.loads(voice.PLANTILLA_AUDIO.read_text(encoding="utf-8"))
+    assert voice.avisos_1x(plantilla) == []

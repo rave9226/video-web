@@ -11,7 +11,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); margi
 /* Mundo de cámara de cada escena (el título queda fuera para que el zoom nunca lo tape) */
 .world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 /* Portada, separadores y cierre */
-.campo { position: absolute; inset: 0; background: var(--campo); color: #fff; }
+/* El texto sobre el campo usa --on-campo (blanco o tinta según contraste), nunca var(--bg) ni
+   #fff: con un campo claro el blanco no se lee. Si el campo es del mismo color que el acento
+   (marcas que usan su primario de portada), un relleno de acento desaparece sobre él: ahí la
+   burbuja o el botón va en var(--bg) con texto var(--accent-text) (`./vl check escenas` avisa). */
+.campo { position: absolute; inset: 0; background: var(--campo); color: var(--on-campo); }
 
 /* Encabezado fijo: símbolo, sección, «Paso N de M», módulo y barra de progreso */
 #hdr { position: absolute; left: 0; top: 0; width: 1920px; height: 112px; z-index: 50;
@@ -65,7 +69,7 @@ h1.tt .key { color: var(--accent-text); }
 .chip.neutro { color: var(--muted); background: var(--surface); border-color: var(--line); }
 .chip.ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
 .chip.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad); }
-.chip.solido { color: #fff; background: var(--accent); border-color: var(--accent); }
+.chip.solido { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
 /* «Preparado por IA»: quién hizo el contenido de la tarjeta */
 .chip.ia { margin-top: 8px; color: var(--ink); background: var(--surface); border-color: var(--ink); }
 /* Sello de estado sobre una fila («Sin respaldo», «No demuestra…») */
